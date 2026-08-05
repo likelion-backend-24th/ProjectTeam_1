@@ -1,5 +1,6 @@
 package com.team1.cityfarm.controller;
 
+import com.team1.cityfarm.dto.BoardRequestDto;
 import com.team1.cityfarm.dto.BoardResponseDto;
 import com.team1.cityfarm.service.BoardService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -9,10 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "게시판 API", description = "게시글 조회, 등록, 수정, 삭제 API")
 @RestController
@@ -29,7 +27,21 @@ public class BoardController {
             @RequestParam(required = false) String keyword,   // 없으면 전체조회
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return boardService.getBoards(type, keyword, pageable).map(BoardResponseDto::from);
+        return boardService.getBoards(type, keyword, pageable);
     }
 
+    @GetMapping("/{boardId}")
+    public BoardResponseDto getBoard(
+            @PathVariable Long boardId
+    ) {
+        return boardService.getBoard(boardId);
+    }
+
+    @PostMapping
+    public BoardResponseDto createBoard(
+            @RequestBody BoardRequestDto request,
+            @RequestParam Long userId
+    ) {
+        return boardService.createBoard(request, userId);
+    }
 }
