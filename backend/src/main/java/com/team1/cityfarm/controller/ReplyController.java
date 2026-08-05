@@ -45,6 +45,9 @@ public class ReplyController {
         return ResponseEntity.ok(replyService.createReply(null,boardId,dto));
     }
 
+    @Operation(summary = "답글 수정",
+            description = "답글의 내용을 수정합니다"
+    )
     @PatchMapping("/reply/{id}")
     public ResponseEntity<ReplyResponseDto> editReply(@PathVariable("id") Long replyId,
                                                       @Valid ReplyCreateRequestDto dto){
