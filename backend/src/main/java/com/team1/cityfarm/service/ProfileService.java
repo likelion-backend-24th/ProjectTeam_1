@@ -1,5 +1,9 @@
 package com.team1.cityfarm.service;
 
+import com.team1.cityfarm.entity.User;
+import com.team1.cityfarm.global.exception.CustomError;
+import com.team1.cityfarm.global.exception.CustomException;
+import com.team1.cityfarm.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

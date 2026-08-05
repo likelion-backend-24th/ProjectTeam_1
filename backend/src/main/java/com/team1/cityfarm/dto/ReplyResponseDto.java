@@ -2,6 +2,8 @@ package com.team1.cityfarm.dto;
 
 import lombok.Getter;
 
+// 아직 Reply 엔티티가 없어서 사용 보류 중
+
 @Getter
 public class ReplyResponseDto {
     private Long id;

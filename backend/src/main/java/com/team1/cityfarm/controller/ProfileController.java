@@ -1,6 +1,7 @@
 package com.team1.cityfarm.controller;
 
 import com.team1.cityfarm.dto.ProfileResponseDto;
+import com.team1.cityfarm.entity.User;
 import com.team1.cityfarm.global.response.ApiResponse;
 import com.team1.cityfarm.service.ProfileService;
 import lombok.RequiredArgsConstructor;
