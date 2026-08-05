@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 public class BoardController {
     private final BoardService boardService;
 
+    //게시글 목록조회
     @GetMapping
     public Page<BoardResponseDto> getBoards(
             @RequestParam(required = false) String type,
@@ -25,6 +27,7 @@ public class BoardController {
         return boardService.getBoards(type, keyword, pageable);
     }
 
+    //게시글 상제조회
     @GetMapping("/{boardId}")
     public BoardResponseDto getBoard(
             @PathVariable Long boardId
@@ -32,11 +35,33 @@ public class BoardController {
         return boardService.getBoard(boardId);
     }
 
+    //게시글 등록
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public BoardResponseDto createBoard(
             @RequestBody BoardRequestDto request,
             @RequestParam Long userId
     ) {
         return boardService.createBoard(request, userId);
+    }
+
+    //게시글 수정
+    @PutMapping("/{boardId}")
+    public BoardResponseDto updateBoard(
+            @RequestBody BoardRequestDto request,
+            @PathVariable Long boardId,
+            @RequestParam Long userId
+    ){
+        return boardService.updateBoard(boardId, request, userId);
+    }
+
+    //게시글 삭제
+    @DeleteMapping("/{boardId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteBoard(
+            @PathVariable Long boardId,
+            @RequestParam Long userId
+    ){
+        boardService.deleteBoard(boardId,userId);
     }
 }
