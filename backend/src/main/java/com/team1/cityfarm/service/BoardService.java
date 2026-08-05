@@ -41,7 +41,8 @@ public class BoardService {
     //게시글 상세 조회
     @Transactional(readOnly = true)
     public BoardResponseDto getBoard(Long boardId) {
-        return boardRepository.findById(boardId).map(BoardResponseDto::from).orElseThrow();
+        return boardRepository.findById(boardId).map(BoardResponseDto::from)
+                .orElseThrow(() -> new CustomException(CustomError.BOARD_NOT_FOUND));
     }
 
     //게시글 등록
@@ -60,6 +61,31 @@ public class BoardService {
 
         return BoardResponseDto.from(boardRepository.save(board));
     }
+
+    //게시글 수정
+    @Transactional
+    public BoardResponseDto updateBoard(Long boardId, BoardRequestDto request,Long userId) {
+        Board board = boardRepository.findById(boardId)
+                .orElseThrow(() -> new CustomException(CustomError.BOARD_NOT_FOUND));
+        if(!board.getUser().getId().equals(userId)){
+            throw new CustomException(CustomError.BOARD_NOT_OWNER);
+        }
+
+        board.update(request.title(), request.content(), request.category());
+        return BoardResponseDto.from(boardRepository.save(board));
+    }
+
+    //게시글 삭제
+    @Transactional
+    public void deleteBoard(Long boardId,Long userId) {
+        Board board = boardRepository.findById(boardId)
+                .orElseThrow(() -> new CustomException(CustomError.BOARD_NOT_FOUND));
+        if(!board.getUser().getId().equals(userId)){
+            throw new CustomException(CustomError.BOARD_NOT_OWNER);
+        }
+        boardRepository.delete(board);
+    }
+
 
 
 
