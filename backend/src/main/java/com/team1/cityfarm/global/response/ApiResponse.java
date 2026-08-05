@@ -1,5 +1,8 @@
 package com.team1.cityfarm.global.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.ALWAYS)
 public class ApiResponse<T> {
 
     private final boolean success;
