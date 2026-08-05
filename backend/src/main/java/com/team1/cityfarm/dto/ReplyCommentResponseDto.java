@@ -17,7 +17,7 @@ public class ReplyCommentResponseDto {
     public ReplyCommentResponseDto(ReplyComment replyComment) {
         this.id = replyComment.getId();
         this.content = replyComment.getContent();
-//      this.nickname = replyComment.getUser().getNickname(); // TODO: User 연관관계 살아나면 추가
+//      this.nickname = replyComment.getUser().getNickname(); // TODO
         this.createdAt = replyComment.getCreatedAt();
         this.updatedAt = replyComment.getUpdatedAt();
     }
