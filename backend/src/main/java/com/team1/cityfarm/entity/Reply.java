@@ -14,7 +14,7 @@ public class Reply {
     @Column(nullable = false)
     private String content;
 
-    @Column(name = "is_adopted")
+    @Column(name = "is_adopted", nullable = false)
     private Boolean isAdopted = false;
 
     @ManyToOne(fetch = FetchType.LAZY)

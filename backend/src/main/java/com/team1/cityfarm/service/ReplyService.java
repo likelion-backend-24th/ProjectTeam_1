@@ -6,6 +6,7 @@ import com.team1.cityfarm.entity.Reply;
 import com.team1.cityfarm.entity.User;
 import com.team1.cityfarm.global.exception.CustomError;
 import com.team1.cityfarm.global.exception.CustomException;
+import com.team1.cityfarm.repository.BoardRepository;
 import com.team1.cityfarm.repository.ReplyRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,12 +15,17 @@ import org.springframework.transaction.annotation.Transactional;
 @Service@RequiredArgsConstructor
 public class ReplyService {
     private final ReplyRepository replyRepository;
+    private final BoardRepository boardRepository;
 
     //답글 작성
     @Transactional
     public ReplyResponseDto createReply(User user, Long boardId, ReplyCreateRequestDto dto){
-        
-        return null;
+        Reply newReply = new Reply();
+        newReply.setUser(user);
+        newReply.setBoard(boardRepository.findById(boardId).orElseThrow(()->new CustomException(CustomError.BOARD_NOT_FOUND)));
+        newReply.setContent(dto.getContent());
+        replyRepository.save(newReply);
+        return ReplyResponseDto.from(newReply);
     }
 
     //답글 수정
