@@ -1,5 +1,6 @@
 package com.team1.cityfarm.controller;
 
+import com.team1.cityfarm.dto.LoginRequestDto;
 import com.team1.cityfarm.dto.SignupRequestDto;
 import com.team1.cityfarm.service.AuthService;
 import lombok.RequiredArgsConstructor;
@@ -19,5 +20,11 @@ public class AuthController {
     public ResponseEntity<String> siginup(@RequestBody SignupRequestDto signupRequestDto){
         authService.signUp(signupRequestDto);
         return ResponseEntity.ok("회원가입 성공");
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<String> login(@RequestBody LoginRequestDto loginRequestDto){
+        authService.login(loginRequestDto);
+        return ResponseEntity.ok("로그인 성공");
     }
 }
