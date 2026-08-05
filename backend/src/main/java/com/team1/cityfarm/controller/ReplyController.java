@@ -20,9 +20,9 @@ public class ReplyController {
 
     //상세 게시판에서 답글 불러오기
     @GetMapping("/board/{id}/reply")
-    public ResponseEntity<List<Reply>> getReply(@PathVariable("id") Long boardId
+    public ResponseEntity<List<ReplyResponseDto>> getReply(@PathVariable("id") Long boardId
                                                 ){
-        return ResponseEntity.ok(null);
+        return ResponseEntity.ok(replyService.getAllReply(boardId));
     }
 
     //상세 게시판에서 답글 작성
@@ -32,5 +32,12 @@ public class ReplyController {
         //userDetails 추가되면 구현 예정
 
         return ResponseEntity.ok(replyService.createReply(null,boardId,dto));
+    }
+
+    @PatchMapping("/reply/{id}")
+    public ResponseEntity<ReplyResponseDto> editReply(@PathVariable("id") Long replyId,
+                                                      @Valid ReplyCreateRequestDto dto){
+        //userDetails 추가되면 구현 예정
+        return ResponseEntity.ok(replyService.editReply(null,replyId,dto));
     }
 }
