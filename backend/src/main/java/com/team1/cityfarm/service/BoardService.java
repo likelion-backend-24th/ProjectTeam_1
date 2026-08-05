@@ -44,6 +44,22 @@ public class BoardService {
         return boardRepository.findById(boardId).map(BoardResponseDto::from).orElseThrow();
     }
 
+    //게시글 등록
+    @Transactional
+    public BoardResponseDto createBoard(BoardRequestDto request, Long userId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
+
+        Board board = Board.builder()
+                .title(request.title())
+                .content(request.content())
+                .category(request.category())
+                .user(user)
+                .build();
+
+        return BoardResponseDto.from(boardRepository.save(board));
+    }
 
 
 

@@ -1,5 +1,6 @@
 package com.team1.cityfarm.controller;
 
+import com.team1.cityfarm.dto.BoardRequestDto;
 import com.team1.cityfarm.dto.BoardResponseDto;
 import com.team1.cityfarm.service.BoardService;
 import lombok.RequiredArgsConstructor;
@@ -29,5 +30,13 @@ public class BoardController {
             @PathVariable Long boardId
     ) {
         return boardService.getBoard(boardId);
+    }
+
+    @PostMapping
+    public BoardResponseDto createBoard(
+            @RequestBody BoardRequestDto request,
+            @RequestParam Long userId
+    ) {
+        return boardService.createBoard(request, userId);
     }
 }
