@@ -31,8 +31,8 @@ public class SwaggerConfig {
 
         return new OpenAPI()
                 .info(new Info()
-                        .title("MoneyLog API Documentation")
-                        .description("가계부 서비스 MoneyLog의 백엔드 API 명세서입니다.")
+                        .title("CityFarm API Documentation")
+                        .description("도심 속 텃밭, 시티팜의 백엔드 API 명세서입니다.")
                         .version("v1.0.0"))
                 .addSecurityItem(securityRequirement)
                 .components(components);

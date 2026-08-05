@@ -12,6 +12,6 @@ public class ProfileService {
 
     public User getUserProfile(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND)); // 유저 없을 시 예외 처리
+                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND)); // 유저 없을 시 예외 처리
     }
 }

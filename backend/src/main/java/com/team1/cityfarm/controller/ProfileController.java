@@ -17,12 +17,9 @@ public class ProfileController {
 
     @GetMapping
     public ApiResponse<ProfileResponseDto> getMyProfile(
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            @AuthenticationPrincipal Long userId
     ) {
-        // JWT 필터를 통해 인증된 유저의 ID 추출
-        Long currentUserId = userDetails.getUserId();
-
-        User user = profileService.getUserProfile(currentUserId);
+        User user = profileService.getUserProfile(userId);
 
         return ApiResponse.success("프로필 조회 성공", new ProfileResponseDto(user));
     }
