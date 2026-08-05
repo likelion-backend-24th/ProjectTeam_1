@@ -1,22 +1,27 @@
 package com.team1.cityfarm.dto;
 
+import com.team1.cityfarm.entity.Board;
+import com.team1.cityfarm.entity.Reply;
+import com.team1.cityfarm.entity.User;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-// 아직 Reply 엔티티가 없어서 사용 보류 중
-
-@Getter
+@Getter@AllArgsConstructor@NoArgsConstructor
 public class ReplyResponseDto {
     private Long id;
-    private Long boardId;
-    private Long userId;
     private String content;
-    private boolean adopted;
+    private Boolean isAdopted;
+    private Board board;
+    private User user;
 
-    public ReplyResponseDto(Reply reply) {
-        this.id = reply.getId();
-        this.boardId = reply.getBoardId();
-        this.userId = reply.getUserId();
-        this.content = reply.getContent();
-        this.adopted = reply.getAdopted();
+    public static ReplyResponseDto from(Reply reply){
+        return new ReplyResponseDto(
+                reply.getId(),
+                reply.getContent(),
+                reply.getIsAdopted(),
+                reply.getBoard(),
+                reply.getUser()
+        );
     }
 }

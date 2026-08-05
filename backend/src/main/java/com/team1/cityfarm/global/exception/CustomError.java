@@ -27,7 +27,9 @@ public enum CustomError {
     //작성자 본인 이외 수정/삭제 접근시
     BOARD_NOT_OWNER(HttpStatus.FORBIDDEN, "게시글 수정/삭제 권한이 없습니다."),
     COMMENT_NOT_OWNER(HttpStatus.FORBIDDEN, "댓글 수정/삭제 권한이 없습니다."),
-    REPLY_NOT_OWNER(HttpStatus.FORBIDDEN, "답글 수정/삭제 권한이 없습니다.");
+    REPLY_NOT_OWNER(HttpStatus.FORBIDDEN, "답글 수정/삭제 권한이 없습니다."),
+
+    BOARD_TYPE_ERROR(HttpStatus.BAD_REQUEST,"잘못된 검색 타입입니다.");
 
     private final HttpStatus httpStatus;
     private final String message;
