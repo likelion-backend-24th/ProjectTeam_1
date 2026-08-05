@@ -57,6 +57,4 @@ public class AuthService {
             throw new CustomException(CustomError.AUTH_PASSWORD_VALID);
 
     }
-
-
 }
