@@ -14,12 +14,32 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class ReplyService {
     private final ReplyRepository replyRepository;
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
+
+    //상세 게시글에 모든 답변 조회
+    @Transactional(readOnly = true)
+    public List<ReplyResponseDto> getAllReply(Long id){
+        //상세 게시글 존재 여부 확인
+        if (!boardRepository.existsById(id)) {
+            throw new CustomException(CustomError.BOARD_NOT_FOUND);
+        }
+
+        List<ReplyResponseDto> loadReplies =
+                replyRepository.findAllByBoard_Id(id)
+                        .stream()
+                        .map(ReplyResponseDto::from)
+                        .collect(Collectors.toList());
+
+        return loadReplies;
+    }
 
     //답글 작성
     @Transactional
