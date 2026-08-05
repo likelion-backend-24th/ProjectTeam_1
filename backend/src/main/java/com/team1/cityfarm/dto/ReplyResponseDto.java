@@ -1,22 +1,41 @@
 package com.team1.cityfarm.dto;
 
+import com.team1.cityfarm.entity.Board;
+import com.team1.cityfarm.entity.Reply;
+import com.team1.cityfarm.entity.User;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
-
-// 아직 Reply 엔티티가 없어서 사용 보류 중
+import lombok.NoArgsConstructor;
 
 @Getter
+@AllArgsConstructor
+@NoArgsConstructor
+@Schema(description = "답글 응답 DTO")
 public class ReplyResponseDto {
-    private Long id;
-    private Long boardId;
-    private Long userId;
-    private String content;
-    private boolean adopted;
 
-    public ReplyResponseDto(Reply reply) {
-        this.id = reply.getId();
-        this.boardId = reply.getBoardId();
-        this.userId = reply.getUserId();
-        this.content = reply.getContent();
-        this.adopted = reply.getAdopted();
+    @Schema(description = "답글 ID", example = "1")
+    private Long id;
+
+    @Schema(description = "답글 내용", example = "상추는 거꾸로 해도 상추랍니다.")
+    private String content;
+
+    @Schema(description = "채택 여부", example = "true")
+    private Boolean isAdopted;
+
+    @Schema(description = "게시글 정보")
+    private Board board;
+
+    @Schema(description = "작성자 정보")
+    private User user;
+
+    public static ReplyResponseDto from(Reply reply) {
+        return new ReplyResponseDto(
+                reply.getId(),
+                reply.getContent(),
+                reply.getIsAdopted(),
+                reply.getBoard(),
+                reply.getUser()
+        );
     }
 }

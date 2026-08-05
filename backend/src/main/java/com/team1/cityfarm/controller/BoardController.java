@@ -3,6 +3,8 @@ package com.team1.cityfarm.controller;
 import com.team1.cityfarm.dto.BoardRequestDto;
 import com.team1.cityfarm.dto.BoardResponseDto;
 import com.team1.cityfarm.service.BoardService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -11,6 +13,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "게시판 API", description = "게시글 조회, 등록, 수정, 삭제 API")
 @RestController
 @RequestMapping("/api/board")
 @RequiredArgsConstructor
