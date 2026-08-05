@@ -14,6 +14,8 @@ public enum CustomError {
     AUTH_FORBIDDEN(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
     AUTH_LOGIN_FAILED(HttpStatus.BAD_REQUEST, "아이디 또는 비밀번호가 일치하지 않습니다."),
     AUTH_PASSWORD_VALID(HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다."),
+    AUTH_EMAIL_REQUIRED(HttpStatus.BAD_REQUEST,"이메일을 입력해주세요"),
+    AUTH_PASSWORD_REQUIRED(HttpStatus.BAD_REQUEST,"비밀번호를 입력해주세요"),
     AUTH_DUPLICATED_EMAIL(HttpStatus.CONFLICT,"이미 사용중인 이메일입니다"),
     AUTH_DUPLICATED_NICKNAME(HttpStatus.CONFLICT,"이미 사용중인 닉네임입니다"),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND,"사용자를 찾을 수 없습니다"),
@@ -25,7 +27,9 @@ public enum CustomError {
     //작성자 본인 이외 수정/삭제 접근시
     BOARD_NOT_OWNER(HttpStatus.FORBIDDEN, "게시글 수정/삭제 권한이 없습니다."),
     COMMENT_NOT_OWNER(HttpStatus.FORBIDDEN, "댓글 수정/삭제 권한이 없습니다."),
-    REPLY_NOT_OWNER(HttpStatus.FORBIDDEN, "답글 수정/삭제 권한이 없습니다.");
+    REPLY_NOT_OWNER(HttpStatus.FORBIDDEN, "답글 수정/삭제 권한이 없습니다."),
+
+    BOARD_TYPE_ERROR(HttpStatus.BAD_REQUEST,"잘못된 검색 타입입니다.");
 
     private final HttpStatus httpStatus;
     private final String message;
