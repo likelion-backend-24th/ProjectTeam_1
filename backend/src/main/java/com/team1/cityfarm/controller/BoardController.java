@@ -24,7 +24,7 @@ public class BoardController {
             @RequestParam(required = false) String keyword,   // 없으면 전체조회
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return boardService.getBoards(type, keyword, pageable).map(BoardResponseDto::from);
+        return boardService.getBoards(type, keyword, pageable);
     }
 
 }
