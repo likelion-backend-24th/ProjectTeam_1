@@ -30,12 +30,12 @@ public class BoardComment {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    /* @ManyToOne(fetch = FetchType.LAZY)
+     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "board_id", nullable = false)
-    private Board board;*/
+    private Board board;
 
-    /* @ManyToOne(fetch = FetchType.LAZY)
+     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;*/
+    private User user;
 
 }
