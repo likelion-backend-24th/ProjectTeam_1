@@ -2,6 +2,7 @@ package com.team1.cityfarm.controller;
 
 import com.team1.cityfarm.dto.ReplyCreateRequestDto;
 import com.team1.cityfarm.dto.ReplyResponseDto;
+import com.team1.cityfarm.global.security.CustomUserDetails;
 import com.team1.cityfarm.service.ReplyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -9,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -37,10 +39,9 @@ public class ReplyController {
     )
     @PostMapping("/board/{id}/reply")
     public ResponseEntity<ReplyResponseDto> createReply(@PathVariable("id") Long boardId,
-                                                        @Valid ReplyCreateRequestDto dto){
-        //userDetails 추가되면 구현 예정
-
-        return ResponseEntity.ok(replyService.createReply(null,boardId,dto));
+                                                        @Valid ReplyCreateRequestDto dto,
+                                                        @AuthenticationPrincipal CustomUserDetails customUserDetails){
+        return ResponseEntity.ok(replyService.createReply(customUserDetails.getUser().getId(), boardId,dto));
     }
 
     @Operation(summary = "답글 수정",
@@ -48,8 +49,15 @@ public class ReplyController {
     )
     @PatchMapping("/reply/{id}")
     public ResponseEntity<ReplyResponseDto> editReply(@PathVariable("id") Long replyId,
-                                                      @Valid ReplyCreateRequestDto dto){
-        //userDetails 추가되면 구현 예정
-        return ResponseEntity.ok(replyService.editReply(null,replyId,dto));
+                                                      @Valid ReplyCreateRequestDto dto,
+                                                      @AuthenticationPrincipal CustomUserDetails customUserDetails){
+        return ResponseEntity.ok(replyService.editReply(customUserDetails.getUser().getId(),replyId,dto));
+    }
+
+    @DeleteMapping("/reply/{id}")
+    public ResponseEntity<String> deleteReply(@PathVariable("id") Long replyId,
+                                         @AuthenticationPrincipal CustomUserDetails customUserDetails){
+        replyService.deleteReply(customUserDetails.getUser().getId(), replyId);
+        return ResponseEntity.ok("삭제 성공");
     }
 }

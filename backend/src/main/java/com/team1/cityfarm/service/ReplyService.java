@@ -43,15 +43,15 @@ public class ReplyService {
 
     //답글 작성
     @Transactional
-    public ReplyResponseDto createReply(User user, Long boardId, ReplyCreateRequestDto dto) {
-        //불러온 user가 비었을 때 예외처리
-        if (user == null) throw new CustomException(CustomError.USER_NOT_FOUND);
-
-        /*컨트롤러에서 받아온 user,
+    public ReplyResponseDto createReply(Long userId, Long boardId, ReplyCreateRequestDto dto) {
+        /*컨트롤러에서 받아온 userid,
         board id로 불러온 board,
         dto에서 받아온 내용으로 답변 생성 및 저장*/
+        User loadUser = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
+
         Reply newReply = Reply.builder()
-                .user(user)
+                .user(loadUser)
                 .board(boardRepository.findById(boardId).orElseThrow(() -> new CustomException(CustomError.BOARD_NOT_FOUND)))
                 .content(dto.getContent())
                 .build();
@@ -64,15 +64,15 @@ public class ReplyService {
 
     //답글 수정
     @Transactional
-    public ReplyResponseDto editReply(User user, Long id, ReplyCreateRequestDto dto) {
-        //불러온 user가 비었을 때 예외처리
-        if (user == null) throw new CustomException(CustomError.USER_NOT_FOUND);
+    public ReplyResponseDto editReply(Long userId, Long id, ReplyCreateRequestDto dto) {
+        User loadUser = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
 
         /*본인만 수정하도록, user가 일치할 시
         dto로 받아온 내용으로 수정*/
         Reply loadReply = replyRepository.findById(id).orElseThrow(() -> new CustomException(CustomError.REPLY_NOT_FOUND));
         //사용자 본인 아닐시 예외 처리
-        if (!loadReply.getUser().getId().equals(user.getId())) throw new CustomException(CustomError.REPLY_NOT_OWNER);
+        if (!loadReply.getUser().getId().equals(loadUser.getId())) throw new CustomException(CustomError.REPLY_NOT_OWNER);
 
         //더티 체크로 상태변경
         loadReply.updateContent(dto.getContent());
@@ -81,14 +81,17 @@ public class ReplyService {
 
     //답글 삭제
     @Transactional
-    public void deleteReply(User user, Long id) {
+    public void deleteReply(Long userId, Long id) {
+        User loadUser = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
+
         //관리자 경우 답글 id로만 찾아 삭제
-        if (user.getRoleType().equals(RoleType.ADMIN)) {
+        if (loadUser.getRoleType().equals(RoleType.ADMIN)) {
             //삭제, 비었을 경우 예외처리
             replyRepository.delete(replyRepository.findById(id).orElseThrow(() -> new CustomException(CustomError.REPLY_NOT_FOUND)));
             return;
         }
         //사용자 본인이 삭제하도록 유저 id와 답글 id로 조회 후 삭제
-        replyRepository.delete(replyRepository.findReplyByIdAndUser_Id(id, user.getId()).orElseThrow(() -> new CustomException(CustomError.REPLY_NOT_FOUND)));
+        replyRepository.delete(replyRepository.findReplyByIdAndUser_Id(id, loadUser.getId()).orElseThrow(() -> new CustomException(CustomError.REPLY_NOT_FOUND)));
     }
 }
