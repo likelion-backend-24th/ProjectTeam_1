@@ -2,14 +2,17 @@ package com.team1.cityfarm.service;
 
 import com.team1.cityfarm.dto.ReplyCommentRequestDto;
 import com.team1.cityfarm.dto.ReplyCommentResponseDto;
+import com.team1.cityfarm.entity.Reply;
 import com.team1.cityfarm.entity.ReplyComment;
+import com.team1.cityfarm.entity.User;
 import com.team1.cityfarm.repository.ReplyCommentRepository;
+import com.team1.cityfarm.repository.ReplyRepository;
+import com.team1.cityfarm.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -17,14 +20,21 @@ import java.util.List;
 public class ReplyCommentService {
 
     private final ReplyCommentRepository replyCommentRepository;
+    private final UserRepository userRepository;
+    private final ReplyRepository replyRepository;
 
     // 답글 댓글 등록
     @Transactional
     public ReplyCommentResponseDto createComment(Long replyId, ReplyCommentRequestDto request, Long userId) {
+        Reply reply = replyRepository.findById(replyId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 답변입니다."));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+
         ReplyComment comment = new ReplyComment();
         comment.setContent(request.getContent());
-        // comment.setReply(reply);  // TODO
-        // comment.setUser(user);    // TODO
+        comment.setReply(reply);
+        comment.setUser(user);
 
         ReplyComment saved = replyCommentRepository.save(comment);
         return new ReplyCommentResponseDto(saved);
@@ -32,14 +42,10 @@ public class ReplyCommentService {
 
     // 답글 댓글 목록 조회
     public List<ReplyCommentResponseDto> getComments(Long replyId) {
-        // TODO: Reply 연관관계 살아나면 아래 주석 해제하고 이 return 지우기
-        /*
         List<ReplyComment> comments = replyCommentRepository.findByReplyIdOrderByCreatedAtAsc(replyId);
         return comments.stream()
                 .map(comment -> new ReplyCommentResponseDto(comment))
                 .collect(Collectors.toList());
-        */
-        return Collections.emptyList();
     }
 
     // 답글 댓글 수정
@@ -48,10 +54,9 @@ public class ReplyCommentService {
         ReplyComment comment = replyCommentRepository.findById(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 댓글입니다."));
 
-        // TODO: 작성자 본인 확인 로직 (user 연관관계 살아나면)
-        /*if (!comment.getUser().getId().equals(userId)) {
+        if (!comment.getUser().getId().equals(userId)) {
             throw new IllegalArgumentException("본인 댓글만 수정할 수 있습니다.");
-        }*/
+        }
 
         comment.setContent(requestDto.getContent());
         ReplyComment updated = replyCommentRepository.saveAndFlush(comment);
@@ -64,10 +69,9 @@ public class ReplyCommentService {
         ReplyComment comment = replyCommentRepository.findById(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 댓글입니다."));
 
-        // TODO: 작성자 본인 확인 로직 (user 연관관계 살아나면)
-        /*if (!comment.getUser().getId().equals(userId)) {
+        if (!comment.getUser().getId().equals(userId)) {
             throw new IllegalArgumentException("본인 댓글만 삭제할 수 있습니다.");
-        }*/
+        }
 
         replyCommentRepository.delete(comment);
     }

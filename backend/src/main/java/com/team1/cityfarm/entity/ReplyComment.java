@@ -32,13 +32,13 @@ public class ReplyComment {
     private LocalDateTime updatedAt;
 
 
-     /*@ManyToOne(fetch = FetchType.LAZY)
+     @ManyToOne(fetch = FetchType.LAZY)
      @JoinColumn(name = "reply_id", nullable = false)
-     private Reply reply;*/
+     private Reply reply;
 
-     /*@ManyToOne(fetch = FetchType.LAZY)
+     @ManyToOne(fetch = FetchType.LAZY)
      @JoinColumn(name = "user_id", nullable = false)
-     private User user;*/
+     private User user;
 
 
 }
