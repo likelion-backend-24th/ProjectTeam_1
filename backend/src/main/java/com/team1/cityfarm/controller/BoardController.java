@@ -32,7 +32,9 @@ public class BoardController {
         return ApiResponse.success("게시글 목록 조회 성공", boardService.getBoards(type, keyword, pageable));
     }
 
-    // 게시글 상세조회
+    //게시글 상제조회
+    @Operation(summary = "게시글 상세 조회",
+            description = "게시글 ID(boardId)를 통해 특정 게시글의 상세 정보를 조회합니다.")
     @GetMapping("/{boardId}")
     public ApiResponse<BoardResponseDto> getBoard(@PathVariable Long boardId) {
         return ApiResponse.success("게시글 조회 성공", boardService.getBoard(boardId));

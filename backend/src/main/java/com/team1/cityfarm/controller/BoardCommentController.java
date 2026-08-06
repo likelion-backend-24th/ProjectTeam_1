@@ -5,6 +5,8 @@ import com.team1.cityfarm.dto.BoardCommentResponseDto;
 import com.team1.cityfarm.global.response.ApiResponse;
 import com.team1.cityfarm.global.security.CustomUserDetails;
 import com.team1.cityfarm.service.BoardCommentService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "Board Comment", description = "게시글 댓글 관련 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api")
@@ -22,6 +25,8 @@ public class BoardCommentController {
     private final BoardCommentService boardCommentService;
 
     //    게시글 댓글 등록
+    @Operation(summary = "게시글 댓글 등록",
+            description = "지정한 게시글에 새로운 댓글을 작성합니다.")
     @PostMapping("/board/{boardId}/board-comments")
     public ResponseEntity<ApiResponse<BoardCommentResponseDto>> createComment(@PathVariable Long boardId,
                                                                               @Valid @RequestBody BoardCommentRequestDto requestDto,
@@ -37,6 +42,8 @@ public class BoardCommentController {
     }
 
     //    게시글 댓글 목록 조회
+    @Operation(summary = "게시글 댓글 목록 조회",
+            description = "특정 게시글에 달린 모든 댓글 목록을 조회합니다.")
     @GetMapping("/board/{boardId}/board-comments")
     public ResponseEntity<ApiResponse<List<BoardCommentResponseDto>>> getComments(@PathVariable Long boardId) {
 
@@ -46,6 +53,8 @@ public class BoardCommentController {
     }
 
     //    게시글 댓글 수정
+    @Operation(summary = "게시글 댓글 수정",
+            description = "본인이 작성한 댓글의 내용을 수정합니다.")
     @PatchMapping("/board-comments/{commentId}")
     public ResponseEntity<ApiResponse<BoardCommentResponseDto>> updateComment(
             @PathVariable Long commentId,
@@ -60,6 +69,8 @@ public class BoardCommentController {
     }
 
     //게시글 댓글 삭제
+    @Operation(summary = "게시글 댓글 삭제",
+            description = "본인이 작성한 댓글을 삭제합니다.")
     @DeleteMapping("/board-comments/{commentId}")
     public ResponseEntity<ApiResponse<Void>> deleteComment(
             @PathVariable Long commentId,
