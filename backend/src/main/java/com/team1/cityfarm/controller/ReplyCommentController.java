@@ -3,17 +3,16 @@ package com.team1.cityfarm.controller;
 import com.team1.cityfarm.dto.ReplyCommentRequestDto;
 import com.team1.cityfarm.dto.ReplyCommentResponseDto;
 import com.team1.cityfarm.global.response.ApiResponse;
+import com.team1.cityfarm.global.security.CustomUserDetails;
 import com.team1.cityfarm.service.ReplyCommentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
@@ -26,10 +25,10 @@ public class ReplyCommentController {
     @PostMapping("/reply/{replyId}/reply-comments")
     public ResponseEntity<ApiResponse<ReplyCommentResponseDto>> createComment(
             @PathVariable Long replyId,
-            @Valid @RequestBody ReplyCommentRequestDto requestDto
-            // TODO: JWT 붙으면 @AuthenticationPrincipal CustomUserDetails userDetails 추가
+            @Valid @RequestBody ReplyCommentRequestDto requestDto,
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long userId = 1L; // TODO: userDetails.getUserId()로 교체
+        Long userId = userDetails.getUser().getId();
         ReplyCommentResponseDto result = replyCommentService.createComment(replyId, requestDto, userId);
 
         return ResponseEntity
@@ -51,10 +50,10 @@ public class ReplyCommentController {
     @PatchMapping("/reply-comments/{commentId}")
     public ResponseEntity<ApiResponse<ReplyCommentResponseDto>> updateComment(
             @PathVariable Long commentId,
-            @Valid @RequestBody ReplyCommentRequestDto requestDto
-            // TODO: JWT 붙으면 @AuthenticationPrincipal CustomUserDetails userDetails 추가
+            @Valid @RequestBody ReplyCommentRequestDto requestDto,
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long userId = 1L; // TODO: userDetails.getUserId()로 교체
+        Long userId = userDetails.getUser().getId();
         ReplyCommentResponseDto result = replyCommentService.updateComment(commentId, requestDto, userId);
 
         return ResponseEntity.ok(ApiResponse.success("답변 댓글이 수정되었습니다.", result));
@@ -63,10 +62,10 @@ public class ReplyCommentController {
     // 답변 댓글 삭제
     @DeleteMapping("/reply-comments/{commentId}")
     public ResponseEntity<ApiResponse<Void>> deleteComment(
-            @PathVariable Long commentId
-            // TODO: JWT 붙으면 @AuthenticationPrincipal CustomUserDetails userDetails 추가
+            @PathVariable Long commentId,
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long userId = 1L; // TODO: userDetails.getUserId()로 교체
+        Long userId = userDetails.getUser().getId();
         replyCommentService.deleteComment(commentId, userId);
 
         return ResponseEntity.ok(ApiResponse.success("답변 댓글이 삭제되었습니다."));
