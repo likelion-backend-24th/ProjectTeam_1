@@ -1,5 +1,7 @@
 package com.team1.cityfarm.entity;
 
+import com.team1.cityfarm.global.exception.CustomError;
+import com.team1.cityfarm.global.exception.CustomException;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -47,4 +49,11 @@ public class User {
     @UpdateTimestamp
     @Column
     private LocalDateTime updatedAt;
+
+    public void updateStatus(Status status){
+        if (status == null) {
+            throw new CustomException(CustomError.USER_STATUS_ERROR);
+        }
+        this.status = status;
+    }
 }

@@ -29,7 +29,8 @@ public enum CustomError {
     COMMENT_NOT_OWNER(HttpStatus.FORBIDDEN, "댓글 수정/삭제 권한이 없습니다."),
     REPLY_NOT_OWNER(HttpStatus.FORBIDDEN, "답글 수정/삭제 권한이 없습니다."),
 
-    BOARD_TYPE_ERROR(HttpStatus.BAD_REQUEST,"잘못된 검색 타입입니다.");
+    BOARD_TYPE_ERROR(HttpStatus.BAD_REQUEST,"잘못된 검색 타입입니다."),
+    USER_STATUS_ERROR(HttpStatus.BAD_REQUEST,"STATUS에서 정의하지 않은 활동상태입니다.");
 
     private final HttpStatus httpStatus;
     private final String message;
