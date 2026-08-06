@@ -21,8 +21,7 @@ public class ProfileController {
 
     @Operation(summary = "내 프로필 조회",
             description = "jwt에 저장된 userId를 이용해 내 프로필 정보를 불러옵니다.",
-            security = @SecurityRequirement(name = "BearerAuth") // Swagger 상단 자물쇠/토큰 표시
-    )
+            security = @SecurityRequirement(name = "BearerAuth"))
     @GetMapping
     public ApiResponse<ProfileResponseDto> getMyProfile(
             @AuthenticationPrincipal CustomUserDetails customUserDetails

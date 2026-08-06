@@ -34,7 +34,8 @@ public class BoardController {
     }
 
     //게시글 상제조회
-    @Operation(summary = "게시글 상세 조회", description = "게시글 ID(boardId)를 통해 특정 게시글의 상세 정보를 조회합니다.")
+    @Operation(summary = "게시글 상세 조회",
+            description = "게시글 ID(boardId)를 통해 특정 게시글의 상세 정보를 조회합니다.")
     @GetMapping("/{boardId}")
     public BoardResponseDto getBoard(
             @PathVariable Long boardId
