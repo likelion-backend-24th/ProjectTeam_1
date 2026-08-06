@@ -1,5 +1,6 @@
 package com.team1.cityfarm.global.security;
 
+import com.team1.cityfarm.entity.RoleType;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,11 +15,10 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
-    private final CustomUserDetailsService customUserDetailsService;
 
-    public JwtAuthenticationFilter(JwtProvider jwtProvider, CustomUserDetailsService customUserDetailsService) {
+    // customUserDetailsService 제거 완료
+    public JwtAuthenticationFilter(JwtProvider jwtProvider) {
         this.jwtProvider = jwtProvider;
-        this.customUserDetailsService = customUserDetailsService;
     }
 
     @Override
@@ -29,12 +29,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = resolveToken(request);
 
         if (token != null && jwtProvider.validateAccessToken(token)) {
+            // 1. 토큰 Claim에서 회원 정보 추출
             Long userId = jwtProvider.getUserId(token);
+            String email = jwtProvider.getEmail(token);
+            String roleStr = jwtProvider.getRole(token); // "USER" 또는 "ADMIN"
+            RoleType roleType = RoleType.valueOf(roleStr);
 
-            // 1. DB에서 CustomUserDetails 조회
-            CustomUserDetails userDetails = customUserDetailsService.loadUserById(userId);
+            // 2. DB 조회 없이 추출한 정보로 경량 CustomUserDetails 생성
+            CustomUserDetails userDetails = new CustomUserDetails(userId, email, roleType);
 
-            // 2. principal에 userDetails 객체 전달
+            // 3. SecurityContext에 Authentication 객체 저장
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 

@@ -1,5 +1,6 @@
 package com.team1.cityfarm.global.security;
 
+import com.team1.cityfarm.entity.RoleType;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -36,14 +37,15 @@ public class JwtProvider {
 
     // ================= Access Token 관련 =================
 
-    // Access Token 생성
-    public String createAccessToken(Long userId, String name) {
+    // Access Token 생성 (email과 roleType을 Claim에 저장)
+    public String createAccessToken(Long userId, String email, RoleType roleType) {
         Date now = new Date();
         Date validity = new Date(now.getTime() + accessExpirationMs);
 
         return Jwts.builder()
                 .subject(String.valueOf(userId))
-                .claim("name", name)
+                .claim("email", email)
+                .claim("role", roleType.name())
                 .issuedAt(now)
                 .expiration(validity)
                 .signWith(accessSecretKey)
@@ -69,6 +71,16 @@ public class JwtProvider {
         return Long.parseLong(getAccessClaims(token).getSubject());
     }
 
+    // Access Token에서 email 추출 (추가)
+    public String getEmail(String token) {
+        return getAccessClaims(token).get("email", String.class);
+    }
+
+    // Access Token에서 role 추출 (추가)
+    public String getRole(String token) {
+        return getAccessClaims(token).get("role", String.class);
+    }
+
     // SecurityContext 등록용 Authentication 생성
     public Authentication getAuthentication(String token) {
         Long userId = getUserId(token);
@@ -77,7 +89,7 @@ public class JwtProvider {
 
     // ================= Refresh Token 관련 =================
 
-    // Refresh Token 생성 (보통 Payload에 최소한의 정보만 담습니다)
+    // Refresh Token 생성
     public String createRefreshToken(Long userId) {
         Date now = new Date();
         Date validity = new Date(now.getTime() + refreshExpirationMs);
