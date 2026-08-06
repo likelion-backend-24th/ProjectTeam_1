@@ -3,6 +3,7 @@ package com.team1.cityfarm.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -43,7 +44,7 @@ public class User {
     private LocalDateTime createdAt;
 
     // 회원 수정 시 사용 예정이며 사용안할 경우 삭제
-//    @UpdateTimestamp
-//    @Column
-//    private LocalDateTime updatedAt;
+    @UpdateTimestamp
+    @Column
+    private LocalDateTime updatedAt;
 }
