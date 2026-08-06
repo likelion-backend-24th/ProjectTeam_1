@@ -1,6 +1,7 @@
 package com.team1.cityfarm.controller;
 
 import com.team1.cityfarm.dto.LoginRequestDto;
+import com.team1.cityfarm.dto.LoginResponseDto;
 import com.team1.cityfarm.dto.SignupRequestDto;
 import com.team1.cityfarm.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,8 +31,8 @@ public class AuthController {
     @Operation(summary = "로그인",
             description = "입력된 이메일과 비밀번호를 확인해 로그인 승인 여부를 판단합니다.")
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody LoginRequestDto loginRequestDto){
-        authService.login(loginRequestDto);
-        return ResponseEntity.ok("로그인 성공");
+    public ResponseEntity<LoginResponseDto> login(@RequestBody LoginRequestDto loginRequestDto){
+        LoginResponseDto responseDto = authService.login(loginRequestDto);
+        return ResponseEntity.ok(responseDto);
     }
 }
