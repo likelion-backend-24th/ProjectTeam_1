@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminService {
     private final UserRepository userRepository;
 
+    //user 전체 조회
     @Transactional(readOnly = true)
     public Page<UserResponseDto> getAllUsers(Pageable pageable){
         return userRepository.findAll(pageable).map(UserResponseDto::from);
