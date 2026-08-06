@@ -26,9 +26,9 @@ public class ProfileController {
     )
     @GetMapping
     public ApiResponse<ProfileResponseDto> getMyProfile(
-            @AuthenticationPrincipal Long userId
+            @AuthenticationPrincipal CustomUserDeatil customUserDeatil
     ) {
-        User user = profileService.getUserProfile(userId);
+        User user = customUserDetails.getUser();
 
         return ApiResponse.success("프로필 조회 성공", new ProfileResponseDto(user));
     }
