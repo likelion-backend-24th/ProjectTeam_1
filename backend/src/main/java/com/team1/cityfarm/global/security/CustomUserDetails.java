@@ -1,8 +1,8 @@
 package com.team1.cityfarm.global.security;
 
+import com.team1.cityfarm.entity.RoleType;
 import com.team1.cityfarm.entity.User;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -11,49 +11,51 @@ import java.util.Collection;
 import java.util.List;
 
 @Getter
-@RequiredArgsConstructor
 public class CustomUserDetails implements UserDetails {
 
-    private final User user;
+    private final Long userId;
+    private final String email;
+    private final RoleType roleType;
 
-    // 권한 반환 (RoleType 연동)
+    // 1. DB 기반 생성자 (로그인 처리 시)
+    public CustomUserDetails(User user) {
+        this.userId = user.getId();
+        this.email = user.getEmail();
+        this.roleType = user.getRoleType();
+    }
+
+    // 2. 토큰 Claim 기반 생성자 (JwtAuthenticationFilter 전용)
+    public CustomUserDetails(Long userId, String email, RoleType roleType) {
+        this.userId = userId;
+        this.email = email;
+        this.roleType = roleType;
+    }
+
+    // ROLE_USER 또는 ROLE_ADMIN 동적 부여
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + user.getRoleType().name()));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + roleType.name()));
     }
 
     @Override
     public String getPassword() {
-        return user.getPassword();
+        return null;
     }
 
-    // Security 식별자로 email 사용
     @Override
     public String getUsername() {
-        return user.getEmail();
+        return email;
     }
 
-    // 계정 만료 여부
     @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
+    public boolean isAccountNonExpired() { return true; }
 
-    // 계정 잠금 여부
     @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
+    public boolean isAccountNonLocked() { return true; }
 
-    // 비밀번호 만료 여부 (별도 만료일 필드가 없으므로 true 고정)
     @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
+    public boolean isCredentialsNonExpired() { return true; }
 
-    // 계정 활성화 여부
     @Override
-    public boolean isEnabled() {
-        return true;
-    }
+    public boolean isEnabled() { return true; }
 }
