@@ -16,8 +16,8 @@ public class ReplyCommentResponseDto {
     @Schema(description = "답글-댓글 내용", example = "헐 몰랐어요")
     private final String content;
 
-    //  @Schema(description = "작성자 닉네임", example = "상추러버123")
-    //  private final String nickname; // TODO: User 연관관계 살아나면 추가
+    @Schema(description = "작성자 닉네임", example = "상추러버123")
+    private final String nickname;
 
     @Schema(description = "생성 일시", example = "2026-08-05T15:30:00")
     private final LocalDateTime createdAt;
@@ -28,7 +28,7 @@ public class ReplyCommentResponseDto {
     public ReplyCommentResponseDto(ReplyComment replyComment) {
         this.id = replyComment.getId();
         this.content = replyComment.getContent();
-//      this.nickname = replyComment.getUser().getNickname(); // TODO
+        this.nickname = replyComment.getUser().getNickname();
         this.createdAt = replyComment.getCreatedAt();
         this.updatedAt = replyComment.getUpdatedAt();
     }

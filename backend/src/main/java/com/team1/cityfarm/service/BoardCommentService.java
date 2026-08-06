@@ -5,6 +5,8 @@ import com.team1.cityfarm.dto.BoardCommentResponseDto;
 import com.team1.cityfarm.entity.Board;
 import com.team1.cityfarm.entity.BoardComment;
 import com.team1.cityfarm.entity.User;
+import com.team1.cityfarm.global.exception.CustomError;
+import com.team1.cityfarm.global.exception.CustomException;
 import com.team1.cityfarm.repository.BoardCommentRepository;
 import com.team1.cityfarm.repository.BoardRepository;
 import com.team1.cityfarm.repository.UserRepository;
@@ -28,9 +30,9 @@ public class BoardCommentService {
     @Transactional
     public BoardCommentResponseDto createComment(Long boardId, BoardCommentRequestDto request, Long userId) {
         Board board = boardRepository.findById(boardId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
+                .orElseThrow(() -> new CustomException(CustomError.BOARD_NOT_FOUND));
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
 
         BoardComment comment = new BoardComment();
         comment.setContent(request.getContent());
@@ -55,10 +57,10 @@ public class BoardCommentService {
     @Transactional
     public BoardCommentResponseDto updateComment(Long commentId, BoardCommentRequestDto requestDto, Long userId) {
         BoardComment comment = boardCommentRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 댓글입니다."));
+                .orElseThrow(() -> new CustomException(CustomError.COMMENT_NOT_FOUND));
 
         if (!comment.getUser().getId().equals(userId)) {
-            throw new IllegalArgumentException("본인 댓글만 수정할 수 있습니다.");
+            throw new CustomException(CustomError.COMMENT_NOT_OWNER);
         }
 
         comment.setContent(requestDto.getContent());
@@ -70,10 +72,10 @@ public class BoardCommentService {
     @Transactional
     public void deleteComment(Long commentId, Long userId) {
         BoardComment comment = boardCommentRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 댓글입니다."));
+                .orElseThrow(() -> new CustomException(CustomError.COMMENT_NOT_FOUND));
 
         if (!comment.getUser().getId().equals(userId)) {
-            throw new IllegalArgumentException("본인 댓글만 삭제할 수 있습니다.");
+            throw new CustomException(CustomError.COMMENT_NOT_OWNER);
         }
 
         boardCommentRepository.delete(comment);

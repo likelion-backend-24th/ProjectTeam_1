@@ -7,7 +7,5 @@ import java.util.List;
 
 public interface BoardCommentRepository extends JpaRepository<BoardComment, Long> {
 
-
-//    TODO : Board 연관관계 살아나면 주석해제
     List<BoardComment> findByBoardIdOrderByCreatedAtAsc(Long boardId);
 }
