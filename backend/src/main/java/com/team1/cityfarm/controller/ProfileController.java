@@ -4,6 +4,8 @@ import com.team1.cityfarm.dto.ProfileResponseDto;
 import com.team1.cityfarm.entity.User;
 import com.team1.cityfarm.global.response.ApiResponse;
 import com.team1.cityfarm.global.security.CustomUserDetails;
+import com.team1.cityfarm.repository.UserRepository;
+import com.team1.cityfarm.service.ProfileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,6 +21,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/profile")
 public class ProfileController {
 
+    private final ProfileService profileService;
+
     @Operation(summary = "내 프로필 조회",
             description = "jwt에 저장된 userId를 이용해 내 프로필 정보를 불러옵니다.",
             security = @SecurityRequirement(name = "BearerAuth"))
@@ -26,7 +30,7 @@ public class ProfileController {
     public ApiResponse<ProfileResponseDto> getMyProfile(
             @AuthenticationPrincipal CustomUserDetails customUserDetails
             ) {
-        User user = customUserDetails.getUser();
+        User user = profileService.getUser(customUserDetails.getUserId());
 
         return ApiResponse.success("프로필 조회 성공", new ProfileResponseDto(user));
     }

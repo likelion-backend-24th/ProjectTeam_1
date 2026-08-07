@@ -54,6 +54,16 @@ public class Board {
         this.viewCount++;
     }
 
+    public void increaseLikeCount() {
+        this.likeCount++;
+    }
+
+    public void decreaseLikeCount() {
+        if (this.likeCount > 0) {
+            this.likeCount--;
+        }
+    }
+
     public void update(String title, String content, Category category) {
         this.title = title;
         this.content = content;

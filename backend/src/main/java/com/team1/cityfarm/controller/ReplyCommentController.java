@@ -35,7 +35,7 @@ public class ReplyCommentController {
             @Valid @RequestBody ReplyCommentRequestDto requestDto,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long userId = userDetails.getUser().getId();
+        Long userId = userDetails.getUserId();
         ReplyCommentResponseDto result = replyCommentService.createComment(replyId, requestDto, userId);
 
         return ResponseEntity
@@ -65,7 +65,7 @@ public class ReplyCommentController {
             @Valid @RequestBody ReplyCommentRequestDto requestDto,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long userId = userDetails.getUser().getId();
+        Long userId = userDetails.getUserId();
         ReplyCommentResponseDto result = replyCommentService.updateComment(commentId, requestDto, userId);
 
         return ResponseEntity.ok(ApiResponse.success("답변 댓글이 수정되었습니다.", result));
@@ -80,7 +80,7 @@ public class ReplyCommentController {
             @PathVariable Long commentId,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long userId = userDetails.getUser().getId();
+        Long userId = userDetails.getUserId();
         replyCommentService.deleteComment(commentId, userId);
 
         return ResponseEntity.ok(ApiResponse.success("답변 댓글이 삭제되었습니다."));

@@ -23,19 +23,19 @@ public class ReplyResponseDto {
     @Schema(description = "채택 여부", example = "true")
     private Boolean isAdopted;
 
-    @Schema(description = "게시글 정보")
-    private Board board;
+    @Schema(description = "게시글 id")
+    private Long boardId;
 
-    @Schema(description = "작성자 정보")
-    private User user;
+    @Schema(description = "작성자 id")
+    private Long userId;
 
     public static ReplyResponseDto from(Reply reply) {
         return new ReplyResponseDto(
                 reply.getId(),
                 reply.getContent(),
                 reply.getIsAdopted(),
-                reply.getBoard(),
-                reply.getUser()
+                reply.getBoard().getId(),
+                reply.getUser().getId()
         );
     }
 }

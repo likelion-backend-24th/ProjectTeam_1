@@ -37,9 +37,9 @@ public class ReplyController {
             security = @SecurityRequirement(name = "BearerAuth"))
     @PostMapping("/board/{id}/reply")
     public ResponseEntity<ReplyResponseDto> createReply(@PathVariable("id") Long boardId,
-                                                        @Valid ReplyCreateRequestDto dto,
+                                                        @RequestBody@Valid ReplyCreateRequestDto dto,
                                                         @AuthenticationPrincipal CustomUserDetails customUserDetails){
-        return ResponseEntity.ok(replyService.createReply(customUserDetails.getUser().getId(), boardId,dto));
+        return ResponseEntity.ok(replyService.createReply(customUserDetails.getUserId(), boardId,dto));
     }
 
     @Operation(summary = "답글 수정",
@@ -47,9 +47,9 @@ public class ReplyController {
             security = @SecurityRequirement(name = "BearerAuth"))
     @PatchMapping("/reply/{id}")
     public ResponseEntity<ReplyResponseDto> editReply(@PathVariable("id") Long replyId,
-                                                      @Valid ReplyCreateRequestDto dto,
+                                                      @RequestBody@Valid ReplyCreateRequestDto dto,
                                                       @AuthenticationPrincipal CustomUserDetails customUserDetails){
-        return ResponseEntity.ok(replyService.editReply(customUserDetails.getUser().getId(),replyId,dto));
+        return ResponseEntity.ok(replyService.editReply(customUserDetails.getUserId(),replyId,dto));
     }
 
     @Operation(summary = "답글 삭제",
@@ -58,7 +58,7 @@ public class ReplyController {
     @DeleteMapping("/reply/{id}")
     public ResponseEntity<String> deleteReply(@PathVariable("id") Long replyId,
                                          @AuthenticationPrincipal CustomUserDetails customUserDetails){
-        replyService.deleteReply(customUserDetails.getUser().getId(), replyId);
+        replyService.deleteReply(customUserDetails.getUserId(), replyId);
         return ResponseEntity.ok("삭제 성공");
     }
 }

@@ -6,6 +6,7 @@ import com.team1.cityfarm.global.response.ApiResponse;
 import com.team1.cityfarm.global.security.CustomUserDetails;
 import com.team1.cityfarm.service.BoardCommentService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,13 +27,14 @@ public class BoardCommentController {
 
     //    게시글 댓글 등록
     @Operation(summary = "게시글 댓글 등록",
-            description = "지정한 게시글에 새로운 댓글을 작성합니다.")
+            description = "지정한 게시글에 새로운 댓글을 작성합니다.",
+            security = @SecurityRequirement(name = "BearerAuth"))
     @PostMapping("/board/{boardId}/board-comments")
     public ResponseEntity<ApiResponse<BoardCommentResponseDto>> createComment(@PathVariable Long boardId,
                                                                               @Valid @RequestBody BoardCommentRequestDto requestDto,
                                                                               @AuthenticationPrincipal CustomUserDetails userDetails) {
 
-        Long userId = userDetails.getUser().getId();
+        Long userId = userDetails.getUserId();
         BoardCommentResponseDto result = boardCommentService.createComment(boardId, requestDto, userId);
 
         return ResponseEntity
@@ -54,7 +56,8 @@ public class BoardCommentController {
 
     //    게시글 댓글 수정
     @Operation(summary = "게시글 댓글 수정",
-            description = "본인이 작성한 댓글의 내용을 수정합니다.")
+            description = "본인이 작성한 댓글의 내용을 수정합니다.",
+            security = @SecurityRequirement(name = "BearerAuth"))
     @PatchMapping("/board-comments/{commentId}")
     public ResponseEntity<ApiResponse<BoardCommentResponseDto>> updateComment(
             @PathVariable Long commentId,
@@ -62,7 +65,7 @@ public class BoardCommentController {
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
 
-        Long userId = userDetails.getUser().getId();
+        Long userId = userDetails.getUserId();
         BoardCommentResponseDto result = boardCommentService.updateComment(commentId, request, userId);
 
         return ResponseEntity.ok(ApiResponse.success("댓글이 수정되었습니다.", result));
@@ -70,14 +73,15 @@ public class BoardCommentController {
 
     //게시글 댓글 삭제
     @Operation(summary = "게시글 댓글 삭제",
-            description = "본인이 작성한 댓글을 삭제합니다.")
+            description = "본인이 작성한 댓글을 삭제합니다.",
+            security = @SecurityRequirement(name = "BearerAuth"))
     @DeleteMapping("/board-comments/{commentId}")
     public ResponseEntity<ApiResponse<Void>> deleteComment(
             @PathVariable Long commentId,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
 
-        Long userId = userDetails.getUser().getId();
+        Long userId = userDetails.getUserId();
         boardCommentService.deleteComment(commentId, userId);
 
         return ResponseEntity.ok(ApiResponse.success("댓글이 삭제되었습니다."));
