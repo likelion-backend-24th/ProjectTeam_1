@@ -17,3 +17,4 @@ jwt:
   refreshKey: "39Mi/4xYqJuoNUvRVd+Nm8+SnjscMCOguulSpwmLJgA="
   access-expiration-ms: 1800000       # 30분
   refresh-expiration-ms: 604800000    # 7일
+
