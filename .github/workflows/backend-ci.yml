@@ -1,4 +1,4 @@
-name: backend-ci.yml
+name: backend-CI.yml
 
 on:
   push:
