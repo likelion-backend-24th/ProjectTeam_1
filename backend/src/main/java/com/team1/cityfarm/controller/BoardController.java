@@ -26,6 +26,8 @@ public class BoardController {
     private final BoardService boardService;
 
     // 게시글 목록조회
+    @Operation(summary = "게시글 목록 조회",
+            description = "type과 keyword를 조건으로 게시글 목록을 조회합니다.(기본-전체조회)")
     @GetMapping
     public ApiResponse<Page<BoardResponseDto>> getBoards(
             @RequestParam(required = false) String type,
