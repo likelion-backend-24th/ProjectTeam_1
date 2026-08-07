@@ -12,7 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "Admin", description = "관리자 전용 API")
+@Tag(name = "관리자 API", description = "관리자 전용 API")
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
