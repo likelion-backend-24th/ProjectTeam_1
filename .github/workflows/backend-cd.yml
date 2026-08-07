@@ -27,11 +27,12 @@ jobs:
       - name: Build & Push image
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ./backend             # 👈 Dockerfile과 소스코드가 있는 경로
+          file: ./backend/Dockerfile     # 👈 실제 Dockerfile 파일의 위치 명시
           push: true
           tags: |
-            ${{ env.IMAGE }}:latest
-            ${{ env.IMAGE }}:${{ github.sha }}
+            ${{ steps.string.outputs.image_lower }}:latest
+            ${{ steps.string.outputs.image_lower }}:${{ github.sha }}
 
   # 2) EC2에 SSH 접속해서 재배포
   deploy:
