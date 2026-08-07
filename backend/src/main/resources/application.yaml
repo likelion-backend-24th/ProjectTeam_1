@@ -2,12 +2,6 @@ spring:
   application:
     name: cityfarm
 
-jwt:
-  secretKey: "MAFCPtab2K7eLhW5oOXPnCQOqzeD1rs9b1O9mRDAcRA="
-  refreshKey: "39Mi/4xYqJuoNUvRVd+Nm8+SnjscMCOguulSpwmLJgA="
-  access-expiration-ms: 1800000       # 30분
-  refresh-expiration-ms: 604800000    # 7일
-
   h2:
     console:
       enabled: true
@@ -17,3 +11,10 @@ jwt:
     username: sa
     password:
     driver-class-name: org.h2.Driver
+
+jwt:
+  secretKey: "MAFCPtab2K7eLhW5oOXPnCQOqzeD1rs9b1O9mRDAcRA="
+  refreshKey: "39Mi/4xYqJuoNUvRVd+Nm8+SnjscMCOguulSpwmLJgA="
+  access-expiration-ms: 1800000       # 30분
+  refresh-expiration-ms: 604800000    # 7일
+
