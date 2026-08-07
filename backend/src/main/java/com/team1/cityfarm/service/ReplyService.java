@@ -54,6 +54,7 @@ public class ReplyService {
                 .user(loadUser)
                 .board(boardRepository.findById(boardId).orElseThrow(() -> new CustomException(CustomError.BOARD_NOT_FOUND)))
                 .content(dto.getContent())
+                .isAdopted(false)
                 .build();
 
         replyRepository.save(newReply);
