@@ -2,11 +2,11 @@ name: backend-ci.yml
 
 on:
   push:
-    branches: [ "dev", "main" ]
+    branches: [ "feat/Docker" ]
     paths:
       - 'backend/**'
   pull_request:
-    branches: [ "dev", "main" ]
+    branches: [ "feat/Docker" ]
     paths:
       - 'backend/**'
 

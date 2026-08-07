@@ -2,7 +2,7 @@ name: CD - Deploy Backend to EC2
 
 on:
   push:
-    branches: [ "feat/Docker", "main" ] # 👈 1. 테스트 중인 브랜치 추가
+    branches: [ "feat/Docker" ] # 👈 1. 테스트 중인 브랜치 추가
     paths:
       - 'backend/**'                    # 👈 2. 백엔드 폴더 변경 시에만 실행
 
