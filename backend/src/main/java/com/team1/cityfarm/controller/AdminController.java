@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "관리자 API", description = "관리자 전용 API")
+@SecurityRequirement(name = "BearerAuth")
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
@@ -21,8 +22,7 @@ public class AdminController {
 
     //전체 유저 조회
     @Operation(summary = "전체 유저 목록 조회",
-            description = "관리자가 페이징을 통해 전체 유저 목록을 조회합니다.",
-            security = @SecurityRequirement(name = "BearerAuth"))
+            description = "관리자가 페이징을 통해 전체 유저 목록을 조회합니다.")
     @GetMapping("/users")
     public ResponseEntity<Page<UserResponseDto>> getAllUsers(Pageable pageable){
         return ResponseEntity.ok(adminService.getAllUsers(pageable));
@@ -30,8 +30,7 @@ public class AdminController {
 
     //유저 상태 수정
     @Operation(summary = "유저 정보 및 상태 수정",
-            description = "관리자가 특정 유저의 정보나 권한/상태를 수정합니다.",
-            security = @SecurityRequirement(name = "BearerAuth"))
+            description = "관리자가 특정 유저의 정보나 권한/상태를 수정합니다.")
     @PatchMapping("/users/{id}")
     public ResponseEntity<UserResponseDto> patchUser(@PathVariable Long id,
                                                      @RequestBody UserRequestDto dto){

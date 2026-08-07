@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "프로필 API", description = "내 프로필 조회 API")
+@SecurityRequirement(name = "BearerAuth")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/profile")
@@ -24,8 +25,7 @@ public class ProfileController {
     private final ProfileService profileService;
 
     @Operation(summary = "내 프로필 조회",
-            description = "jwt에 저장된 userId를 이용해 내 프로필 정보를 불러옵니다.",
-            security = @SecurityRequirement(name = "BearerAuth"))
+            description = "jwt에 저장된 userId를 이용해 내 프로필 정보를 불러옵니다.")
     @GetMapping
     public ApiResponse<ProfileResponseDto> getMyProfile(
             @AuthenticationPrincipal CustomUserDetails customUserDetails
