@@ -25,6 +25,9 @@ public record BoardResponseDto(
         @Schema(description = "조회수", example = "42")
         int viewCount,
 
+        @Schema(description = "좋아요 수", example = "12")
+        int likeCount,
+
         @Schema(description = "생성 일시", example = "2026-08-05T15:30:00")
         String createdAt,
 
@@ -39,6 +42,7 @@ public record BoardResponseDto(
                 board.getUser().getNickname(),
                 board.getCategory(),
                 board.getViewCount(),
+                board.getLikeCount(),
                 board.getCreatedAt().toString(),
                 board.getUpdatedAt().toString()
         );
