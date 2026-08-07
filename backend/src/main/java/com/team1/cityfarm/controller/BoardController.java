@@ -3,6 +3,7 @@ package com.team1.cityfarm.controller;
 import com.team1.cityfarm.dto.BoardRequestDto;
 import com.team1.cityfarm.dto.BoardResponseDto;
 import com.team1.cityfarm.global.response.ApiResponse;
+import com.team1.cityfarm.global.security.CustomUserDetails;
 import com.team1.cityfarm.service.BoardService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "게시판 API", description = "게시글 조회, 등록, 수정, 삭제 API")
@@ -44,10 +46,10 @@ public class BoardController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<BoardResponseDto> createBoard(
-            @Valid @RequestBody BoardRequestDto request
-            // userId는 인증 붙으면 @AuthenticationPrincipal 등에서 꺼내기
+            @Valid @RequestBody BoardRequestDto request,
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long userId = null; // TODO: 인증 붙으면 교체
+        Long userId = userDetails.getUserId();
         return ApiResponse.success("게시글 등록 성공", boardService.createBoard(request, userId));
     }
 
@@ -55,17 +57,21 @@ public class BoardController {
     @PutMapping("/{boardId}")
     public ApiResponse<BoardResponseDto> updateBoard(
             @PathVariable Long boardId,
-            @Valid @RequestBody BoardRequestDto request
+            @Valid @RequestBody BoardRequestDto request,
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long userId = null; // TODO
+        Long userId = userDetails.getUserId();
         return ApiResponse.success("게시글 수정 성공", boardService.updateBoard(boardId, request, userId));
     }
 
     // 게시글 삭제
     @DeleteMapping("/{boardId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteBoard(@PathVariable Long boardId) {
-        Long userId = null; // TODO
+    public void deleteBoard(
+            @PathVariable Long boardId,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Long userId = userDetails.getUserId();
         boardService.deleteBoard(boardId, userId);
     }
 }
