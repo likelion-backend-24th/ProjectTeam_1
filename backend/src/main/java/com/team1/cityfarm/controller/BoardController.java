@@ -5,6 +5,7 @@ import com.team1.cityfarm.dto.BoardResponseDto;
 import com.team1.cityfarm.global.response.ApiResponse;
 import com.team1.cityfarm.service.BoardService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +33,7 @@ public class BoardController {
         return ApiResponse.success("게시글 목록 조회 성공", boardService.getBoards(type, keyword, pageable));
     }
 
-    //게시글 상제조회
+    //게시글 상세 조회
     @Operation(summary = "게시글 상세 조회",
             description = "게시글 ID(boardId)를 통해 특정 게시글의 상세 정보를 조회합니다.")
     @GetMapping("/{boardId}")
@@ -41,6 +42,9 @@ public class BoardController {
     }
 
     // 게시글 등록
+    @Operation(summary = "게시글 등록",
+            description = "게시글을 등록합니다.",
+            security = @SecurityRequirement(name = "BearerAuth"))
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<BoardResponseDto> createBoard(
@@ -52,6 +56,9 @@ public class BoardController {
     }
 
     // 게시글 수정
+    @Operation(summary = "게시글 수정",
+            description = "업데이트 내역을 받아 게시글을 수정합니다.",
+            security = @SecurityRequirement(name = "BearerAuth"))
     @PutMapping("/{boardId}")
     public ApiResponse<BoardResponseDto> updateBoard(
             @PathVariable Long boardId,
@@ -62,6 +69,9 @@ public class BoardController {
     }
 
     // 게시글 삭제
+    @Operation(summary = "게시글 삭제",
+            description = "게시글 ID(boardId)를 받아 해당 게시글을 삭제합니다.",
+            security = @SecurityRequirement(name = "BearerAuth"))
     @DeleteMapping("/{boardId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteBoard(@PathVariable Long boardId) {

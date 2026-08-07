@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProfileService {
     private final UserRepository userRepository;
 
-    public User getUserProfile(Long userId) {
+    public User getUser(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND)); // 유저 없을 시 예외 처리
     }
