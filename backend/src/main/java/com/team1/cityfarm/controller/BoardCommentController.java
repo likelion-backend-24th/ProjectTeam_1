@@ -32,7 +32,7 @@ public class BoardCommentController {
                                                                               @Valid @RequestBody BoardCommentRequestDto requestDto,
                                                                               @AuthenticationPrincipal CustomUserDetails userDetails) {
 
-        Long userId = userDetails.getUser().getId();
+        Long userId = userDetails.getUserId();
         BoardCommentResponseDto result = boardCommentService.createComment(boardId, requestDto, userId);
 
         return ResponseEntity
@@ -62,7 +62,7 @@ public class BoardCommentController {
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
 
-        Long userId = userDetails.getUser().getId();
+        Long userId = userDetails.getUserId();
         BoardCommentResponseDto result = boardCommentService.updateComment(commentId, request, userId);
 
         return ResponseEntity.ok(ApiResponse.success("댓글이 수정되었습니다.", result));
@@ -77,7 +77,7 @@ public class BoardCommentController {
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
 
-        Long userId = userDetails.getUser().getId();
+        Long userId = userDetails.getUserId();
         boardCommentService.deleteComment(commentId, userId);
 
         return ResponseEntity.ok(ApiResponse.success("댓글이 삭제되었습니다."));
