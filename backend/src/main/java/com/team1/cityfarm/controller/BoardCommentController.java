@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Tag(name = "Board Comment", description = "게시글 댓글 관련 API")
+@Tag(name = "게시글 댓글 API", description = "게시글 댓글 조회, 등록, 수정, 삭제 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api")
