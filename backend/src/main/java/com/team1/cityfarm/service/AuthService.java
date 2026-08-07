@@ -7,9 +7,8 @@ import com.team1.cityfarm.entity.RefreshToken;
 import com.team1.cityfarm.entity.User;
 import com.team1.cityfarm.global.exception.CustomError;
 import com.team1.cityfarm.global.exception.CustomException;
-import com.team1.cityfarm.global.util.JwtTokenizer;
+import com.team1.cityfarm.global.security.JwtProvider;
 import com.team1.cityfarm.repository.UserRepository;
-import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.transaction.Transactional;
@@ -22,7 +21,7 @@ import org.springframework.stereotype.Service;
 public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtTokenizer jwtTokenizer;
+    private final JwtProvider jwtProvider;
     private final RefreshTokenService refreshTokenService;
 
     // 회원가입
@@ -52,6 +51,12 @@ public class AuthService {
     // 로그인
     public LoginResponseDto login(LoginRequestDto dto) {
 
+        if (dto.getEmail() == null || dto.getEmail().isEmpty())
+            throw new CustomException(CustomError.AUTH_EMAIL_REQUIRED);
+
+        if (dto.getPassword() == null || dto.getPassword().isEmpty())
+            throw new CustomException(CustomError.AUTH_PASSWORD_VALID);
+
         User user = userRepository.findByEmail(dto.getEmail())
                 .orElseThrow(() -> new CustomException(CustomError.AUTH_LOGIN_FAILED));
 
@@ -59,18 +64,8 @@ public class AuthService {
             throw new CustomException(CustomError.AUTH_LOGIN_FAILED);
         }
 
-        if (dto.getEmail() == null || dto.getEmail().isEmpty())
-            throw new CustomException(CustomError.AUTH_EMAIL_REQUIRED);
-
-        if (dto.getPassword() == null || dto.getPassword().isEmpty())
-            throw new CustomException(CustomError.AUTH_PASSWORD_VALID);
-
-        // 로그인 토큰
-        String accessToken = jwtTokenizer.createAccessToken(
-                user.getId(), user.getEmail(), user.getNickname(), user.getName());
-        String refreshToken = jwtTokenizer.createRefreshToken(
-                user.getId(), user.getEmail(), user.getNickname(), user.getName());
-
+        String accessToken = jwtProvider.createAccessToken(user.getId(), user.getEmail(), user.getRoleType());
+        String refreshToken = jwtProvider.createRefreshToken(user.getId());
         refreshTokenService.deleteAllByUserId(user.getId());
 
         RefreshToken refreshTokenEntity = RefreshToken.builder()
@@ -89,9 +84,9 @@ public class AuthService {
             throw new CustomException(CustomError.TOKEN_NOT_FOUND);
         }
 
-        Claims claims;
+        Long userId;
         try{
-            claims = jwtTokenizer.parseRefreshToken(refreshToken);
+            userId = jwtProvider.getUserIdFromRefreshToken(refreshToken);
         } catch (ExpiredJwtException e){
             throw new CustomException(CustomError.TOKEN_EXPIRED);
         } catch (JwtException | IllegalArgumentException e){
@@ -104,16 +99,11 @@ public class AuthService {
             throw new CustomException(CustomError.TOKEN_INVALID);
         }
 
-        Long userId = claims.get("userId", Long.class);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
 
-        String newAccessToken = jwtTokenizer.createAccessToken(
-                user.getId(), user.getEmail(), user.getNickname(), user.getName());
+        String newAccessToken = jwtProvider.createAccessToken(user.getId(), user.getEmail(), user.getRoleType());
 
-        return LoginResponseDto.builder()
-                .accessToken(newAccessToken)
-                .refreshToken(refreshToken)
-                .build();
+        return new LoginResponseDto(newAccessToken, refreshToken);
     }
 }

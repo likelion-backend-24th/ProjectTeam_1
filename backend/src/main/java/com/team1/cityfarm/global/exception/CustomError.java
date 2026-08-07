@@ -28,7 +28,7 @@ public enum CustomError {
 
     // JWT 토큰 예외
     TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "요청 헤더에서 토큰을 찾을 수 없습니다."),
-    TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "기간이 만료된 토큰입니다. 다시 고르인해주세요."),
+    TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "기간이 만료된 토큰입니다. 다시 로그인해주세요."),
     TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
 
     //작성자 본인 이외 수정/삭제 접근시
