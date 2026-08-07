@@ -23,10 +23,10 @@ public class ReplyResponseDto {
     @Schema(description = "채택 여부", example = "true")
     private Boolean isAdopted;
 
-    @Schema(description = "게시글 id")
+    @Schema(description = "게시글 id", example = "1")
     private Long boardId;
 
-    @Schema(description = "작성자 id")
+    @Schema(description = "작성자 id", example = "1")
     private Long userId;
 
     public static ReplyResponseDto from(Reply reply) {

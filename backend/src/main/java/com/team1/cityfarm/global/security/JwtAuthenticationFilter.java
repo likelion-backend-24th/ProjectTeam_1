@@ -26,7 +26,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
+        System.out.println("=========================================");
+        System.out.println("[Request URI] " + request.getRequestURI());
+        System.out.println("[Auth Header] " + request.getHeader("Authorization"));
+
         String token = resolveToken(request);
+        System.out.println("[Extracted Token] " + token);
+
+        if (token != null) {
+            System.out.println("[Token Valid] " + jwtProvider.validateAccessToken(token));
+        }
+        System.out.println("=========================================");
+
+//        String token = resolveToken(request);
 
         if (token != null && jwtProvider.validateAccessToken(token)) {
             // 1. 토큰 Claim에서 회원 정보 추출

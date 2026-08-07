@@ -16,7 +16,7 @@ public class BoardCommentResponseDto {
     @Schema(description = "댓글 내용", example = "상추 먹고싶네요..")
     private final String content;
 
-    @Schema(description = "작성자 닉네임", example = "상추러버123")
+    @Schema(description = "작성자 닉네임", example = "파머123")
     private final String nickname;
 
     @Schema(description = "작성일시", example = "2026-08-05T15:30:00")
