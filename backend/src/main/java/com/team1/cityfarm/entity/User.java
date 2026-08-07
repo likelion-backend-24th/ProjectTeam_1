@@ -56,4 +56,14 @@ public class User {
         }
         this.status = status;
     }
+
+    public void updateRoleType(RoleType roleType){
+        if (roleType == null) {
+            throw new CustomException(CustomError.USER_STATUS_ERROR);
+        }
+        this.roleType = roleType;
+    }
+
+
+
 }

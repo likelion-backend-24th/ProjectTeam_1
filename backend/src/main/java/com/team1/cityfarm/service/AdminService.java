@@ -27,8 +27,9 @@ public class AdminService {
     public UserResponseDto modifyUser(Long id, UserRequestDto dto){
         //id로 user 조회
         User loadUser = userRepository.findById(id).orElseThrow(()->new CustomException(CustomError.USER_NOT_FOUND));
-        //활동 상태 변경
+        //활동 상태, RoleType(ADMIN,USER) 변경
         loadUser.updateStatus(dto.getStatus());
+        loadUser.updateRoleType(dto.getRoleType());
         return UserResponseDto.from(loadUser);
     }
 
