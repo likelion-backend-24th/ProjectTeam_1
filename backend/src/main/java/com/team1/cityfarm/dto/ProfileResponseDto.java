@@ -11,7 +11,7 @@ public class ProfileResponseDto {
     @Schema(description = "사용자 이름", example = "홍길동")
     private String name;
 
-    @Schema(description = "사용자 닉네임", example = "상추러버123")
+    @Schema(description = "사용자 닉네임", example = "파머123")
     private String nickName;
 
     @Schema(description = "사용자 이메일", example = "user@cityfarm.com")

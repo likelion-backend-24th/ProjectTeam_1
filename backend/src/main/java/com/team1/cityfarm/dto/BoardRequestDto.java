@@ -16,7 +16,7 @@ public record BoardRequestDto(
         @NotBlank(message = "내용은 필수입니다.")
         String content,
 
-        @Schema(description = "게시글 카테고리", example = "자유게시판")
+        @Schema(description = "게시글 카테고리", example = "FREE")
         @NotNull(message = "카테고리는 필수입니다.")
         Category category
 ) {}

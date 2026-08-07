@@ -19,7 +19,7 @@ public record BoardResponseDto(
         @Schema(description = "작성자 닉네임", example = "파머123")
         String writer,
 
-        @Schema(description = "게시글 카테고리", example = "VEGETABLE")
+        @Schema(description = "게시글 카테고리", example = "FREE")
         Category category,
 
         @Schema(description = "조회수", example = "42")
