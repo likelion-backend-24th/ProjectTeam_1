@@ -54,9 +54,9 @@ public class BoardService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
 
-        // 공지사항 권한 검증
+        // 공지사항 권한 검증 - 401 → 403으로 수정 (이미 로그인된 사용자의 권한 부족 상황)
         if (request.category() == Category.NOTICE && user.getRoleType() != RoleType.ADMIN) {
-            throw new CustomException(CustomError.AUTH_UNAUTHORIZED);
+            throw new CustomException(CustomError.AUTH_FORBIDDEN);
         }
 
         Board board = Board.builder()
@@ -68,18 +68,21 @@ public class BoardService {
         return BoardResponseDto.from(boardRepository.save(board));
     }
 
-    //게시글 수정
+    // 게시글 수정
     @Transactional
-    public BoardResponseDto updateBoard(Long boardId, BoardRequestDto request,Long userId) {
+    public BoardResponseDto updateBoard(Long boardId, BoardRequestDto request, Long userId) {
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new CustomException(CustomError.BOARD_NOT_FOUND));
-        if(!board.getUser().getId().equals(userId)){
+        if (!board.getUser().getId().equals(userId)) {
             throw new CustomException(CustomError.BOARD_NOT_OWNER);
         }
 
-        // 공지사항 카테고리로 변경하려 할 때 ADMIN 검증
-        if (request.category() == Category.NOTICE && board.getUser().getRoleType() != RoleType.ADMIN) {
-            throw new CustomException(CustomError.AUTH_UNAUTHORIZED);
+        // 요청자의 role을 직접 조회해서 검증 - 원작성자 role이 아니라 실제 요청자 role을 봐야 함
+        User requester = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
+
+        if (request.category() == Category.NOTICE && requester.getRoleType() != RoleType.ADMIN) {
+            throw new CustomException(CustomError.AUTH_FORBIDDEN);
         }
 
         board.update(request.title(), request.content(), request.category());
