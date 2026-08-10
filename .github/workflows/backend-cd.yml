@@ -59,44 +59,74 @@ jobs:
     needs: build-image
     runs-on: ubuntu-latest
     steps:
-      # 👈 [추가 1] GitHub 레포지토리 코드 가져오기
-      - uses: actions/checkout@v4
-
-      # 👈 [추가 2] docker-compose.yml 및 .env 전송
-      - name: Copy docker-compose.yml to EC2
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "docker-compose.yml" # 깃허브 루티드 디렉토리의 compose 파일
-          target: "/home/${{ secrets.EC2_USER }}/cityfarm"
-
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: GITHUB_TOKEN,IMAGE_NAME,ACTOR의
+          envs: GITHUB_TOKEN,IMAGE_NAME,ACTOR,DB_PASSWORD
           script: |
             # 1) GHCR 로그인
             echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
             
-            # 2) 서버의 작업 디렉토리 이동 (없으면 생성)
+            # 2) 디렉토리 이동 및 생성
             mkdir -p ~/cityfarm
             cd ~/cityfarm
             
-            # 3) 최신 이미지 가져오기
-            docker pull "$IMAGE_NAME":latest
+            # 3) .env 파일 생성
+            echo "DB_PASSWORD=$DB_PASSWORD" > .env
             
-            # 4) Docker Compose로 최신 이미지 반영 재기동
+            # 4) docker-compose.yml 직접 자동 생성 (SCP 실패 위험 제거)
+            cat << 'EOF' > docker-compose.yml
+            version: '3.8'
+
+            services:
+              db:
+                image: mysql:8.0
+                container_name: cityfarm-DB
+                restart: always
+                environment:
+                  MYSQL_DATABASE: cityfarm
+                  MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+                ports:
+                  - "3306:3306"
+                volumes:
+                  - mysql_data:/var/lib/mysql
+                healthcheck:
+                  test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+                  interval: 10s
+                  timeout: 5s
+                  retries: 5
+
+              app:
+                image: ${IMAGE_NAME}:latest
+                container_name: cityfarm-backend
+                restart: always
+                ports:
+                  - "8080:8080"
+                depends_on:
+                  db:
+                    condition: service_healthy
+                environment:
+                  SPRING_PROFILES_ACTIVE: prod
+                  SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/cityfarm?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+                  SPRING_DATASOURCE_USERNAME: root
+                  SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+
+            volumes:
+              mysql_data:
+            EOF
+            
+            # 5) 최신 이미지 pull 및 컨테이너 실행
+            docker pull "$IMAGE_NAME":latest
             docker compose down || true
             docker compose up -d
             
-            # 5) 사용하지 않는 구버전 이미지 정리
+            # 6) 안 쓰는 이미지 정리
             docker image prune -f
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           IMAGE_NAME: ${{ needs.build-image.outputs.image_lower }}
           ACTOR: ${{ github.actor }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
