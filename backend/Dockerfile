@@ -10,6 +10,13 @@ RUN gradle dependencies --no-daemon || true
 
 # 나머지 소스를 복사하고 실행 가능한 jar를 빌드 (테스트는 CI에서 수행하므로 여기선 생략)
 COPY src ./src
+
+ARG DB_PASSWORD
+ENV SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/cityfarm?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+ENV SPRING_DATASOURCE_USERNAME=root
+ENV SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+ENV SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
+
 RUN gradle bootJar --no-daemon
 
 # ===== 2단계: 실행 스테이지 =====
