@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # 1) MySQL Database 컨테이너
+  db:
+    image: mysql:8.0
+    container_name: cityfarm-DB
+    restart: always
+    environment:
+      MYSQL_DATABASE: cityfarm
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2) Spring Boot 백엔드 애플리케이션 컨테이너
+  app:
+    image: ghcr.io/likelion-backend-24th/cityfarm-backend:latest
+    container_name: cityfarm-backend
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy # DB 헬스체크 통과 후 백엔드 실행
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/cityfarm?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+
+volumes:
+  mysql_data: # DB 데이터 보존용 볼륨 (컨테이너가 꺼져도 데이터 유지)

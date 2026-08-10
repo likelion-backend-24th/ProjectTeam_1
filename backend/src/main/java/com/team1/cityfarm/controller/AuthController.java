@@ -7,6 +7,7 @@ import com.team1.cityfarm.dto.SignupRequestDto;
 import com.team1.cityfarm.global.security.CustomUserDetails;
 import com.team1.cityfarm.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +37,9 @@ public class AuthController {
         return ResponseEntity.ok(responseDto);
     }
 
+    @Operation(summary = "로그아웃",
+            description = "로그인 저장 정보를 삭제합니다.",
+            security = @SecurityRequirement(name = "BearerAuth"))
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(
             @AuthenticationPrincipal CustomUserDetails customUserDetails) {
