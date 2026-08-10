@@ -3,6 +3,8 @@ package com.team1.cityfarm.service;
 import com.team1.cityfarm.dto.BoardRequestDto;
 import com.team1.cityfarm.dto.BoardResponseDto;
 import com.team1.cityfarm.entity.Board;
+import com.team1.cityfarm.entity.Category;
+import com.team1.cityfarm.entity.RoleType;
 import com.team1.cityfarm.entity.User;
 import com.team1.cityfarm.global.exception.CustomError;
 import com.team1.cityfarm.global.exception.CustomException;
@@ -52,13 +54,17 @@ public class BoardService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
 
+        // 공지사항 권한 검증
+        if (request.category() == Category.NOTICE && user.getRoleType() != RoleType.ADMIN) {
+            throw new CustomException(CustomError.AUTH_UNAUTHORIZED);
+        }
+
         Board board = Board.builder()
                 .title(request.title())
                 .content(request.content())
                 .category(request.category())
                 .user(user)
                 .build();
-
         return BoardResponseDto.from(boardRepository.save(board));
     }
 
@@ -69,6 +75,11 @@ public class BoardService {
                 .orElseThrow(() -> new CustomException(CustomError.BOARD_NOT_FOUND));
         if(!board.getUser().getId().equals(userId)){
             throw new CustomException(CustomError.BOARD_NOT_OWNER);
+        }
+
+        // 공지사항 카테고리로 변경하려 할 때 ADMIN 검증
+        if (request.category() == Category.NOTICE && board.getUser().getRoleType() != RoleType.ADMIN) {
+            throw new CustomException(CustomError.AUTH_UNAUTHORIZED);
         }
 
         board.update(request.title(), request.content(), request.category());
