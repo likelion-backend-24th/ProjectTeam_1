@@ -54,4 +54,14 @@ public class AuthController {
         LoginResponseDto responseDto = authService.reissueAccessToken(requestDto.getRefreshToken());
         return ResponseEntity.ok(responseDto);
     }
+
+    @Operation(summary = "회원 탈퇴",
+            description = "현재 로그인한 회원의 계정을 삭제(탈퇴)합니다.",
+            security = @SecurityRequirement(name = "BearerAuth"))
+    @DeleteMapping("/withdraw")
+    public ResponseEntity<Void> withdraw(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+        authService.withdraw(customUserDetails.getUserId());
+        return ResponseEntity.noContent().build(); // 204 No Content 반환
+    }
 }

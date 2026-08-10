@@ -8,6 +8,7 @@ import com.team1.cityfarm.entity.User;
 import com.team1.cityfarm.global.exception.CustomError;
 import com.team1.cityfarm.global.exception.CustomException;
 import com.team1.cityfarm.global.security.JwtProvider;
+import com.team1.cityfarm.repository.RefreshTokenRepository;
 import com.team1.cityfarm.repository.UserRepository;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -24,6 +25,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
     private final RefreshTokenService refreshTokenService;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     // 회원가입
     public void signUp(SignupRequestDto dto){
@@ -113,5 +115,18 @@ public class AuthService {
     public void logout(Long userId) {
         // DB에서 해당 유저의 Refresh Token 삭제
         refreshTokenService.deleteAllByUserId(userId);
+    }
+
+    @Transactional
+    public void withdraw(Long userId) {
+        // 1. 회원 존재 여부 확인
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
+
+        // 2. Redis 등에 저장된 RefreshToken 삭제
+        refreshTokenRepository.deleteByUserId(userId);
+
+        // 3. 회원 탈퇴 처리 (하드 삭제)
+        userRepository.delete(user); // 또는 user.withdraw(); (소프트 삭제 시)
     }
 }
