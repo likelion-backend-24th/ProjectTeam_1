@@ -25,26 +25,41 @@ public class BoardService {
 
     //게시글 목록 조회
     @Transactional(readOnly = true)
-    public Page<BoardResponseDto> getBoards(String type, String keyword, Pageable pageable) {
-        if (keyword == null || keyword.isBlank()) {
-            return boardRepository.findAll(pageable).map(BoardResponseDto::from);
+    public Page<BoardResponseDto> getBoards(String type, String keyword, Category category, Pageable pageable) {
+        boolean hasKeyword = keyword != null && !keyword.isBlank();
+
+        Page<Board> boards;
+
+        if (category == null && !hasKeyword) {
+            boards = boardRepository.findAll(pageable);
+        } else if (category != null && !hasKeyword) {
+            boards = boardRepository.findByCategory(category, pageable);
+        } else if (category == null) {
+            boards = switch (type) {
+                case "title" -> boardRepository.findByTitleContaining(keyword, pageable);
+                case "content" -> boardRepository.findByContentContaining(keyword, pageable);
+                case "author" -> boardRepository.findByUser_Nickname(keyword, pageable);
+                default -> throw new CustomException(CustomError.INVALID_INPUT_VALUE);
+            };
+        } else {
+            boards = switch (type) {
+                case "title" -> boardRepository.findByCategoryAndTitleContaining(category, keyword, pageable);
+                case "content" -> boardRepository.findByCategoryAndContentContaining(category, keyword, pageable);
+                case "author" -> boardRepository.findByCategoryAndUser_Nickname(category, keyword, pageable);
+                default -> throw new CustomException(CustomError.INVALID_INPUT_VALUE);
+            };
         }
 
-        Page<Board> boards = switch (type) {
-            case "title" -> boardRepository.findByTitleContaining(keyword, pageable);
-            case "content" -> boardRepository.findByContentContaining(keyword, pageable);
-            case "author" -> boardRepository.findByUser_Nickname(keyword, pageable);
-            default -> throw new CustomException(CustomError.INVALID_INPUT_VALUE);
-        };
-
-        return boards.map(BoardResponseDto::from);   // 여기서 DTO 변환하고 리턴
+        return boards.map(BoardResponseDto::from);
     }
 
-    //게시글 상세 조회
-    @Transactional(readOnly = true)
+    //게시글 상세 조회 (조회수 증가)
+    @Transactional
     public BoardResponseDto getBoard(Long boardId) {
-        return boardRepository.findById(boardId).map(BoardResponseDto::from)
+        Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new CustomException(CustomError.BOARD_NOT_FOUND));
+        board.increaseViewCount();
+        return BoardResponseDto.from(board);
     }
 
     //게시글 등록
