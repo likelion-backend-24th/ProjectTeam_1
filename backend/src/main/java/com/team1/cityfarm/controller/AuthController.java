@@ -2,6 +2,7 @@ package com.team1.cityfarm.controller;
 
 import com.team1.cityfarm.dto.LoginRequestDto;
 import com.team1.cityfarm.dto.LoginResponseDto;
+import com.team1.cityfarm.dto.RefreshTokenRequestDto;
 import com.team1.cityfarm.dto.SignupRequestDto;
 import com.team1.cityfarm.global.security.CustomUserDetails;
 import com.team1.cityfarm.service.AuthService;
@@ -40,5 +41,13 @@ public class AuthController {
             @AuthenticationPrincipal CustomUserDetails customUserDetails) {
         authService.logout(customUserDetails.getUserId());
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "토큰 재발급",
+            description = "refreshToken을 검증해 새로운 accessToken을 발급합니다.")
+    @PostMapping("/reissue")
+    public ResponseEntity<LoginResponseDto> reissue(@RequestBody RefreshTokenRequestDto requestDto) {
+        LoginResponseDto responseDto = authService.reissueAccessToken(requestDto.getRefreshToken());
+        return ResponseEntity.ok(responseDto);
     }
 }
