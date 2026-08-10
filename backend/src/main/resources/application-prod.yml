@@ -1,27 +1,22 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:cityfarm;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    # docker-compose의 db 서비스 이름(db:3306)으로 접속
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
+  # H2 콘솔 설정은 운영 환경에서 보안상 끔
   h2:
     console:
-      enabled: true
-      path: /h2-console
-      settings:
-        web-allow-others: true # 외부(EC2) 접근 허용
+      enabled: false
 
   jpa:
     hibernate:
-      ddl-auto: update # create or update
-    show-sql: true
+      ddl-auto: update # 운영 DB 테이블 구조 유지/업데이트
+    show-sql: false    # 운영 환경에서는 로그 절약을 위해 false 권장
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
 
-jwt:
-  secretKey: "MAFCPtab2K7eLhW5oOXPnCQOqzeD1rs9b1O9mRDAcRA="
-  refreshKey: "39Mi/4xYqJuoNUvRVd+Nm8+SnjscMCOguulSpwmLJgA="
-  access-expiration-ms: 1800000       # 30분
-  refresh-expiration-ms: 604800000    # 7일
+# jwt 설정은 application-secret.yml 또는 환경변수로 관리
