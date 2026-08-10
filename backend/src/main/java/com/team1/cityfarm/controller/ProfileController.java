@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "프로필 API", description = "마이 프로필 조회 API")
+@Tag(name = "프로필 API", description = "내 프로필 조회 API")
 @SecurityRequirement(name = "BearerAuth")
 @RestController
 @RequiredArgsConstructor
