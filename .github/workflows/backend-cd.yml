@@ -59,6 +59,19 @@ jobs:
     needs: build-image
     runs-on: ubuntu-latest
     steps:
+      # 👈 [추가 1] GitHub 레포지토리 코드 가져오기
+      - uses: actions/checkout@v4
+
+      # 👈 [추가 2] docker-compose.yml 및 .env 전송
+      - name: Copy docker-compose.yml to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "docker-compose.yml" # 깃허브 루티드 디렉토리의 compose 파일
+          target: "/home/${{ secrets.EC2_USER }}/cityfarm"
+
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1
         with:
