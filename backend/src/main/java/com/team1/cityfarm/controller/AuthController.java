@@ -3,15 +3,14 @@ package com.team1.cityfarm.controller;
 import com.team1.cityfarm.dto.LoginRequestDto;
 import com.team1.cityfarm.dto.LoginResponseDto;
 import com.team1.cityfarm.dto.SignupRequestDto;
+import com.team1.cityfarm.global.security.CustomUserDetails;
 import com.team1.cityfarm.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "회원관리 API", description = "회원 가입 및 로그인 API")
 @RestController
@@ -34,5 +33,12 @@ public class AuthController {
     public ResponseEntity<LoginResponseDto> login(@RequestBody LoginRequestDto loginRequestDto){
         LoginResponseDto responseDto = authService.login(loginRequestDto);
         return ResponseEntity.ok(responseDto);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+        authService.logout(customUserDetails.getUserId());
+        return ResponseEntity.ok().build();
     }
 }
