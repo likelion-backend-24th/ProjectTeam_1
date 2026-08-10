@@ -97,6 +97,11 @@ public class BoardService {
         if(!board.getUser().getId().equals(userId)){
             throw new CustomException(CustomError.BOARD_NOT_OWNER);
         }
+        if (board.getUser().getRoleType().equals(RoleType.ADMIN)) {
+            //삭제, 비었을 경우 예외처리
+            boardRepository.delete(boardRepository.findById(userId).orElseThrow(() -> new CustomException(CustomError.BOARD_NOT_FOUND)));
+            return;
+        }
         boardRepository.delete(board);
     }
 
