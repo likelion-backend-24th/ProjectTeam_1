@@ -23,7 +23,7 @@ public class BoardService {
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
 
-    //게시글 목록 조회
+    // 게시글 목록 조회
     @Transactional(readOnly = true)
     public Page<BoardResponseDto> getBoards(String type, String keyword, Category category, Pageable pageable) {
         boolean hasKeyword = keyword != null && !keyword.isBlank();
@@ -35,14 +35,16 @@ public class BoardService {
         } else if (category != null && !hasKeyword) {
             boards = boardRepository.findByCategory(category, pageable);
         } else if (category == null) {
-            boards = switch (type) {
+            String searchType = (type != null) ? type : "title";
+            boards = switch (searchType) {
                 case "title" -> boardRepository.findByTitleContaining(keyword, pageable);
                 case "content" -> boardRepository.findByContentContaining(keyword, pageable);
                 case "author" -> boardRepository.findByUser_Nickname(keyword, pageable);
                 default -> throw new CustomException(CustomError.INVALID_INPUT_VALUE);
             };
         } else {
-            boards = switch (type) {
+            String searchType = (type != null) ? type : "title";
+            boards = switch (searchType) {
                 case "title" -> boardRepository.findByCategoryAndTitleContaining(category, keyword, pageable);
                 case "content" -> boardRepository.findByCategoryAndContentContaining(category, keyword, pageable);
                 case "author" -> boardRepository.findByCategoryAndUser_Nickname(category, keyword, pageable);
