@@ -35,15 +35,15 @@ services:
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
 
-  # 3) 프론트엔드 컨테이너 (추후 추가)
-  frontend:
-    image: ghcr.io/likelion-backend-24th/cityfarm-frontend:latest
-    container_name: cityfarm-frontend
-    restart: always
-    ports:
-      - "80:80" # 외부에서 HTTP 기본 포트로 접속
-    depends_on:
-      - app
+#  # 3) 프론트엔드 컨테이너 (추후 추가)
+#  frontend:
+#    image: ghcr.io/likelion-backend-24th/cityfarm-frontend:latest
+#    container_name: cityfarm-frontend
+#    restart: always
+#    ports:
+#      - "80:80" # 외부에서 HTTP 기본 포트로 접속
+#    depends_on:
+#      - app
 
 volumes:
   mysql_data: # DB 데이터 보존용 볼륨 (컨테이너가 꺼져도 데이터 유지)
