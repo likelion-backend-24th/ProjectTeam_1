@@ -48,8 +48,6 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          build-args:
-            DB_PASSWORD=${{secrets.DB_PASSWORD}}
           tags: |
             ${{ env.IMAGE_LOWER }}:latest
             ${{ env.IMAGE_LOWER }}:${{ github.sha }}
