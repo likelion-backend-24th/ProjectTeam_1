@@ -2,6 +2,7 @@ package com.team1.cityfarm.controller;
 
 import com.team1.cityfarm.dto.BoardRequestDto;
 import com.team1.cityfarm.dto.BoardResponseDto;
+import com.team1.cityfarm.entity.Category;
 import com.team1.cityfarm.global.response.ApiResponse;
 import com.team1.cityfarm.global.security.CustomUserDetails;
 import com.team1.cityfarm.service.BoardService;
@@ -32,9 +33,10 @@ public class BoardController {
     public ApiResponse<Page<BoardResponseDto>> getBoards(
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String keyword,   // 없으면 전체조회
+            @RequestParam(required = false) Category category, // 없으면 전체 카테고리(공지/질문/자유 탭)
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return ApiResponse.success("게시글 목록 조회 성공", boardService.getBoards(type, keyword, pageable));
+        return ApiResponse.success("게시글 목록 조회 성공", boardService.getBoards(type, keyword, category, pageable));
     }
 
     //게시글 상세 조회
