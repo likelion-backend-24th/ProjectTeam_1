@@ -78,7 +78,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: GITHUB_TOKEN,IMAGE_NAME,ACTOR
+          envs: GITHUB_TOKEN,IMAGE_NAME,ACTOR의
           script: |
             # 1) GHCR 로그인
             echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
