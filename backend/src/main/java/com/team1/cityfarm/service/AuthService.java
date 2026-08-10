@@ -107,4 +107,11 @@ public class AuthService {
 
         return new LoginResponseDto(newAccessToken, refreshToken);
     }
+
+    //로그아웃
+    @Transactional
+    public void logout(Long userId) {
+        // DB에서 해당 유저의 Refresh Token 삭제
+        refreshTokenService.deleteAllByUserId(userId);
+    }
 }
