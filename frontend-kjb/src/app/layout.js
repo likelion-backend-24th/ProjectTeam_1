@@ -1,5 +1,6 @@
 import "./globals.css";
 import { AuthInitializer } from "@/components/AuthInitializer";
+import { ToastContainer } from "@/components/ToastContainer";
 
 export const metadata = {
   title: "도시 귀농 프로젝트",
@@ -18,6 +19,7 @@ export default function RootLayout({ children }) {
       </head>
       <body className="flex min-h-svh justify-center font-[Pretendard,system-ui,sans-serif]">
         <AuthInitializer />
+        <ToastContainer />
         {children}
       </body>
     </html>

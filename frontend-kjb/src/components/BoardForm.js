@@ -8,6 +8,7 @@ import { createBoard, getBoard, updateBoard } from "@/lib/api/board";
 import { ApiError } from "@/lib/api/client";
 import { CATEGORY_LABEL } from "@/utils/format";
 import { useAuthStore } from "@/store/authStore";
+import { useToastStore } from "@/store/toastStore";
 
 const BASE_CATEGORIES = ["QNA", "FREE"];
 
@@ -15,6 +16,7 @@ export function BoardForm({ boardId }) {
   const isEdit = boardId !== undefined;
   const router = useRouter();
   const isAdmin = useAuthStore((s) => s.isAdmin);
+  const showToast = useToastStore((s) => s.showToast);
   const selectableCategories = isAdmin ? ["NOTICE", ...BASE_CATEGORIES] : BASE_CATEGORIES;
 
   const [category, setCategory] = useState("QNA");
@@ -48,15 +50,17 @@ export function BoardForm({ boardId }) {
     try {
       if (isEdit) {
         await updateBoard(boardId, { title: title.trim(), content: content.trim(), category });
+        showToast("게시글이 수정되었어요.");
         // Replace so the edit form doesn't linger in history behind the detail page.
         router.replace(`/board/${boardId}`);
       } else {
         const created = await createBoard({ title: title.trim(), content: content.trim(), category });
+        showToast("게시글이 등록되었어요.");
         // Replace so pressing back from the new post goes to the board list, not this form.
         router.replace(`/board/${created.id}`);
       }
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "게시글 등록에 실패했어요.");
+      showToast(err instanceof ApiError ? err.message : "게시글 등록에 실패했어요.", "error");
     } finally {
       setIsSubmitting(false);
     }

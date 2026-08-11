@@ -5,16 +5,17 @@ import { useRouter } from "next/navigation";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuthStore } from "@/store/authStore";
+import { useToastStore } from "@/store/toastStore";
 import { ApiError } from "@/lib/api/client";
 
 function ProfileView() {
   const profile = useAuthStore((s) => s.profile);
   const logout = useAuthStore((s) => s.logout);
   const withdraw = useAuthStore((s) => s.withdraw);
+  const showToast = useToastStore((s) => s.showToast);
   const router = useRouter();
 
   const [isWithdrawing, setIsWithdrawing] = useState(false);
-  const [error, setError] = useState(null);
 
   async function handleLogout() {
     await logout();
@@ -25,12 +26,12 @@ function ProfileView() {
     if (!window.confirm("정말 탈퇴하시겠어요? 이 작업은 되돌릴 수 없어요.")) return;
 
     setIsWithdrawing(true);
-    setError(null);
     try {
       await withdraw();
+      showToast("탈퇴가 완료되었어요.");
       router.replace("/login");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "탈퇴에 실패했어요. 다시 시도해주세요.");
+      showToast(err instanceof ApiError ? err.message : "탈퇴에 실패했어요. 다시 시도해주세요.", "error");
     } finally {
       setIsWithdrawing(false);
     }
@@ -47,8 +48,6 @@ function ProfileView() {
       <ReadonlyField label="이름" value={profile?.name} />
       <ReadonlyField label="닉네임" value={profile?.nickName} />
       <ReadonlyField label="이메일" value={profile?.email} />
-
-      {error && <p className="rounded-lg bg-red-50 px-3.5 py-2.5 text-[13px] text-red-700">{error}</p>}
 
       <button
         type="button"
