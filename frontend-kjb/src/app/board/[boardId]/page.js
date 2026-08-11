@@ -14,6 +14,7 @@ import { createReply, deleteReply, getReplies } from "@/lib/api/reply";
 import { ApiError } from "@/lib/api/client";
 import { CATEGORY_LABEL, formatRelativeTime } from "@/utils/format";
 import { useAuthStore } from "@/store/authStore";
+import { isBoardLiked, setBoardLiked } from "@/lib/likedBoards";
 
 export default function BoardDetailPage() {
   const { boardId } = useParams();
@@ -69,6 +70,16 @@ export default function BoardDetailPage() {
     return () => controller.abort();
   }, [id, load]);
 
+  useEffect(() => {
+    // The board detail API doesn't report whether the current user already
+    // liked the post, so restore it from our local per-account record
+    // (localStorage), which the API can't provide synchronously during render.
+    if (profile?.email) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLiked(isBoardLiked(profile.email, id));
+    }
+  }, [profile?.email, id]);
+
   function requireLogin() {
     router.push(`/login?from=${encodeURIComponent(`/board/${id}`)}`);
   }
@@ -78,6 +89,7 @@ export default function BoardDetailPage() {
     try {
       const res = liked ? await unlikeBoard(id) : await likeBoard(id);
       setLiked(res.liked);
+      setBoardLiked(profile?.email, id, res.liked);
       setPost((prev) => (prev ? { ...prev, likeCount: res.likeCount } : prev));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "요청에 실패했어요.");
