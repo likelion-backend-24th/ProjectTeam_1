@@ -43,6 +43,7 @@ export default function BoardDetail({ params }) {
       const data = await getBoard(boardId)
       setBoard(data)
       setLikeCount(data.likeCount)
+      setLiked(data.liked)
     } catch (err) {
       setError(err.message || '게시글을 불러오지 못했습니다.')
     } finally {

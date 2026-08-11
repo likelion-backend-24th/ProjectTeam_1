@@ -28,6 +28,9 @@ public record BoardResponseDto(
         @Schema(description = "좋아요 수", example = "12")
         int likeCount,
 
+        @Schema(description = "현재 로그인한 사용자의 좋아요 여부", example = "true")
+        boolean liked,
+
         @Schema(description = "생성 일시", example = "2026-08-05T15:30:00")
         String createdAt,
 
@@ -35,6 +38,10 @@ public record BoardResponseDto(
         String updatedAt
 ) {
     public static BoardResponseDto from(Board board) {
+        return from(board, false);
+    }
+
+    public static BoardResponseDto from(Board board, boolean liked) {
         return new BoardResponseDto(
                 board.getId(),
                 board.getTitle(),
@@ -43,6 +50,7 @@ public record BoardResponseDto(
                 board.getCategory(),
                 board.getViewCount(),
                 board.getLikeCount(),
+                liked,
                 board.getCreatedAt().toString(),
                 board.getUpdatedAt().toString()
         );

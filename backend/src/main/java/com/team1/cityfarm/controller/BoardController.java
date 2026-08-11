@@ -43,8 +43,12 @@ public class BoardController {
     @Operation(summary = "게시글 상세 조회",
             description = "게시글 ID(boardId)를 통해 특정 게시글의 상세 정보를 조회합니다.")
     @GetMapping("/{boardId}")
-    public ApiResponse<BoardResponseDto> getBoard(@PathVariable Long boardId) {
-        return ApiResponse.success("게시글 조회 성공", boardService.getBoard(boardId));
+    public ApiResponse<BoardResponseDto> getBoard(
+            @PathVariable Long boardId,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Long userId = userDetails != null ? userDetails.getUserId() : null;
+        return ApiResponse.success("게시글 조회 성공", boardService.getBoard(boardId, userId));
     }
 
     // 게시글 등록

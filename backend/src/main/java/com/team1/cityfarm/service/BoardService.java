@@ -8,6 +8,7 @@ import com.team1.cityfarm.entity.RoleType;
 import com.team1.cityfarm.entity.User;
 import com.team1.cityfarm.global.exception.CustomError;
 import com.team1.cityfarm.global.exception.CustomException;
+import com.team1.cityfarm.repository.BoardLikeRepository;
 import com.team1.cityfarm.repository.BoardRepository;
 import com.team1.cityfarm.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class BoardService {
 
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
+    private final BoardLikeRepository boardLikeRepository;
 
     //게시글 목록 조회
     @Transactional(readOnly = true)
@@ -55,11 +57,12 @@ public class BoardService {
 
     //게시글 상세 조회 (조회수 증가)
     @Transactional
-    public BoardResponseDto getBoard(Long boardId) {
+    public BoardResponseDto getBoard(Long boardId, Long userId) {
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new CustomException(CustomError.BOARD_NOT_FOUND));
         board.increaseViewCount();
-        return BoardResponseDto.from(board);
+        boolean liked = userId != null && boardLikeRepository.existsByBoard_IdAndUser_Id(boardId, userId);
+        return BoardResponseDto.from(board, liked);
     }
 
     //게시글 등록
