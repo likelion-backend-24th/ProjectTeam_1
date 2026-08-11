@@ -90,15 +90,18 @@ public class BoardService {
     public BoardResponseDto updateBoard(Long boardId, BoardRequestDto request, Long userId) {
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new CustomException(CustomError.BOARD_NOT_FOUND));
-        if (!board.getUser().getId().equals(userId)) {
-            throw new CustomException(CustomError.BOARD_NOT_OWNER);
-        }
 
         // 요청자의 role을 직접 조회해서 검증 - 원작성자 role이 아니라 실제 요청자 role을 봐야 함
         User requester = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
 
-        if (request.category() == Category.NOTICE && requester.getRoleType() != RoleType.ADMIN) {
+        boolean isOwner = board.getUser().getId().equals(userId);
+        boolean isAdmin = requester.getRoleType() == RoleType.ADMIN;
+        if (!isOwner && !isAdmin) {
+            throw new CustomException(CustomError.BOARD_NOT_OWNER);
+        }
+
+        if (request.category() == Category.NOTICE && !isAdmin) {
             throw new CustomException(CustomError.AUTH_FORBIDDEN);
         }
 
@@ -108,17 +111,19 @@ public class BoardService {
 
     //게시글 삭제
     @Transactional
-    public void deleteBoard(Long boardId,Long userId) {
+    public void deleteBoard(Long boardId, Long userId) {
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new CustomException(CustomError.BOARD_NOT_FOUND));
-        if(!board.getUser().getId().equals(userId)){
+
+        User requester = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
+
+        boolean isOwner = board.getUser().getId().equals(userId);
+        boolean isAdmin = requester.getRoleType() == RoleType.ADMIN;
+        if (!isOwner && !isAdmin) {
             throw new CustomException(CustomError.BOARD_NOT_OWNER);
         }
-        if (board.getUser().getRoleType().equals(RoleType.ADMIN)) {
-            //삭제, 비었을 경우 예외처리
-            boardRepository.delete(boardRepository.findById(userId).orElseThrow(() -> new CustomException(CustomError.BOARD_NOT_FOUND)));
-            return;
-        }
+
         boardRepository.delete(board);
     }
 
