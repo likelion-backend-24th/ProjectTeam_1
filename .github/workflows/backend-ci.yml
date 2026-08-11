@@ -57,10 +57,10 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      # 5) 빌드 + 테스트 (DB 접속 주소를 127.0.0.1로 강제 주입)
+      # 5) 빌드 + 테스트
       - name: Build & Test
         env:
-          SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/cityfarm?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+          SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/cityfarm?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
           SPRING_DATASOURCE_USERNAME: root
           SPRING_DATASOURCE_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: ./gradlew clean build

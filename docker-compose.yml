@@ -28,23 +28,22 @@ services:
       - "8080:8080"
     depends_on:
       db:
-        condition: service_healthy # DB 헬스체크 통과 후 백엔드 실행
+        condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/cityfarm?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
 
-#  # 3) 프론트엔드 컨테이너 (추후 추가)
-#  frontend:
-#    image: ghcr.io/likelion-backend-24th/cityfarm-frontend:latest
-#    container_name: cityfarm-frontend
-#    restart: always
-#    ports:
-#      - "80:80" # 외부에서 HTTP 기본 포트로 접속
-#    depends_on:
-#      - app
+  # 3) 프론트엔드 컨테이너
+  frontend:
+    image: ghcr.io/likelion-backend-24th/cityfarm-frontend:latest # 레지스트리 소문자 경로 및 이름 확인
+    container_name: cityfarm-frontend
+    restart: always
+    ports:
+      - "80:3000" # 💡 수정: 외부 80포트로 접속해서 내부 Next.js(3000포트)로 연결
+    depends_on:
+      - app
 
 volumes:
-  mysql_data: # DB 데이터 보존용 볼륨 (컨테이너가 꺼져도 데이터 유지)
-
+  mysql_data:
