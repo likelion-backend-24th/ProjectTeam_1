@@ -1,4 +1,8 @@
-export const API_BASE_URL = "http://54.86.192.52:8080";
+// Defaults to the shared remote server. Override locally by creating
+// `.env.local` (gitignored) with NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+// — useful for testing admin features against your own local backend, since
+// the shared server has no admin account.
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://54.86.192.52:8080";
 const TOKEN_KEY = "accessToken";
 
 export function getAccessToken() {
