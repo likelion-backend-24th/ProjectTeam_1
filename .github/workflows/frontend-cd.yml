@@ -8,7 +8,7 @@ on:
       - 'docker-compose.yml'
 
 jobs:
-  # 1) Docker 이미지 빌드 후 GHCR에 push함
+  # 1) Docker 이미지 빌드 후 GHCR에 push
   build-image:
     runs-on: ubuntu-latest
     permissions:

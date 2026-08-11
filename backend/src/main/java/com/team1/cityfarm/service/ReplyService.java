@@ -92,7 +92,7 @@ public class ReplyService {
             replyRepository.delete(replyRepository.findById(id).orElseThrow(() -> new CustomException(CustomError.REPLY_NOT_FOUND)));
             return;
         }
-        //사용자 본인이 삭제하도록 유저 id와 답글 id로 조회 후 삭제함
+        //사용자 본인이 삭제하도록 유저 id와 답글 id로 조회 후 삭제
         replyRepository.delete(replyRepository.findReplyByIdAndUser_Id(id, loadUser.getId()).orElseThrow(() -> new CustomException(CustomError.REPLY_NOT_FOUND)));
     }
 }
