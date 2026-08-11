@@ -109,15 +109,13 @@ public class BoardService {
     public void deleteBoard(Long boardId,Long userId) {
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new CustomException(CustomError.BOARD_NOT_FOUND));
-
-        // 요청자 role을 조회해 관리자면 작성자와 무관하게 삭제를 허용
-        User requester = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
-
-        boolean isOwner = board.getUser().getId().equals(userId);
-        boolean isAdmin = requester.getRoleType() == RoleType.ADMIN;
-        if (!isOwner && !isAdmin) {
+        if(!board.getUser().getId().equals(userId)){
             throw new CustomException(CustomError.BOARD_NOT_OWNER);
+        }
+        if (board.getUser().getRoleType().equals(RoleType.ADMIN)) {
+            //삭제, 비었을 경우 예외처리
+            boardRepository.delete(boardRepository.findById(userId).orElseThrow(() -> new CustomException(CustomError.BOARD_NOT_FOUND)));
+            return;
         }
         boardRepository.delete(board);
     }
