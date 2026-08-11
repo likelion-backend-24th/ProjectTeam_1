@@ -1,7 +1,7 @@
 import { apiRequest } from "./client";
 
-export function getBoards({ type, keyword, page = 0, size = 10 } = {}) {
-  return apiRequest("/api/board", { query: { type, keyword, page, size } });
+export function getBoards({ type, keyword, page = 0, size = 10, sort } = {}) {
+  return apiRequest("/api/board", { query: { type, keyword, page, size, sort } });
 }
 
 export function getBoard(boardId, signal) {

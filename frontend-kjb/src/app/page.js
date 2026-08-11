@@ -18,6 +18,11 @@ const FILTERS = [
   { label: "자유게시판", value: "FREE" },
 ];
 
+const SORT_OPTIONS = [
+  { label: "최신순", value: "createdAt,desc" },
+  { label: "좋아요순", value: "likeCount,desc" },
+];
+
 const CATEGORY_BORDER = {
   NOTICE: "border-l-notice",
   QNA: "border-l-qna",
@@ -25,6 +30,18 @@ const CATEGORY_BORDER = {
 };
 
 const PAGE_SIZE = 10;
+const MAX_PAGE_BUTTONS = 5;
+
+function getPageNumbers(current, totalPages) {
+  if (totalPages <= MAX_PAGE_BUTTONS) return Array.from({ length: totalPages }, (_, i) => i);
+  let start = Math.max(0, current - Math.floor(MAX_PAGE_BUTTONS / 2));
+  let end = start + MAX_PAGE_BUTTONS - 1;
+  if (end >= totalPages) {
+    end = totalPages - 1;
+    start = end - MAX_PAGE_BUTTONS + 1;
+  }
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+}
 
 export default function BoardListPage() {
   const router = useRouter();
@@ -32,17 +49,18 @@ export default function BoardListPage() {
   const profile = useAuthStore((s) => s.profile);
 
   const [activeFilter, setActiveFilter] = useState("ALL");
+  const [sort, setSort] = useState(SORT_OPTIONS[0].value);
   const [keywordInput, setKeywordInput] = useState("");
   const [keyword, setKeyword] = useState("");
 
   const [posts, setPosts] = useState([]);
   const [page, setPage] = useState(0);
-  const [isLast, setIsLast] = useState(true);
+  const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const loadPosts = useCallback(
-    async (targetPage, append) => {
+    async (targetPage) => {
       setIsLoading(true);
       setError(null);
       try {
@@ -51,14 +69,15 @@ export default function BoardListPage() {
           keyword: keyword || undefined,
           page: targetPage,
           size: PAGE_SIZE,
+          sort,
         });
         // Defensive client-side filter: the backend currently returns all
         // categories regardless of the `type` query param, so re-filter here
         // to keep the UI correct even if that server-side bug is present.
         const content =
           activeFilter === "ALL" ? res.content : res.content.filter((p) => p.category === activeFilter);
-        setPosts((prev) => (append ? [...prev, ...content] : content));
-        setIsLast(res.last);
+        setPosts(content);
+        setTotalPages(res.totalPages);
         setPage(targetPage);
       } catch (err) {
         setError(err instanceof ApiError ? err.message : "게시글을 불러오지 못했어요.");
@@ -66,13 +85,13 @@ export default function BoardListPage() {
         setIsLoading(false);
       }
     },
-    [activeFilter, keyword],
+    [activeFilter, keyword, sort],
   );
 
   useEffect(() => {
-    // Refetch whenever the filter/keyword changes; not derivable from render.
+    // Refetch whenever the filter/keyword/sort changes; not derivable from render.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadPosts(0, false);
+    loadPosts(0);
   }, [loadPosts]);
 
   function handleSearchSubmit(e) {
@@ -87,6 +106,8 @@ export default function BoardListPage() {
     }
     router.push("/write");
   }
+
+  const pageNumbers = getPageNumbers(page, totalPages);
 
   return (
     <AppShell header={<PageHeader title="게시판" />}>
@@ -112,19 +133,33 @@ export default function BoardListPage() {
         />
       </form>
 
-      <div className="flex flex-wrap items-center gap-2">
-        {FILTERS.map((f) => (
-          <button
-            key={f.value}
-            type="button"
-            onClick={() => setActiveFilter(f.value)}
-            className={`shrink-0 rounded-full px-3.5 py-2 text-[13px] font-semibold ${
-              activeFilter === f.value ? "bg-primary text-white" : "bg-surface text-ink-soft"
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {FILTERS.map((f) => (
+            <button
+              key={f.value}
+              type="button"
+              onClick={() => setActiveFilter(f.value)}
+              className={`shrink-0 rounded-full px-3.5 py-2 text-[13px] font-semibold ${
+                activeFilter === f.value ? "bg-primary text-white" : "bg-surface text-ink-soft"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+          className="shrink-0 rounded-full border border-border bg-white px-3 py-2 text-[13px] font-semibold text-ink-soft outline-none"
+        >
+          {SORT_OPTIONS.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       {error && <p className="rounded-lg bg-red-50 px-3.5 py-2.5 text-[13px] text-red-700">{error}</p>}
@@ -172,14 +207,39 @@ export default function BoardListPage() {
 
       {isLoading && <p className="py-3 text-center text-sm text-ink-muted">불러오는 중...</p>}
 
-      {!isLast && !isLoading && posts.length > 0 && (
-        <button
-          type="button"
-          onClick={() => loadPosts(page + 1, true)}
-          className="h-[50px] w-full rounded-xl bg-surface text-[15px] font-semibold text-ink"
-        >
-          더 보기
-        </button>
+      {!isLoading && posts.length > 0 && totalPages > 1 && (
+        <div className="flex items-center justify-center gap-1.5">
+          <button
+            type="button"
+            disabled={page === 0}
+            onClick={() => loadPosts(page - 1)}
+            aria-label="이전 페이지"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-semibold text-ink-soft disabled:opacity-30"
+          >
+            ‹
+          </button>
+          {pageNumbers.map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => loadPosts(p)}
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-semibold ${
+                p === page ? "bg-primary text-white" : "text-ink-soft"
+              }`}
+            >
+              {p + 1}
+            </button>
+          ))}
+          <button
+            type="button"
+            disabled={page >= totalPages - 1}
+            onClick={() => loadPosts(page + 1)}
+            aria-label="다음 페이지"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-semibold text-ink-soft disabled:opacity-30"
+          >
+            ›
+          </button>
+        </div>
       )}
 
       <button
