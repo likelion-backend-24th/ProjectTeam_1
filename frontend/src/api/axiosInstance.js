@@ -2,7 +2,7 @@ import axios from "axios";
 import { useAuthStore } from "../stores/useAuthStore";
 
 const api = axios.create({
-  baseURL: "http://localhost:8080", // 필요 시 백엔드 Base URL 설정 (예: 'http://localhost:8080')
+  baseURL: "http://54.86.192.52:8080", // 필요 시 백엔드 Base URL 설정 (예: 'http://localhost:8080')
   headers: {
     "Content-Type": "application/json",
   },

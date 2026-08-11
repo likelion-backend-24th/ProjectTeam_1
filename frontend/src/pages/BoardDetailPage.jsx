@@ -1,10 +1,13 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react"; // 🔥 useRef 추가
 import api from "../api/axiosInstance";
 import { useAuthStore } from "../stores/useAuthStore";
 
 export function BoardDetailPage({ postId, onNavigate }) {
   const { user, roleType, nickName, userId } = useAuthStore();
   const isAdmin = roleType === "ADMIN";
+
+  // 🔥 중복 요청 방지용 ref
+  const fetchedPostId = useRef(null);
 
   // 데이터 State
   const [post, setPost] = useState(null);
@@ -66,7 +69,7 @@ export function BoardDetailPage({ postId, onNavigate }) {
     [isAdmin, nickName, user, userId],
   );
 
-  // 전체 데이터 Fetch
+  // 전체 데이터 Fetch (기존에 잘 짜두신 로직)
   const fetchAllData = useCallback(async () => {
     if (!postId) return;
 
@@ -111,9 +114,19 @@ export function BoardDetailPage({ postId, onNavigate }) {
     }
   }, [postId]);
 
+  // 🔥 수정된 useEffect: 기존 로직에 중복 호출 방어만 추가
   useEffect(() => {
+    // 1. postId가 없거나, 이미 해당 postId로 API를 호출한 상태라면 즉시 중단
+    if (!postId || fetchedPostId.current === postId) {
+      return;
+    }
+
+    // 2. 현재 postId 기록
+    fetchedPostId.current = postId;
+
+    // 3. 데이터 패칭 실행
     fetchAllData();
-  }, [fetchAllData]);
+  }, [postId, fetchAllData]);
 
   // ---------------- 본문 기능 ----------------
   const handleToggleLike = async () => {

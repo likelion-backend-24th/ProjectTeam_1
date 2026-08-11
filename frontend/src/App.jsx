@@ -5,6 +5,8 @@ import { LoginPage } from "./pages/LoginPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { BoardWritePage } from "./pages/BoardWritePage";
 import { AdminUserPage } from "./pages/AdminUserPage";
+// 1. SignupPage import 추가
+import { SignupPage } from "./pages/SignupPage";
 import { useAuthStore } from "./stores/useAuthStore";
 
 export default function App() {
@@ -52,6 +54,11 @@ export default function App() {
           )}
 
           {currentPage === "login" && <LoginPage onNavigate={handleNavigate} />}
+
+          {/* 2. 회원가입 페이지 렌더링 조건 추가 */}
+          {currentPage === "signup" && (
+            <SignupPage onNavigate={handleNavigate} />
+          )}
 
           {currentPage === "profile" && (
             <ProfilePage onNavigate={handleNavigate} />
