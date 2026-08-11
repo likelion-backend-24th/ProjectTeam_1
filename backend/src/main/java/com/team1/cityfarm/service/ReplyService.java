@@ -27,7 +27,7 @@ public class ReplyService {
     //상세 게시글에 모든 답변 조회
     @Transactional(readOnly = true)
     public List<ReplyResponseDto> getAllReply(Long id){
-        //상세 게시글 존재 여부를 확인
+        //상세 게시글 존재 여부 확인
         if (!boardRepository.existsById(id)) {
             throw new CustomException(CustomError.BOARD_NOT_FOUND);
         }
