@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { clearAccessToken, getAccessToken, setAccessToken } from "@/lib/api/client";
 import { getMyProfile } from "@/lib/api/profile";
-import { login as loginApi, logout as logoutApi } from "@/lib/api/auth";
+import { login as loginApi, logout as logoutApi, withdraw as withdrawApi } from "@/lib/api/auth";
 import { decodeJwtPayload } from "@/lib/jwt";
 
 function isAdminToken(token) {
@@ -47,6 +47,12 @@ export const useAuthStore = create((set, get) => ({
     } catch {
       // ignore network/server errors on logout, clear local state regardless
     }
+    clearAccessToken();
+    set({ isAuthenticated: false, profile: null, isAdmin: false });
+  },
+
+  withdraw: async () => {
+    await withdrawApi();
     clearAccessToken();
     set({ isAuthenticated: false, profile: null, isAdmin: false });
   },

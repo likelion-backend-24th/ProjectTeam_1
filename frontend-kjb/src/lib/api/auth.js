@@ -11,3 +11,7 @@ export function login(payload) {
 export function logout() {
   return apiRequest("/api/auth/logout", { method: "POST" });
 }
+
+export function withdraw() {
+  return apiRequest("/api/auth/withdraw", { method: "DELETE" });
+}

@@ -6,6 +6,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { getAllUsers, patchUser } from "@/lib/api/admin";
 import { ApiError } from "@/lib/api/client";
 import { formatRelativeTime } from "@/utils/format";
+import { useToastStore } from "@/store/toastStore";
 
 const STATUS_OPTIONS = ["ACTIVE", "INACTIVE", "WITHDRAWN"];
 const ROLE_OPTIONS = ["USER", "ADMIN"];
@@ -18,6 +19,7 @@ const STATUS_LABEL = {
 };
 
 function AdminView() {
+  const showToast = useToastStore((s) => s.showToast);
   const [users, setUsers] = useState([]);
   const [page, setPage] = useState(0);
   const [isLast, setIsLast] = useState(true);
@@ -65,8 +67,9 @@ function AdminView() {
     try {
       const updated = await patchUser(user.id, draft);
       setUsers((prev) => prev.map((u) => (u.id === user.id ? updated : u)));
+      showToast("회원 정보가 수정되었어요.");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "회원 정보 수정에 실패했어요.");
+      showToast(err instanceof ApiError ? err.message : "회원 정보 수정에 실패했어요.", "error");
     } finally {
       setSavingId(null);
     }

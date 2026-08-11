@@ -14,6 +14,8 @@ import { createReply, deleteReply, getReplies } from "@/lib/api/reply";
 import { ApiError } from "@/lib/api/client";
 import { CATEGORY_LABEL, formatRelativeTime } from "@/utils/format";
 import { useAuthStore } from "@/store/authStore";
+import { useToastStore } from "@/store/toastStore";
+import { isBoardLiked, setBoardLiked } from "@/lib/likedBoards";
 
 export default function BoardDetailPage() {
   const { boardId } = useParams();
@@ -22,6 +24,7 @@ export default function BoardDetailPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const profile = useAuthStore((s) => s.profile);
   const isAdmin = useAuthStore((s) => s.isAdmin);
+  const showToast = useToastStore((s) => s.showToast);
 
   const [post, setPost] = useState(null);
   const [liked, setLiked] = useState(false);
@@ -60,7 +63,7 @@ export default function BoardDetailPage() {
 
   useEffect(() => {
     if (!Number.isFinite(id)) return;
-    // getBoard() increments the server-side view count as a side effect of the
+    // getBoard() increments the server-side view count as a side effect of the g
     // GET, so this abort guard prevents React StrictMode's dev-only
     // double-invoke from inflating the view count.
     const controller = new AbortController();
@@ -68,6 +71,16 @@ export default function BoardDetailPage() {
     load(controller.signal);
     return () => controller.abort();
   }, [id, load]);
+
+  useEffect(() => {
+    // The board detail API doesn't report whether the current user already
+    // liked the post, so restore it from our local per-account record
+    // (localStorage), which the API can't provide synchronously during render.
+    if (profile?.email) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLiked(isBoardLiked(profile.email, id));
+    }
+  }, [profile?.email, id]);
 
   function requireLogin() {
     router.push(`/login?from=${encodeURIComponent(`/board/${id}`)}`);
@@ -78,9 +91,10 @@ export default function BoardDetailPage() {
     try {
       const res = liked ? await unlikeBoard(id) : await likeBoard(id);
       setLiked(res.liked);
+      setBoardLiked(profile?.email, id, res.liked);
       setPost((prev) => (prev ? { ...prev, likeCount: res.likeCount } : prev));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "요청에 실패했어요.");
+      showToast(err instanceof ApiError ? err.message : "요청에 실패했어요.", "error");
     }
   }
 
@@ -88,22 +102,34 @@ export default function BoardDetailPage() {
     if (!window.confirm("게시글을 삭제할까요?")) return;
     try {
       await deleteBoard(id);
+      showToast("게시글이 삭제되었어요.");
       router.push("/");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "삭제에 실패했어요.");
+      showToast(err instanceof ApiError ? err.message : "삭제에 실패했어요.", "error");
     }
   }
 
   async function handleAddComment(content) {
     if (!isAuthenticated) return requireLogin();
-    const created = await createBoardComment(id, { content });
-    setComments((prev) => [...prev, created]);
+    try {
+      const created = await createBoardComment(id, { content });
+      setComments((prev) => [...prev, created]);
+      showToast("댓글이 등록되었어요.");
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.message : "댓글 등록에 실패했어요.", "error");
+      throw err; // let the comment form know it failed so it keeps the draft text
+    }
   }
 
   async function handleDeleteComment(commentId) {
     if (!window.confirm("댓글을 삭제할까요?")) return;
-    await deleteBoardComment(commentId);
-    setComments((prev) => prev.filter((c) => c.id !== commentId));
+    try {
+      await deleteBoardComment(commentId);
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+      showToast("댓글이 삭제되었어요.");
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.message : "댓글 삭제에 실패했어요.", "error");
+    }
   }
 
   async function handleAddReply(e) {
@@ -118,8 +144,9 @@ export default function BoardDetailPage() {
       setReplies((prev) => [...prev, created]);
       setReplyDraft("");
       setShowReplyForm(false);
+      showToast("답글이 등록되었어요.");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "답글 등록에 실패했어요.");
+      showToast(err instanceof ApiError ? err.message : "답글 등록에 실패했어요.", "error");
     } finally {
       setIsReplySubmitting(false);
     }
@@ -127,8 +154,13 @@ export default function BoardDetailPage() {
 
   async function handleDeleteReply(replyId) {
     if (!window.confirm("답글을 삭제할까요?")) return;
-    await deleteReply(replyId);
-    setReplies((prev) => prev.filter((r) => r.id !== replyId));
+    try {
+      await deleteReply(replyId);
+      setReplies((prev) => prev.filter((r) => r.id !== replyId));
+      showToast("답글이 삭제되었어요.");
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.message : "답글 삭제에 실패했어요.", "error");
+    }
   }
 
   const isOwner = !!profile && !!post && profile.nickName === post.writer;
