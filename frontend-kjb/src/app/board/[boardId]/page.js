@@ -63,7 +63,7 @@ export default function BoardDetailPage() {
 
   useEffect(() => {
     if (!Number.isFinite(id)) return;
-    // getBoard() increments the server-side view count as a side effect of the g
+    // getBoard() increments the server-side view count as a side effect of the
     // GET, so this abort guard prevents React StrictMode's dev-only
     // double-invoke from inflating the view count.
     const controller = new AbortController();
