@@ -27,10 +27,10 @@ export function AdminUserPage({ onNavigate }) {
     fetchUsers();
   }, []);
 
-  const handleUserUpdate = async (userId, newRole, newStatus) => {
+  const handleUserUpdate = async (userId, newRoleType, newStatus) => {
     try {
       await api.patch(`/api/admin/users/${userId}`, {
-        role: newRole,
+        roleType: newRoleType, // 🔥 role -> roleType으로 변경
         status: newStatus,
       });
       alert("회원 정보가 수정되었습니다.");
@@ -88,7 +88,7 @@ export function AdminUserPage({ onNavigate }) {
                       권한
                     </span>
                     <select
-                      value={user.role}
+                      value={user.roleType} // 🔥 user.role -> user.roleType으로 변경
                       onChange={(e) =>
                         handleUserUpdate(userId, e.target.value, user.status)
                       }
@@ -99,21 +99,27 @@ export function AdminUserPage({ onNavigate }) {
                     </select>
                   </div>
 
-                  {/* 상태 수정 (ACTIVE, INACTIVE, WITHDRAWN) */}
+                  {/* 상태 수정 */}
                   <div className="flex items-center gap-1.5 flex-1">
                     <span className="text-[10px] font-bold text-gray-400">
                       상태
                     </span>
                     <select
                       value={user.status}
-                      onChange={(e) =>
-                        handleUserUpdate(userId, user.role, e.target.value)
+                      onChange={
+                        (e) =>
+                          handleUserUpdate(
+                            userId,
+                            user.roleType,
+                            e.target.value,
+                          ) // 🔥 user.role -> user.roleType으로 변경
                       }
                       className="w-full p-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 focus:outline-none"
                     >
                       <option value="ACTIVE">ACTIVE</option>
                       <option value="INACTIVE">INACTIVE</option>
-                      <option value="WITHDRAWN">WITHDRAWN</option>
+                      <option value="SUSPENDED">SUSPENDED</option>{" "}
+                      {/* 백엔드 에러 문구에 맞게 수정 가능 */}
                     </select>
                   </div>
                 </div>
