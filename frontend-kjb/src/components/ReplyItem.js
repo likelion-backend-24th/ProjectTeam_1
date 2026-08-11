@@ -4,8 +4,10 @@ import { useState } from "react";
 import { createReplyComment, deleteReplyComment, getReplyComments } from "@/lib/api/reply";
 import { ApiError } from "@/lib/api/client";
 import { formatRelativeTime } from "@/utils/format";
+import { useToastStore } from "@/store/toastStore";
 
 export function ReplyItem({ reply, currentNickname, isAuthenticated, onDeleteReply, onRequireLogin }) {
+  const showToast = useToastStore((s) => s.showToast);
   const [isOpen, setIsOpen] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -48,8 +50,9 @@ export function ReplyItem({ reply, currentNickname, isAuthenticated, onDeleteRep
       const created = await createReplyComment(reply.id, { content: trimmed });
       setComments((prev) => [...prev, created]);
       setDraft("");
+      showToast("댓글이 등록되었어요.");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "댓글 등록에 실패했어요.");
+      showToast(err instanceof ApiError ? err.message : "댓글 등록에 실패했어요.", "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -57,8 +60,13 @@ export function ReplyItem({ reply, currentNickname, isAuthenticated, onDeleteRep
 
   async function handleDeleteComment(commentId) {
     if (!window.confirm("댓글을 삭제할까요?")) return;
-    await deleteReplyComment(commentId);
-    setComments((prev) => prev.filter((c) => c.id !== commentId));
+    try {
+      await deleteReplyComment(commentId);
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+      showToast("댓글이 삭제되었어요.");
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.message : "댓글 삭제에 실패했어요.", "error");
+    }
   }
 
   return (
