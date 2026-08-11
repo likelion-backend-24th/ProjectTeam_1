@@ -8,7 +8,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# [필수] CD에서 넘겨주는 build-args를 받아 환경변수로 설정
+# [필수] CD에서 넘겨주는 build-args를 받아 환경변수 설정
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 

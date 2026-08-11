@@ -4,11 +4,11 @@ on:
   push:
     branches: [ "feat/Docker" ]
     paths:
-      - 'frontend/**'
+      - 'frontend-kjb/**'
   pull_request:
     branches: [ "feat/Docker" ]
     paths:
-      - 'frontend/**'
+      - 'frontend-kjb/**'
 
 jobs:
   build-and-test:

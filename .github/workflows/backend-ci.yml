@@ -63,7 +63,7 @@ jobs:
           SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/cityfarm?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
           SPRING_DATASOURCE_USERNAME: root
           SPRING_DATASOURCE_PASSWORD: ${{ secrets.DB_PASSWORD }}
-        run: ./gradlew clean build - x
+        run: ./gradlew clean build -x
 
       # 6) 테스트 리포트 보관
       - name: Upload test report
