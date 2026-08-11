@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "feat/Docker" ]
     paths:
-      - 'frontend/**'
+      - 'frontend-kjb/**' # 💡 경로 수정
       - 'docker-compose.yml'
 
 jobs:
@@ -33,12 +33,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 💡 NEXT_PUBLIC_API_URL을 build-args로 전달하도록 수정
       - name: Build & Push image
         uses: docker/build-push-action@v6
         with:
-          context: ./frontend
-          file: ./frontend/Dockerfile
+          context: ./frontend-kjb # 💡 경로 수정
+          file: ./frontend-kjb/Dockerfile # 💡 경로 수정
           push: true
           tags: |
             ${{ steps.string.outputs.image_lower }}:latest
