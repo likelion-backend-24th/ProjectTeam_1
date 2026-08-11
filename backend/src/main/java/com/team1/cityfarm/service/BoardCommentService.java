@@ -4,6 +4,7 @@ import com.team1.cityfarm.dto.BoardCommentRequestDto;
 import com.team1.cityfarm.dto.BoardCommentResponseDto;
 import com.team1.cityfarm.entity.Board;
 import com.team1.cityfarm.entity.BoardComment;
+import com.team1.cityfarm.entity.RoleType;
 import com.team1.cityfarm.entity.User;
 import com.team1.cityfarm.global.exception.CustomError;
 import com.team1.cityfarm.global.exception.CustomException;
@@ -74,7 +75,13 @@ public class BoardCommentService {
         BoardComment comment = boardCommentRepository.findById(commentId)
                 .orElseThrow(() -> new CustomException(CustomError.COMMENT_NOT_FOUND));
 
-        if (!comment.getUser().getId().equals(userId)) {
+        // 요청자 role을 조회해 관리자면 작성자와 무관하게 삭제를 허용
+        User requester = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
+
+        boolean isOwner = comment.getUser().getId().equals(userId);
+        boolean isAdmin = requester.getRoleType() == RoleType.ADMIN;
+        if (!isOwner && !isAdmin) {
             throw new CustomException(CustomError.COMMENT_NOT_OWNER);
         }
 
