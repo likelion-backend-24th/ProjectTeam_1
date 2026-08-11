@@ -1,18 +1,39 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuthStore } from "@/store/authStore";
+import { ApiError } from "@/lib/api/client";
 
 function ProfileView() {
   const profile = useAuthStore((s) => s.profile);
   const logout = useAuthStore((s) => s.logout);
+  const withdraw = useAuthStore((s) => s.withdraw);
   const router = useRouter();
+
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [error, setError] = useState(null);
 
   async function handleLogout() {
     await logout();
     router.replace("/login");
+  }
+
+  async function handleWithdraw() {
+    if (!window.confirm("정말 탈퇴하시겠어요? 이 작업은 되돌릴 수 없어요.")) return;
+
+    setIsWithdrawing(true);
+    setError(null);
+    try {
+      await withdraw();
+      router.replace("/login");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "탈퇴에 실패했어요. 다시 시도해주세요.");
+    } finally {
+      setIsWithdrawing(false);
+    }
   }
 
   return (
@@ -27,12 +48,23 @@ function ProfileView() {
       <ReadonlyField label="닉네임" value={profile?.nickName} />
       <ReadonlyField label="이메일" value={profile?.email} />
 
+      {error && <p className="rounded-lg bg-red-50 px-3.5 py-2.5 text-[13px] text-red-700">{error}</p>}
+
       <button
         type="button"
         onClick={handleLogout}
         className="mt-2 h-[50px] w-full rounded-xl bg-surface text-[15px] font-semibold text-ink"
       >
         로그아웃
+      </button>
+
+      <button
+        type="button"
+        onClick={handleWithdraw}
+        disabled={isWithdrawing}
+        className="h-[46px] w-full text-[13px] font-medium text-ink-muted disabled:opacity-50"
+      >
+        {isWithdrawing ? "탈퇴 처리 중..." : "회원 탈퇴"}
       </button>
     </AppShell>
   );
