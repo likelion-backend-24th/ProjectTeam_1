@@ -1,105 +1,133 @@
 import React, { useEffect, useState } from "react";
-import api from "../api/axiosInstance";
 import { useAuthStore } from "../stores/useAuthStore";
+import api from "../api/axiosInstance";
 
 export function ProfilePage({ onNavigate }) {
-  const [profile, setProfile] = useState(null);
+  const { accessToken, name, nickName, email, roleType, setProfile, logout } =
+    useAuthStore();
   const [loading, setLoading] = useState(true);
-  const { logout } = useAuthStore();
+
+  const isAdmin = roleType === "ADMIN";
 
   useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
-    try {
-      const res = await api.get("/api/profile");
-      const data = res.data.data || res.data;
-      setProfile(data);
-    } catch (err) {
-      alert("프로필 정보를 불러오는 데 실패했습니다.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 회원 탈퇴 처리 (DELETE /api/auth/withdraw)
-  const handleWithdraw = async () => {
-    if (
-      !window.confirm(
-        "정말로 탈퇴하시겠습니까? 탈퇴 후에는 계정을 복구할 수 없습니다.",
-      )
-    )
+    if (!accessToken) {
+      alert("로그인이 필요합니다.");
+      onNavigate("login");
       return;
-
-    try {
-      await api.delete("/api/auth/withdraw");
-      alert("회원 탈퇴가 완료되었습니다.");
-      await logout();
-      onNavigate("boardList");
-    } catch (err) {
-      alert(
-        "회원 탈퇴 실패: " +
-          (err.response?.data?.message || "오류가 발생했습니다."),
-      );
     }
-  };
 
-  if (loading)
-    return <div className="p-4 text-center text-gray-500">로딩 중...</div>;
-  if (!profile)
-    return (
-      <div className="p-4 text-center text-gray-500">
-        프로필 정보를 찾을 수 없습니다.
-      </div>
-    );
+    const fetchProfile = async () => {
+      try {
+        setLoading(true);
+        // GET /api/profile
+        const res = await api.get("/api/profile");
+        const data = res.data.data || res.data;
+
+        // name(성명), nickName(활동명), email(가입계정명) 업데이트
+        setProfile({
+          name: data.name,
+          nickName: data.nickName,
+          email: data.email,
+        });
+      } catch (err) {
+        console.error("프로필 조회 실패:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [accessToken]);
+
+  const handleLogout = () => {
+    logout();
+    alert("로그아웃되었습니다.");
+    onNavigate("login");
+  };
 
   return (
-    <div className="py-2 space-y-4">
-      <h2 className="text-xl font-bold text-gray-800 mb-4">내 프로필</h2>
+    <div className="p-4 space-y-6">
+      <div className="flex items-center justify-between pt-1 border-b border-gray-100 pb-3">
+        <h1 className="text-base font-bold text-gray-900">내 프로필</h1>
+        <button
+          onClick={handleLogout}
+          className="text-xs font-bold text-red-500 hover:text-red-700"
+        >
+          로그아웃
+        </button>
+      </div>
 
-      <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-        <div>
-          <label className="block text-xs font-bold text-gray-400 mb-1">
-            이름
-          </label>
-          <p className="text-base font-semibold text-gray-800">
-            {profile.name || "-"}
-          </p>
-        </div>
-
-        <div className="border-t border-gray-100 pt-3">
-          <label className="block text-xs font-bold text-gray-400 mb-1">
-            닉네임
-          </label>
-          <p className="text-base font-semibold text-gray-800">
-            {profile.nickName || profile.nickname || "-"}
-          </p>
-        </div>
-
-        <div className="border-t border-gray-100 pt-3">
-          <label className="block text-xs font-bold text-gray-400 mb-1">
-            이메일
-          </label>
-          <p className="text-base font-semibold text-gray-800">
-            {profile.email || "-"}
-          </p>
+      <div className="flex justify-center py-2">
+        <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center text-2xl font-bold text-blue-600">
+          {nickName ? nickName[0].toUpperCase() : "U"}
         </div>
       </div>
 
-      <div className="space-y-2 pt-2">
-        <button
-          onClick={() => onNavigate("boardList")}
-          className="w-full bg-gray-100 text-gray-600 py-3 rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors"
-        >
-          목록으로 돌아가기
-        </button>
+      <div className="space-y-4 pt-2">
+        <div>
+          <label className="block text-xs font-bold text-gray-400 mb-1.5">
+            활동명 (닉네임)
+          </label>
+          <div className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800">
+            {loading ? "불러오는 중..." : nickName || "-"}
+          </div>
+        </div>
 
+        <div>
+          <label className="block text-xs font-bold text-gray-400 mb-1.5">
+            성명 / 가입 계정
+          </label>
+          <div className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800">
+            {loading
+              ? "불러오는 중..."
+              : `${name || "미등록"} (${email || "-"})`}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-gray-400 mb-1.5">
+            계정 권한 (JWT role)
+          </label>
+          <div className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 flex justify-between items-center">
+            <span>{isAdmin ? "관리자 (ADMIN)" : "일반 회원 (USER)"}</span>
+            {isAdmin && (
+              <span className="px-2 py-0.5 bg-red-100 text-red-600 rounded text-[10px] font-bold">
+                ADMIN
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* {isAdmin && (
+        <div className="pt-2">
+          <button
+            onClick={() => onNavigate("admin")}
+            className="w-full py-3.5 bg-gray-900 text-white font-bold text-xs rounded-xl hover:bg-black transition-colors shadow-sm"
+          >
+            🛠 관리자 페이지로 이동
+          </button>
+        </div>
+      )} */}
+
+      <div className="pt-4 border-t border-gray-100">
         <button
-          onClick={handleWithdraw}
-          className="w-full bg-red-50 text-red-500 py-3 rounded-xl font-bold text-xs hover:bg-red-100 transition-colors border border-red-100"
+          onClick={async () => {
+            if (confirm("정말로 탈퇴하시겠습니까?")) {
+              try {
+                await api.delete("/api/auth/withdraw");
+                alert("탈퇴되었습니다.");
+              } catch (err) {
+                console.error("탈퇴 처리 실패:", err);
+              } finally {
+                logout();
+                onNavigate("login");
+              }
+            }
+          }}
+          className="w-full py-3 bg-gray-100 text-gray-500 font-bold text-xs rounded-xl hover:bg-red-50 hover:text-red-600 transition-colors"
         >
-          회원 탈퇴
+          탈퇴하기
         </button>
       </div>
     </div>
