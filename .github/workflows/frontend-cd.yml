@@ -81,7 +81,7 @@ jobs:
             docker pull "$IMAGE_NAME":latest
             docker compose up -d frontend
             
-            # 4) 구버전 이미지 정돈
+            # 4) 구버전 이미지 정돈함
             docker image prune -f
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
