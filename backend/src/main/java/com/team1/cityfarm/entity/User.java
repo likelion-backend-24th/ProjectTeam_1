@@ -50,6 +50,13 @@ public class User {
     @Column
     private LocalDateTime updatedAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "provider", length = 20) // null 허용 (nullable = true가 기본값)
+    private ProviderType provider; // GOOGLE, KAKAO, NAVER, LOCAL 등
+
+    @Column(name = "provider_id")
+    private String providerId;
+
     public void updateStatus(Status status){
         if (status == null) {
             throw new CustomException(CustomError.USER_STATUS_ERROR);
@@ -65,5 +72,8 @@ public class User {
     }
 
 
-
+    public void linkSocial(ProviderType provider, String providerId) {
+        this.provider = provider;
+        this.providerId = providerId;
+    }
 }
