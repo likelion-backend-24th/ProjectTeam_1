@@ -24,7 +24,7 @@ public class User {
     @Column(nullable = false, length = 50, unique = true)
     private String email;
 
-    @Column(nullable = true) // 소셜 로그인 전용 가입자는 null 허용
+    @Column(nullable = false)
     private String password;
 
     @Column(length = 50, nullable = false, unique = true)

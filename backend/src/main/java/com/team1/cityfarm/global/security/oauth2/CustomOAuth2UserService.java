@@ -11,6 +11,7 @@ import com.team1.cityfarm.entity.User;
 import com.team1.cityfarm.repository.SocialAccountRepository;
 import com.team1.cityfarm.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -27,6 +28,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final UserRepository userRepository;
     private final SocialAccountRepository socialAccountRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
@@ -78,7 +80,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                                                 .email(email)
                                                 .name(userInfo.getName() != null ? userInfo.getName() : tempNickname)
                                                 .nickname(tempNickname)
-                                                .password(null)
+                                                .password(passwordEncoder.encode("OAUTH_USER_TEMP_PASSWORD"))
                                                 .roleType(RoleType.USER)
                                                 .build()
                                 );
@@ -92,7 +94,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                                     .providerId(providerId)
                                     .build()
                     );
-
                     return user;
                 });
     }
