@@ -1,7 +1,11 @@
 package com.team1.cityfarm.global.config;
 
-import com.team1.cityfarm.global.security.*;
-import com.team1.cityfarm.service.CustomOAuth2UserService; // 위치한 패키지에 맞춰 import
+import com.team1.cityfarm.global.security.filter.JwtAuthenticationFilter;
+import com.team1.cityfarm.global.security.handler.CustomAccessDeniedHandler;
+import com.team1.cityfarm.global.security.handler.CustomAuthenticationEntryPoint;
+import com.team1.cityfarm.global.security.oauth2.CustomOAuth2UserService;
+import com.team1.cityfarm.global.security.jwt.JwtProvider;
+import com.team1.cityfarm.global.security.handler.OAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,8 +29,8 @@ public class SecurityConfig {
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
-    // 1. 작성한 CustomOAuth2UserService 주입 추가
     private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler; // 1. 핸들러 주입 추가!
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -45,8 +49,8 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
                                 "/h2-console/**",
-                                "/login/oauth2/code/**", // 2-1. OAuth2 Redirect URI 경로 허용
-                                "/oauth2/**"              // 2-2. OAuth2 Authorization 요청 경로 허용
+                                "/login/oauth2/code/**",
+                                "/oauth2/**"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/board", "/api/board/**")
                         .permitAll()
@@ -54,15 +58,16 @@ public class SecurityConfig {
                         .hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
-                // 3. OAuth2 로그인 설정 추가
+                // 2. OAuth2 로그인에 successHandler 연결!
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(customOAuth2UserService)
                         )
+                        .successHandler(oAuth2SuccessHandler) // 이 부분 추가!
                 )
                 .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(customAuthenticationEntryPoint) // 401 Unauthorized
-                        .accessDeniedHandler(customAccessDeniedHandler)           // 403 Forbidden
+                        .authenticationEntryPoint(customAuthenticationEntryPoint)
+                        .accessDeniedHandler(customAccessDeniedHandler)
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

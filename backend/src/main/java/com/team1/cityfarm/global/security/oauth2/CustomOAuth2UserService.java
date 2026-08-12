@@ -1,4 +1,4 @@
-package com.team1.cityfarm.service;
+package com.team1.cityfarm.global.security.oauth2;
 
 import com.team1.cityfarm.dto.oauth2.GoogleUserInfo;
 import com.team1.cityfarm.dto.oauth2.OAuth2UserInfo;
@@ -6,7 +6,6 @@ import com.team1.cityfarm.entity.RoleType;
 import com.team1.cityfarm.entity.User;
 import com.team1.cityfarm.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -15,14 +14,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
@@ -44,7 +41,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             throw new OAuth2AuthenticationException("지원하지 않는 소셜 로그인 제공자입니다.");
         }
 
-        // 4. DB 저장 또는 기존 회원 정보 업데이트
+        // 4. DB 저장 또는 기존 회원 정보 업데이트 (이메일 같을 시 자동 연동)
         User user = saveOrUpdate(userInfo);
 
         // 5. OAuth2User 객체 반환 (Spring Security가 SecurityContext에 저장)
@@ -58,7 +55,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     entity.setName(userInfo.getName());
                     return entity;
                 })
-                // 2. 소셜 연동이 안 되어 있는 경우: 이메일로 기존 회원 검색
+                // 2. 소셜 연동이 안 되어 있는 경우: 이메일로 기존 회원 검색하여 자동 연동
                 .orElseGet(() -> userRepository.findByEmail(userInfo.getEmail())
                         .map(existingUser -> {
                             existingUser.linkSocial(userInfo.getProvider(), userInfo.getProviderId());
@@ -69,7 +66,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                                 User.builder()
                                         .email(userInfo.getEmail())
                                         .name(userInfo.getName())
-                                        .password(passwordEncoder.encode(UUID.randomUUID().toString()))
                                         .provider(userInfo.getProvider())
                                         .providerId(userInfo.getProviderId())
                                         .roleType(RoleType.USER)

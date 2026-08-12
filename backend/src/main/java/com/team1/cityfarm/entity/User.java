@@ -24,7 +24,6 @@ public class User {
     @Column(nullable = false, length = 50, unique = true)
     private String email;
 
-    @Column(nullable = false)
     private String password;
 
     @Column(length = 50, nullable = false, unique = true)
@@ -52,7 +51,7 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "provider", length = 20) // null 허용 (nullable = true가 기본값)
-    private ProviderType provider; // GOOGLE, KAKAO, NAVER, LOCAL 등
+    private ProviderType provider; // GOOGLE, KAKAO, NAVER
 
     @Column(name = "provider_id")
     private String providerId;

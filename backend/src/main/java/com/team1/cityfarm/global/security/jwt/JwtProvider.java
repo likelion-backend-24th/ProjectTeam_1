@@ -1,4 +1,4 @@
-package com.team1.cityfarm.global.security;
+package com.team1.cityfarm.global.security.jwt;
 
 import com.team1.cityfarm.entity.RoleType;
 import io.jsonwebtoken.Claims;
