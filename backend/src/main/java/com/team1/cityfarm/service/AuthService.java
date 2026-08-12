@@ -5,15 +5,17 @@ import com.team1.cityfarm.dto.LoginResponseDto;
 import com.team1.cityfarm.dto.SignupRequestDto;
 import com.team1.cityfarm.dto.oauth2.OAuth2UserInfo;
 import com.team1.cityfarm.entity.RefreshToken;
+import com.team1.cityfarm.entity.SocialAccount;
 import com.team1.cityfarm.entity.User;
 import com.team1.cityfarm.global.exception.CustomError;
 import com.team1.cityfarm.global.exception.CustomException;
 import com.team1.cityfarm.global.security.jwt.JwtProvider;
 import com.team1.cityfarm.repository.RefreshTokenRepository;
+import com.team1.cityfarm.repository.SocialAccountRepository;
 import com.team1.cityfarm.repository.UserRepository;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AuthService {
     private final UserRepository userRepository;
+    private final SocialAccountRepository socialAccountRepository; // 1. SocialAccountRepository 추가
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
     private final RefreshTokenService refreshTokenService;
@@ -66,7 +69,7 @@ public class AuthService {
 
         // 소셜 로그인 전용 계정(비밀번호 없음) 예외 처리
         if (user.getPassword() == null) {
-            throw new CustomException(CustomError.AUTH_LOGIN_FAILED); // 또는 전용 CustomError 정의
+            throw new CustomException(CustomError.AUTH_LOGIN_FAILED);
         }
 
         if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
@@ -116,7 +119,31 @@ public class AuthService {
         return new LoginResponseDto(newAccessToken, refreshToken);
     }
 
-    //로그아웃
+    // 로그인된 사용자의 소셜 계정 수동 연동
+    @Transactional
+    public void linkSocialToLoginUser(Long userId, OAuth2UserInfo userInfo) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
+
+        // 이미 연동되어 있는 소셜 계정인지 확인
+        boolean isAlreadyLinked = socialAccountRepository
+                .findByProviderAndProviderId(userInfo.getProvider(), userInfo.getProviderId())
+                .isPresent();
+
+        if (isAlreadyLinked) {
+            throw new CustomException(CustomError.AUTH_LOGIN_FAILED); // 필요에 따라 적절한 CustomError 지정
+        }
+
+        SocialAccount socialAccount = SocialAccount.builder()
+                .user(user)
+                .provider(userInfo.getProvider())
+                .providerId(userInfo.getProviderId())
+                .build();
+
+        socialAccountRepository.save(socialAccount);
+    }
+
+    // 로그아웃
     @Transactional
     public void logout(Long userId) {
         // DB에서 해당 유저의 Refresh Token 삭제
@@ -134,15 +161,5 @@ public class AuthService {
 
         // 3. 회원 탈퇴 처리
         userRepository.delete(user);
-    }
-
-    // 회원가입 된 이메일과 다른 소셜 ID로 수동 연동할 경우 사용
-    @Transactional
-    public void linkSocialToLoginUser(Long userId, OAuth2UserInfo userInfo) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
-
-        // 로그인된 기존 유저의 provider, providerId를 새로운 소셜 정보로 덮어씌움
-        user.linkSocial(userInfo.getProvider(), userInfo.getProviderId());
     }
 }
