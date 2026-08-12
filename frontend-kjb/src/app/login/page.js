@@ -83,6 +83,36 @@ function LoginForm() {
           </button>
         </form>
 
+        {/* 소셜 로그인 영역 추가 */}
+        <div className="flex flex-col gap-3">
+          <div className="relative flex py-2 items-center">
+            <div className="flex-grow border-t border-surface"></div>
+            <span className="flex-shrink mx-4 text-xs text-ink-soft">또는 소셜 로그인</span>
+            <div className="flex-grow border-t border-surface"></div>
+          </div>
+
+          <a
+            href="http://54.86.192.52:8080/oauth2/authorization/google"
+            className="flex h-[50px] w-full items-center justify-center gap-2 rounded-xl border border-surface bg-white text-[15px] font-semibold text-ink hover:bg-surface transition-colors"
+          >
+            <span>구글로 시작하기</span>
+          </a>
+
+          <a
+            href="http://54.86.192.52:8080/oauth2/authorization/kakao"
+            className="flex h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-[#FEE500] text-[15px] font-semibold text-[#191919] hover:opacity-90 transition-colors"
+          >
+            <span>카카오로 시작하기</span>
+          </a>
+
+          <a
+            href="http://54.86.192.52:8080/oauth2/authorization/naver"
+            className="flex h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-[#03C75A] text-[15px] font-semibold text-white hover:opacity-90 transition-colors"
+          >
+            <span>네이버로 시작하기</span>
+          </a>
+        </div>
+
         <div className="flex justify-center gap-1.5 text-sm text-ink-soft">
           <span>아직 계정이 없으신가요?</span>
           <Link className="font-bold text-ink" href="/signup">
