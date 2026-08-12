@@ -13,11 +13,13 @@ import java.util.Map;
 @Getter
 public class CustomOAuth2User implements OAuth2User {
 
+    private final Long id;
     private final String email;
     private final String role;
     private final Map<String, Object> attributes;
 
     public CustomOAuth2User(User user, Map<String, Object> attributes) {
+        this.id = user.getId();
         this.email = user.getEmail();
         this.role = user.getRoleType().name();
         this.attributes = attributes;
