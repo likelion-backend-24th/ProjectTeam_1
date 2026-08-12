@@ -92,7 +92,7 @@ function LoginForm() {
           </div>
 
           <a
-            href="http://54.86.192.52:8080/oauth2/authorization/google"
+            href="http://54.86.192.52.nip.io:8080/oauth2/authorization/google"
             className="flex h-[50px] w-full items-center justify-center gap-2 rounded-xl border border-surface bg-white text-[15px] font-semibold text-ink hover:bg-surface transition-colors"
           >
             <span>구글로 시작하기</span>

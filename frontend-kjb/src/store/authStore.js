@@ -41,6 +41,18 @@ export const useAuthStore = create((set, get) => ({
     set({ profile, isAuthenticated: true, isAdmin: isAdminToken(res.accessToken) });
   },
 
+  socialLogin: async (accessToken) => {
+    setAccessToken(accessToken);
+    try {
+      const profile = await getMyProfile();
+      set({ profile, isAuthenticated: true, isAdmin: isAdminToken(accessToken), isLoading: false });
+    } catch {
+      clearAccessToken();
+      set({ isAuthenticated: false, profile: null, isAdmin: false, isLoading: false });
+      throw new Error("소셜 로그인 프로필을 불러오지 못했습니다.");
+    }
+  },
+
   logout: async () => {
     try {
       await logoutApi();
