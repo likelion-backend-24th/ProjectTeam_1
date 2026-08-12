@@ -1,9 +1,14 @@
 package com.team1.cityfarm.global.security.oauth2;
 
 import com.team1.cityfarm.dto.oauth2.GoogleUserInfo;
+import com.team1.cityfarm.dto.oauth2.KakaoUserInfo;
+import com.team1.cityfarm.dto.oauth2.NaverUserInfo;
 import com.team1.cityfarm.dto.oauth2.OAuth2UserInfo;
+import com.team1.cityfarm.entity.ProviderType;
 import com.team1.cityfarm.entity.RoleType;
+import com.team1.cityfarm.entity.SocialAccount;
 import com.team1.cityfarm.entity.User;
+import com.team1.cityfarm.repository.SocialAccountRepository;
 import com.team1.cityfarm.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -14,12 +19,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final UserRepository userRepository;
+    private final SocialAccountRepository socialAccountRepository;
 
     @Override
     @Transactional
@@ -35,42 +42,58 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         OAuth2UserInfo userInfo = null;
         if ("google".equalsIgnoreCase(registrationId)) {
             userInfo = new GoogleUserInfo(attributes);
+        } else if ("kakao".equalsIgnoreCase(registrationId)) {
+            userInfo = new KakaoUserInfo(attributes);
+        } else if ("naver".equalsIgnoreCase(registrationId)) {
+            userInfo = new NaverUserInfo(attributes);
         }
 
         if (userInfo == null) {
             throw new OAuth2AuthenticationException("지원하지 않는 소셜 로그인 제공자입니다.");
         }
 
-        // 4. DB 저장 또는 기존 회원 정보 업데이트 (이메일 같을 시 자동 연동)
+        // 4. DB 저장 또는 기존 회원 정보 업데이트 및 소셜 계정 연동
         User user = saveOrUpdate(userInfo);
 
-        // 5. OAuth2User 객체 반환 (Spring Security가 SecurityContext에 저장)
-        return oAuth2User;
+        // 5. CustomOAuth2User 반환 (OAuth2SuccessHandler에서 oAuth2User.getUser()를 직접 꺼낼 수 있게 설정)
+        return new CustomOAuth2User(user, attributes);
     }
 
     private User saveOrUpdate(OAuth2UserInfo userInfo) {
-        // 1. provider + providerId로 기존 소셜 회원 검색
-        return userRepository.findByProviderAndProviderId(userInfo.getProvider(), userInfo.getProviderId())
-                .map(entity -> {
-                    entity.setName(userInfo.getName());
-                    return entity;
-                })
-                // 2. 소셜 연동이 안 되어 있는 경우: 이메일로 기존 회원 검색하여 자동 연동
-                .orElseGet(() -> userRepository.findByEmail(userInfo.getEmail())
-                        .map(existingUser -> {
-                            existingUser.linkSocial(userInfo.getProvider(), userInfo.getProviderId());
-                            return existingUser;
-                        })
-                        // 3. 신규 회원일 경우 자동 가입
-                        .orElseGet(() -> userRepository.save(
-                                User.builder()
-                                        .email(userInfo.getEmail())
-                                        .name(userInfo.getName())
-                                        .provider(userInfo.getProvider())
-                                        .providerId(userInfo.getProviderId())
-                                        .roleType(RoleType.USER)
-                                        .build()
-                        ))
-                );
+        ProviderType provider = userInfo.getProvider();
+        String providerId = userInfo.getProviderId();
+        String email = userInfo.getEmail();
+
+        // 1. SocialAccount 테이블에서 기존 연동 계정 조회
+        return socialAccountRepository.findByProviderAndProviderId(provider, providerId)
+                .map(SocialAccount::getUser)
+                .orElseGet(() -> {
+                    // 2. 연동된 소셜 계정이 없으면, 이메일로 기존 User 조회
+                    User user = userRepository.findByEmail(email)
+                            .orElseGet(() -> {
+                                // 3. 신규 회원일 경우 User 생성
+                                String tempNickname = "user_" + UUID.randomUUID().toString().substring(0, 8);
+                                return userRepository.save(
+                                        User.builder()
+                                                .email(email)
+                                                .name(userInfo.getName() != null ? userInfo.getName() : tempNickname)
+                                                .nickname(tempNickname)
+                                                .password(null)
+                                                .roleType(RoleType.USER)
+                                                .build()
+                                );
+                            });
+
+                    // 4. 조회되거나 새로 생성된 User에 SocialAccount 연동 저장
+                    socialAccountRepository.save(
+                            SocialAccount.builder()
+                                    .user(user)
+                                    .provider(provider)
+                                    .providerId(providerId)
+                                    .build()
+                    );
+
+                    return user;
+                });
     }
 }

@@ -24,6 +24,7 @@ public class User {
     @Column(nullable = false, length = 50, unique = true)
     private String email;
 
+    @Column(nullable = true) // 소셜 로그인 전용 가입자는 null 허용
     private String password;
 
     @Column(length = 50, nullable = false, unique = true)
@@ -44,17 +45,9 @@ public class User {
     @Column(updatable = false, name = "created_at")
     private LocalDateTime createdAt;
 
-    // 회원 수정 시 사용 예정이며 사용안할 경우 삭제
     @UpdateTimestamp
-    @Column
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "provider", length = 20) // null 허용 (nullable = true가 기본값)
-    private ProviderType provider; // GOOGLE, KAKAO, NAVER
-
-    @Column(name = "provider_id")
-    private String providerId;
 
     public void updateStatus(Status status){
         if (status == null) {
@@ -68,11 +61,5 @@ public class User {
             throw new CustomException(CustomError.USER_STATUS_ERROR);
         }
         this.roleType = roleType;
-    }
-
-
-    public void linkSocial(ProviderType provider, String providerId) {
-        this.provider = provider;
-        this.providerId = providerId;
     }
 }
