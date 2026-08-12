@@ -14,7 +14,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update # 운영 DB 테이블 구조 유지/업데이트
-    show-sql: false    # 운영 환경에서는 로그 절약을 위해 false 권장
+    show-sql: false    # 운영 환경에서는 로그 절약을 위해 false 권장함
     properties:
       hibernate:
         format_sql: false
