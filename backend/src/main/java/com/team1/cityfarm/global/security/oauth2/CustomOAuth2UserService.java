@@ -64,20 +64,27 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private User saveOrUpdate(OAuth2UserInfo userInfo) {
         ProviderType provider = userInfo.getProvider();
         String providerId = userInfo.getProviderId();
-        String email = userInfo.getEmail();
 
-        // 1. SocialAccount 테이블에서 기존 연동 계정 조회
+        // 1. 이메일이 없거나 비어있는 경우 (카카오 등 권한 없는 경우 대응)
+        String email = userInfo.getEmail();
+        if (email == null || email.trim().isEmpty()) {
+            email = provider.name().toLowerCase() + "_" + providerId + "@social.local";
+        }
+
+        final String finalEmail = email; // 람다식 내 사용을 위한 final 변수
+
+        // 2. SocialAccount 테이블에서 기존 연동 계정 조회
         return socialAccountRepository.findByProviderAndProviderId(provider, providerId)
                 .map(SocialAccount::getUser)
                 .orElseGet(() -> {
-                    // 2. 연동된 소셜 계정이 없으면, 이메일로 기존 User 조회
-                    User user = userRepository.findByEmail(email)
+                    // 3. 연동된 소셜 계정이 없으면, 이메일로 기존 User 조회
+                    User user = userRepository.findByEmail(finalEmail)
                             .orElseGet(() -> {
-                                // 3. 신규 회원일 경우 User 생성
+                                // 4. 신규 회원일 경우 User 생성
                                 String tempNickname = "user_" + UUID.randomUUID().toString().substring(0, 8);
                                 return userRepository.save(
                                         User.builder()
-                                                .email(email)
+                                                .email(finalEmail)
                                                 .name(userInfo.getName() != null ? userInfo.getName() : tempNickname)
                                                 .nickname(tempNickname)
                                                 .password(passwordEncoder.encode("OAUTH_USER_TEMP_PASSWORD"))
@@ -86,7 +93,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                                 );
                             });
 
-                    // 4. 조회되거나 새로 생성된 User에 SocialAccount 연동 저장
+                    // 5. 조회되거나 새로 생성된 User에 SocialAccount 연동 저장
                     socialAccountRepository.save(
                             SocialAccount.builder()
                                     .user(user)
