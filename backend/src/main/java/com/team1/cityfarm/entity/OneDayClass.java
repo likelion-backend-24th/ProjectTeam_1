@@ -15,34 +15,34 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "class_enrollments")
-public class ClassEnrollment {
+@Table(name = "classes")
+public class OneDayClass {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "class_id", nullable = false)
-    private OneDayClass oneDayClass;
+    @JoinColumn(name = "host_id", nullable = false)
+    private User host;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @Column(nullable = false, length = 100)
+    private String title;
 
-    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 1000)
+    private String description;
+
     @Column(nullable = false)
-    private EnrollmentStatus status;
+    private LocalDateTime date;
 
-    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 200)
+    private String location;
+
     @Column(nullable = false)
-    private PaymentType paymentType;
+    private int capacity;
 
-    @JoinColumn(name = "order_id")
-    private Long orderId;
-
-    @JoinColumn(name = "subscription_id")
-    private Long subscriptionId;
+    @Column(nullable = false)
+    private int price;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
@@ -50,5 +50,4 @@ public class ClassEnrollment {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
-
 }
