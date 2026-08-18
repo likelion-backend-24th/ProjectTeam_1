@@ -114,7 +114,7 @@ export default function BoardListPage() {
       <div className="relative flex flex-col gap-1 overflow-hidden rounded-[18px] bg-gradient-to-br from-[#1a2e22] via-[#2f5138] to-[#3f6b48] px-5 py-[22px] text-white">
         <span className="text-xs font-bold tracking-wide text-[#c8e6cf]">도시 귀농 프로젝트</span>
         <p className="relative z-10 max-w-[80%] text-[19px] leading-snug font-extrabold break-words">
-          {profile ? `${profile.nickName}님, 오늘도 반가워요!` : "이웃들과 텃밭 이야기를 나눠보세요"}
+          {profile ? `${profile.nickname}님, 오늘도 반가워요!` : "이웃들과 텃밭 이야기를 나눠보세요"}
         </p>
         <p className="relative z-10 mt-0.5 max-w-[80%] text-[13px] text-white/80">공지, 질문, 자유 이야기를 한곳에서 확인해요</p>
         <span aria-hidden className="absolute -right-1.5 -bottom-3.5 rotate-[-8deg] text-[72px] opacity-20">

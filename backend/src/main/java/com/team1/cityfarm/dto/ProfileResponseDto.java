@@ -12,14 +12,14 @@ public class ProfileResponseDto {
     private String name;
 
     @Schema(description = "사용자 닉네임", example = "파머123")
-    private String nickName;
+    private String nickname;
 
     @Schema(description = "사용자 이메일", example = "user@cityfarm.com")
     private String email;
 
     public ProfileResponseDto(User user) {
         this.name = user.getName();
-        this.nickName = user.getNickname();
+        this.nickname = user.getNickname();
         this.email = user.getEmail();
     }
 }
