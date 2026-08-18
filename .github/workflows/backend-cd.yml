@@ -21,9 +21,12 @@ jobs:
       - uses: actions/checkout@v4
 
       # 2) GitHub Secrets의 내용으로 application-secret.yml 파일 생성
+      # 2) GitHub Secrets의 내용으로 application-secret.yml 파일 생성
       - name: Create application-secret.yml
         run: |
-          echo "${{ secrets.APPLICATION_SECRET_YML }}" > ./backend/src/main/resources/application-secret.yml
+          cat << 'EOF' > ./backend/src/main/resources/application-secret.yml
+          ${{ secrets.APPLICATION_SECRET_YML }}
+          EOF
 
       # 1-1) GitHub 계정/레포명을 전부 소문자로 변환 (GHCR 필수 규격)
       - name: Lowercase Repository Name

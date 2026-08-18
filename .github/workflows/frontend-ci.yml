@@ -1,4 +1,4 @@
-name: frontend-ci.yml
+name: frontend-CI.yml
 
 on:
   push:
