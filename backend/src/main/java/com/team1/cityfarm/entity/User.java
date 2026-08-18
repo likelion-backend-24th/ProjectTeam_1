@@ -45,9 +45,8 @@ public class User {
     @Column(updatable = false, name = "created_at")
     private LocalDateTime createdAt;
 
-    // 회원 수정 시 사용 예정이며 사용안할 경우 삭제
     @UpdateTimestamp
-    @Column
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     public void updateStatus(Status status){
@@ -63,7 +62,4 @@ public class User {
         }
         this.roleType = roleType;
     }
-
-
-
 }
