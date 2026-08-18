@@ -6,7 +6,10 @@ export function getMyProfile() {
 
 export function updateProfile(payload) {
   return apiRequest("/api/profile", {
-    method: "PATCH", // 서버 규격에 따라 PUT일 경우 수정해주세요
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify(payload),
   });
 }

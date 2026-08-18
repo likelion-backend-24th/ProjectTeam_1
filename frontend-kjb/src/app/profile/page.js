@@ -20,7 +20,7 @@ function ProfileView() {
   
   // 프로필 수정 상태 관리
   const [isEditing, setIsEditing] = useState(false);
-  const [nickNameInput, setNickNameInput] = useState(profile?.nickName ?? "");
+  const [nicknameInput, setNicknameInput] = useState(profile?.nickname ?? "");
   const [isSaving, setIsSaving] = useState(false);
 
   async function handleLogout() {
@@ -45,21 +45,21 @@ function ProfileView() {
 
   // 수정 모드 진입
   function handleStartEdit() {
-    setNickNameInput(profile?.nickName ?? "");
+    setNicknameInput(profile?.nickname ?? "");
     setIsEditing(true);
   }
 
   // 수정 취소
   function handleCancelEdit() {
     setIsEditing(false);
-    setNickNameInput(profile?.nickName ?? "");
+    setNicknameInput(profile?.nickname ?? "");
   }
 
   // 닉네임 저장
   async function handleSaveProfile() {
-    console.log("1. 저장 버튼 클릭됨, 입력값:", nickNameInput);
+    console.log("1. 저장 버튼 클릭됨, 입력값:", nicknameInput);
 
-    if (!nickNameInput.trim()) {
+    if (!nicknameInput.trim()) {
       showToast("닉네임을 입력해주세요.", "error");
       return;
     }
@@ -67,7 +67,7 @@ function ProfileView() {
     setIsSaving(true);
     try {
       console.log("2. API 호출 직전");
-      await updateProfile({ nickName: nickNameInput });
+      await updateProfile({ nickname: nicknameInput });
       console.log("3. API 호출 성공");
       
       showToast("닉네임이 수정되었어요.");
@@ -126,13 +126,13 @@ function ProfileView() {
 
         {!isEditing ? (
           <div className="w-full rounded-xl bg-surface px-4 py-3.5 text-[15px]">
-            {profile?.nickName}
+            {profile?.nickname}
           </div>
         ) : (
           <input
             type="text"
-            value={nickNameInput}
-            onChange={(e) => setNickNameInput(e.target.value)}
+            value={nicknameInput}
+            onChange={(e) => setNicknameInput(e.target.value)}
             placeholder="변경할 닉네임을 입력하세요"
             className="w-full rounded-xl bg-surface px-4 py-3.5 text-[15px] outline-none ring-2 ring-primary focus:ring-2"
             autoFocus
