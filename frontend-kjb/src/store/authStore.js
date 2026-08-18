@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { clearAccessToken, getAccessToken, setAccessToken } from "@/lib/api/client";
-import { getMyProfile } from "@/lib/api/profile";
+import { getMyProfile, updateProfile as updateProfileApi } from "@/lib/api/profile"; // 👈 이 부분 추가
 import { login as loginApi, logout as logoutApi, withdraw as withdrawApi } from "@/lib/api/auth";
 import { decodeJwtPayload } from "@/lib/jwt";
 
@@ -69,12 +69,9 @@ export const useAuthStore = create((set, get) => ({
     set({ isAuthenticated: false, profile: null, isAdmin: false });
   },
 
-  // 👇 닉네임 등 프로필 수정을 위한 액션 추가
   updateProfile: async (payload) => {
-    // 1. 서버에 프로필 수정 요청 (서버 구현에 맞게 함수명/파라미터 조정 필요)
     const updatedProfile = await updateProfileApi(payload);
     
-    // 2. 스토어 내부의 profile 상태를 갱신 (서버 응답값 또는 기존 프로필과 병합)
     set((state) => ({
       profile: updatedProfile ?? { ...state.profile, ...payload },
     }));
