@@ -10,7 +10,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
-@Entity
+@Entity@Table
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
@@ -24,17 +24,22 @@ public class Order {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    private Long amount;
+    private Integer amount;
 
     @Column(unique = true, name = "merchant_order_id")
     private String merchantOrderId;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private OrderType orderType;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private OrderStatus orderStatus;
 
-    @Column(name = "subscription_id")
-    private Long subscriptionId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subscription_id")
+    private Subscription subscription;
 
     @CreationTimestamp
     @Column(updatable = false, name = "created_at")
