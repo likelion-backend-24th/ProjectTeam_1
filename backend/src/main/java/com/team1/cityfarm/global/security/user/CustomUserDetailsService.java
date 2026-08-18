@@ -1,4 +1,4 @@
-package com.team1.cityfarm.global.security;
+package com.team1.cityfarm.global.security.user;
 
 import com.team1.cityfarm.entity.User;
 import com.team1.cityfarm.global.exception.CustomError;

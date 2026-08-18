@@ -1,4 +1,4 @@
-package com.team1.cityfarm.global.security;
+package com.team1.cityfarm.global.security.user;
 
 import com.team1.cityfarm.entity.RoleType;
 import com.team1.cityfarm.entity.Status;

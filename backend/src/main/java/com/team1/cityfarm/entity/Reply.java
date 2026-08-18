@@ -17,6 +17,7 @@ public class Reply {
     @Column(nullable = false)
     private String content;
 
+    @Builder.Default
     @Column(name = "is_adopted", nullable = false)
     private Boolean isAdopted = false;
 

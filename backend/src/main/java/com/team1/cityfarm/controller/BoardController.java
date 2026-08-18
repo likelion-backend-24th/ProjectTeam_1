@@ -4,7 +4,7 @@ import com.team1.cityfarm.dto.BoardRequestDto;
 import com.team1.cityfarm.dto.BoardResponseDto;
 import com.team1.cityfarm.entity.Category;
 import com.team1.cityfarm.global.response.ApiResponse;
-import com.team1.cityfarm.global.security.CustomUserDetails;
+import com.team1.cityfarm.global.security.user.CustomUserDetails;
 import com.team1.cityfarm.service.BoardService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;

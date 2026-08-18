@@ -1,5 +1,6 @@
 package com.team1.cityfarm.repository;
 
+import com.team1.cityfarm.entity.ProviderType;
 import com.team1.cityfarm.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
