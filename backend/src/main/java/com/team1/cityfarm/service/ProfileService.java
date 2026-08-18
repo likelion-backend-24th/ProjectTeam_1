@@ -23,18 +23,18 @@ public class ProfileService {
     }
 
     @Transactional
-    public User updateProfile(Long userId, String nickName) throws CustomException {
+    public User updateProfile(Long userId, String nickname) throws CustomException {
         User user = getUser(userId);
 
-        if (nickName == null || nickName.trim().isEmpty()) {
+        if (nickname == null || nickname.trim().isEmpty()) {
             throw new CustomException(CustomError.INVALID_INPUT_VALUE);
         }
 
-        if (!user.getNickname().equals(nickName) && userRepository.existsByNickname(nickName)) {
+        if (!user.getNickname().equals(nickname) && userRepository.existsByNickname(nickname)) {
             throw new CustomException(CustomError.INVALID_INPUT_VALUE);
         }
 
-        user.setNickname(nickName);
+        user.setNickname(nickname);
 
         return user;
     }

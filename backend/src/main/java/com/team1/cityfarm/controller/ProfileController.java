@@ -41,7 +41,7 @@ public class ProfileController {
             @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @RequestBody @Valid ProfileRequestDto profileRequestDto
             ) {
-        profileService.updateProfile(customUserDetails.getUserId(), profileRequestDto.getNickName());
+        profileService.updateProfile(customUserDetails.getUserId(), profileRequestDto.getNickname());
 
         return ApiResponse.success("프로필 수정 성공", null);
     }

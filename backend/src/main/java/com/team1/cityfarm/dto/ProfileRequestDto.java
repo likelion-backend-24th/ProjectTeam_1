@@ -8,9 +8,9 @@ import lombok.Getter;
 public class ProfileRequestDto {
 
     @Schema(description = "수정할 사용자 닉네임", example = "파머321")
-    private String nickName;
+    private String nickname;
 
-    public ProfileRequestDto(String nickName) {
-        this.nickName = nickName;
+    public ProfileRequestDto(String nickname) {
+        this.nickname = nickname;
     }
 }
