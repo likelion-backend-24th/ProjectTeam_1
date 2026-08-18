@@ -70,7 +70,7 @@ export const useAuthStore = create((set, get) => ({
   },
 
   updateProfile: async (payload) => {
-    const updatedProfile = await updateProfileApi(payload);
+    const updatedProfile = await updateProfile(payload);
     
     set((state) => ({
       profile: updatedProfile ?? { ...state.profile, ...payload },
