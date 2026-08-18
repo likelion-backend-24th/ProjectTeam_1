@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { RequireAuth } from "@/components/RequireAuth";
+import { ChevronRightIcon, ReceiptIcon, TicketIcon } from "@/components/icons";
 import { useAuthStore } from "@/store/authStore";
 import { useToastStore } from "@/store/toastStore";
 import { ApiError } from "@/lib/api/client";
@@ -49,6 +51,11 @@ function ProfileView() {
       <ReadonlyField label="닉네임" value={profile?.nickName} />
       <ReadonlyField label="이메일" value={profile?.email} />
 
+      <div className="flex flex-col gap-2">
+        <ProfileLinkRow href="/subscription" icon={<TicketIcon size={20} />} label="내 구독" />
+        <ProfileLinkRow href="/profile/payments" icon={<ReceiptIcon size={20} />} label="결제 내역" />
+      </div>
+
       <button
         type="button"
         onClick={handleLogout}
@@ -66,6 +73,18 @@ function ProfileView() {
         {isWithdrawing ? "탈퇴 처리 중..." : "회원 탈퇴"}
       </button>
     </AppShell>
+  );
+}
+
+function ProfileLinkRow({ href, icon, label }) {
+  return (
+    <Link href={href} className="flex items-center justify-between rounded-xl bg-surface px-4 py-3.5">
+      <span className="flex items-center gap-2.5 text-[15px] font-semibold text-ink">
+        {icon}
+        {label}
+      </span>
+      <ChevronRightIcon size={18} className="text-ink-muted" />
+    </Link>
   );
 }
 

@@ -127,7 +127,4 @@ public class BoardService {
         boardRepository.delete(board);
     }
 
-
-
-
 }
