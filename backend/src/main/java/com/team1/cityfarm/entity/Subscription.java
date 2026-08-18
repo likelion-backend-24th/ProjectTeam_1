@@ -26,7 +26,7 @@ public class Subscription {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false,name = "plan_type")
-    private SubscriptionPlan planType;
+    private SubscriptionPlanType planType;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

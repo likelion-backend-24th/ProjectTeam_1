@@ -23,16 +23,16 @@ public class SubscriptionPass {
     @JoinColumn(name = "subscription_id", nullable = false)
     private Subscription subscription;
 
-    @Column(nullable = false)
+    @Column(nullable = false,name = "total_count")
     private Integer totalCount;
 
-    @Column(nullable = false)
+    @Column(nullable = false,name = "remaining_count")
     private Integer remainingCount;
 
-    @Column(nullable = false)
+    @Column(nullable = false,name = "valid_from")
     private LocalDateTime validFrom;
 
-    @Column(nullable = false)
+    @Column(nullable = false,name = "valid_until")
     private LocalDateTime validUntil;
 
     @Enumerated(EnumType.STRING)
