@@ -57,6 +57,8 @@ function ProfileView() {
 
   // 닉네임 저장
   async function handleSaveProfile() {
+    console.log("1. 저장 버튼 클릭됨, 입력값:", nickNameInput);
+
     if (!nickNameInput.trim()) {
       showToast("닉네임을 입력해주세요.", "error");
       return;
@@ -64,10 +66,14 @@ function ProfileView() {
 
     setIsSaving(true);
     try {
+      console.log("2. API 호출 직전");
       await updateProfile({ nickName: nickNameInput });
+      console.log("3. API 호출 성공");
+      
       showToast("닉네임이 수정되었어요.");
       setIsEditing(false);
     } catch (err) {
+      console.error("4. API 호출 에러 발생:", err);
       showToast(err instanceof ApiError ? err.message : "닉네임 수정에 실패했어요.", "error");
     } finally {
       setIsSaving(false);
