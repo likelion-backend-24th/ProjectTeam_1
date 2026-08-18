@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { clearAccessToken, getAccessToken, setAccessToken } from "@/lib/api/client";
-import { getMyProfile, updateProfile as updateProfileApi } from "@/lib/api/profile"; // 👈 이 부분 추가
+import { getMyProfile, updateProfile } from "@/lib/api/profile"; // 👈 이 부분 추가
 import { login as loginApi, logout as logoutApi, withdraw as withdrawApi } from "@/lib/api/auth";
 import { decodeJwtPayload } from "@/lib/jwt";
 
