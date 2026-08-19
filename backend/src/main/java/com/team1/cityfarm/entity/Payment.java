@@ -1,10 +1,7 @@
 package com.team1.cityfarm.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -14,7 +11,7 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Getter
+@Getter@Setter
 public class Payment {
     @Id@GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -51,4 +48,10 @@ public class Payment {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    public void cancel(String cancelReason, LocalDateTime cancelledAt) {
+        this.status = PaymentStatus.CANCELLED;
+        this.cancelReason = cancelReason;
+        this.cancelledAt = cancelledAt;
+    }
 }
