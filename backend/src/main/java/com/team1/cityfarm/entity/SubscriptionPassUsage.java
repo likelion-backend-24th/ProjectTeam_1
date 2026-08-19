@@ -35,9 +35,9 @@ public class SubscriptionPassUsage {
      * 수강권을 사용한 클래스 신청
      * ClassEnrollment 추가시 주석 제거
      */
-//    @OneToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "enrollment_id", nullable = false)
-//    private ClassEnrollment enrollment;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "enrollment_id", nullable = false)
+    private ClassEnrollment enrollment;
 
     /**
      * 수강권 차감 시각

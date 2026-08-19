@@ -1,6 +1,6 @@
 package com.team1.cityfarm.entity;
 
 public enum PaymentType {
-    SUBSCRIPTION,GENERAL
-//    구독횟수 차감, 일반결제
+    GENERAL,      // 일반 결제
+    SUBSCRIPTION  // 구독 패스 결제
 }

@@ -27,7 +27,7 @@ public class BillingKey {
     /**
      * 실제 DB에는 암호화하여 저장
      */
-    @Column(nullable = false)
+    @Column(nullable = false,name = "billing_key_encrypted")
     private String billingKeyEncrypted;
 
     @Enumerated(EnumType.STRING)

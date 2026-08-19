@@ -1,16 +1,13 @@
 package com.team1.cityfarm.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
-@Entity
+@Entity@Builder
 @Getter
 @Setter
 @NoArgsConstructor
@@ -38,10 +35,10 @@ public class ClassEnrollment {
     @Column(nullable = false)
     private PaymentType paymentType;
 
-    @JoinColumn(name = "order_id")
+    @Column(name = "order_id")
     private Long orderId;
 
-    @JoinColumn(name = "subscription_id")
+    @Column(name = "subscription_id")
     private Long subscriptionId;
 
     @CreationTimestamp

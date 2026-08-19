@@ -1,6 +1,7 @@
 package com.team1.cityfarm.entity;
 
 public enum EnrollmentStatus {
-    PENDING,CONFIRMED,CANCELED
-//    결제대기, 확정, 취소
+    PENDING,    // 결제 대기
+    CONFIRMED,  // 결제 완료 (수강 확정)
+    CANCELLED   // 취소됨
 }

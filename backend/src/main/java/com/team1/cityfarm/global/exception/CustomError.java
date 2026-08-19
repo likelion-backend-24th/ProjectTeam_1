@@ -37,7 +37,11 @@ public enum CustomError {
     REPLY_NOT_OWNER(HttpStatus.FORBIDDEN, "답글 수정/삭제 권한이 없습니다."),
 
     BOARD_TYPE_ERROR(HttpStatus.BAD_REQUEST,"잘못된 검색 타입입니다."),
-    USER_STATUS_ERROR(HttpStatus.BAD_REQUEST,"STATUS에서 정의하지 않은 활동상태입니다.");
+    USER_STATUS_ERROR(HttpStatus.BAD_REQUEST,"STATUS에서 정의하지 않은 활동상태입니다."),
+
+    //기타 예외
+    ONE_DAY_CLASS_NOT_FOUND(HttpStatus.NOT_FOUND,"찾을 수 없는 클래스 입니다"),
+    ALREADY_ENROLLED_CLASS(HttpStatus.BAD_REQUEST,"이미 수강중인 클래스입니다");
 
     private final HttpStatus httpStatus;
     private final String message;
