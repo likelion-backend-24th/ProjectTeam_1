@@ -1,22 +1,22 @@
-# spring:
-#   datasource:
-#     # docker-compose의 db 서비스 이름(db:3306)으로 접속
-#     url: ${SPRING_DATASOURCE_URL}
-#     username: ${SPRING_DATASOURCE_USERNAME}
-#     password: ${SPRING_DATASOURCE_PASSWORD}
-#     driver-class-name: com.mysql.cj.jdbc.Driver
+spring:
+  datasource:
+    # docker-compose의 db 서비스 이름(db:3306)으로 접속
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
-#   # H2 콘솔 설정은 운영 환경에서 보안상 끔
-#   h2:
-#     console:
-#       enabled: false
+  # H2 콘솔 설정은 운영 환경에서 보안상 끔
+  h2:
+    console:
+      enabled: false
 
-#   jpa:
-#     hibernate:
-#       ddl-auto: update # 운영 DB 테이블 구조 유지/업데이트
-#     show-sql: false    # 운영 환경에서는 로그 절약을 위해 false 권장
-#     properties:
-#       hibernate:
-#         format_sql: false
+  jpa:
+    hibernate:
+      ddl-auto: update # 운영 DB 테이블 구조 유지/업데이트
+    show-sql: false    # 운영 환경에서는 로그 절약을 위해 false 권장
+    properties:
+      hibernate:
+        format_sql: false
 
-# # jwt 설정은 application-secret.yml 또는 환경변수로 관리
+# jwt 설정은 application-secret.yml 또는 환경변수로 관리
