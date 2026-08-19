@@ -3,16 +3,19 @@ package com.team1.cityfarm.service;
 import com.team1.cityfarm.dto.LoginRequestDto;
 import com.team1.cityfarm.dto.LoginResponseDto;
 import com.team1.cityfarm.dto.SignupRequestDto;
+import com.team1.cityfarm.dto.oauth2.OAuth2UserInfo;
 import com.team1.cityfarm.entity.RefreshToken;
+import com.team1.cityfarm.entity.SocialAccount;
 import com.team1.cityfarm.entity.User;
 import com.team1.cityfarm.global.exception.CustomError;
 import com.team1.cityfarm.global.exception.CustomException;
-import com.team1.cityfarm.global.security.JwtProvider;
+import com.team1.cityfarm.global.security.jwt.JwtProvider;
 import com.team1.cityfarm.repository.RefreshTokenRepository;
+import com.team1.cityfarm.repository.SocialAccountRepository;
 import com.team1.cityfarm.repository.UserRepository;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,22 +25,23 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AuthService {
     private final UserRepository userRepository;
+    private final SocialAccountRepository socialAccountRepository; // 1. SocialAccountRepository 추가
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
     private final RefreshTokenService refreshTokenService;
     private final RefreshTokenRepository refreshTokenRepository;
 
     // 회원가입
-    public void signUp(SignupRequestDto dto){
-        if (userRepository.findByEmail(dto.getEmail()).isPresent()){
+    public void signUp(SignupRequestDto dto) {
+        if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
             throw new CustomException(CustomError.AUTH_DUPLICATED_EMAIL);
         }
 
-        if (!dto.getPassword().equals(dto.getPasswordConfirm())){
+        if (!dto.getPassword().equals(dto.getPasswordConfirm())) {
             throw new CustomException(CustomError.AUTH_PASSWORD_VALID);
         }
 
-        if (userRepository.findByNickname(dto.getNickname()).isPresent()){
+        if (userRepository.findByNickname(dto.getNickname()).isPresent()) {
             throw new CustomException(CustomError.AUTH_DUPLICATED_NICKNAME);
         }
 
@@ -63,6 +67,11 @@ public class AuthService {
         User user = userRepository.findByEmail(dto.getEmail())
                 .orElseThrow(() -> new CustomException(CustomError.AUTH_LOGIN_FAILED));
 
+        // 소셜 로그인 전용 계정(비밀번호 없음) 예외 처리
+        if (user.getPassword() == null) {
+            throw new CustomException(CustomError.AUTH_LOGIN_FAILED);
+        }
+
         if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
             throw new CustomException(CustomError.AUTH_LOGIN_FAILED);
         }
@@ -82,23 +91,23 @@ public class AuthService {
 
     // 토큰 재발급
     @Transactional
-    public LoginResponseDto reissueAccessToken(String refreshToken){
-        if (refreshToken == null){
+    public LoginResponseDto reissueAccessToken(String refreshToken) {
+        if (refreshToken == null) {
             throw new CustomException(CustomError.TOKEN_NOT_FOUND);
         }
 
         Long userId;
-        try{
+        try {
             userId = jwtProvider.getUserIdFromRefreshToken(refreshToken);
-        } catch (ExpiredJwtException e){
+        } catch (ExpiredJwtException e) {
             throw new CustomException(CustomError.TOKEN_EXPIRED);
-        } catch (JwtException | IllegalArgumentException e){
+        } catch (JwtException | IllegalArgumentException e) {
             throw new CustomException(CustomError.TOKEN_INVALID);
         }
 
         RefreshToken dbToken = refreshTokenService.findRefreshToken(refreshToken)
                 .orElseThrow(() -> new CustomException(CustomError.TOKEN_INVALID));
-        if (!refreshToken.equals(dbToken.getToken())){
+        if (!refreshToken.equals(dbToken.getToken())) {
             throw new CustomException(CustomError.TOKEN_INVALID);
         }
 
@@ -110,7 +119,31 @@ public class AuthService {
         return new LoginResponseDto(newAccessToken, refreshToken);
     }
 
-    //로그아웃
+    // 로그인된 사용자의 소셜 계정 수동 연동
+    @Transactional
+    public void linkSocialToLoginUser(Long userId, OAuth2UserInfo userInfo) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
+
+        // 이미 연동되어 있는 소셜 계정인지 확인
+        boolean isAlreadyLinked = socialAccountRepository
+                .findByProviderAndProviderId(userInfo.getProvider(), userInfo.getProviderId())
+                .isPresent();
+
+        if (isAlreadyLinked) {
+            throw new CustomException(CustomError.AUTH_LOGIN_FAILED); // 필요에 따라 적절한 CustomError 지정
+        }
+
+        SocialAccount socialAccount = SocialAccount.builder()
+                .user(user)
+                .provider(userInfo.getProvider())
+                .providerId(userInfo.getProviderId())
+                .build();
+
+        socialAccountRepository.save(socialAccount);
+    }
+
+    // 로그아웃
     @Transactional
     public void logout(Long userId) {
         // DB에서 해당 유저의 Refresh Token 삭제
@@ -123,10 +156,10 @@ public class AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
 
-        // 2. Redis 등에 저장된 RefreshToken 삭제
+        // 2. RefreshToken 삭제
         refreshTokenRepository.deleteByUserId(userId);
 
-        // 3. 회원 탈퇴 처리 (하드 삭제)
-        userRepository.delete(user); // 또는 user.withdraw(); (소프트 삭제 시)
+        // 3. 회원 탈퇴 처리
+        userRepository.delete(user);
     }
 }

@@ -22,11 +22,13 @@ public class RefreshTokenService {
         return refreshTokenRepository.findByToken(refreshToken);
     }
 
+    @Transactional
     public void deleteRefreshToken(String refreshToken){
         refreshTokenRepository.findByToken(refreshToken)
                 .ifPresent(refreshTokenRepository::delete);
     }
 
+    @Transactional
     public void deleteAllByUserId(Long userId){
         refreshTokenRepository.deleteByUserId(userId);
     }
