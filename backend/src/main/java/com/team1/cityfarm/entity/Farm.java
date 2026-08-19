@@ -26,7 +26,7 @@ public class Farm {
 
     // 임대 땅 제목
     @Column(nullable = false, length = 50)
-    private String locationTitle;
+    private String title;
 
     // 주소 (자동으로 불러옴)
     @Column(nullable = false)
@@ -45,7 +45,7 @@ public class Farm {
     private int monthlyRent;
 
     // 임대 기간
-    @Column
+    @Column(nullable = false)
     private int rentalMonths;
 
     // 설명
