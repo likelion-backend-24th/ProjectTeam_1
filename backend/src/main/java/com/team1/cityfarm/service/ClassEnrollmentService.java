@@ -45,7 +45,17 @@ public class ClassEnrollmentService {
             throw new CustomException(CustomError.ALREADY_ENROLLED_CLASS);
         }
 
-        // 2. PENDING 상태 수강 신청 객체 생성
+        // 2. 정원 초과 여부 검증
+        long enrolledCount = classEnrollmentRepository.countByOneDayClassIdAndStatusIn(
+                classId,
+                List.of(EnrollmentStatus.PENDING, EnrollmentStatus.CONFIRMED)
+        );
+
+        if (enrolledCount >= oneDayClass.getCapacity()) {
+            throw new CustomException(CustomError.CLASS_CAPACITY_EXCEEDED);
+        }
+
+        // 3. PENDING 상태 수강 신청 객체 생성
         ClassEnrollment enrollment = ClassEnrollment.builder()
                 .oneDayClass(oneDayClass)
                 .user(user)

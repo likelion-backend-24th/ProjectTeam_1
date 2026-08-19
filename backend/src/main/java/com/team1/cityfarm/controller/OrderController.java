@@ -8,6 +8,7 @@ import com.team1.cityfarm.service.ClassEnrollmentService;
 import com.team1.cityfarm.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;

@@ -4,7 +4,7 @@ import com.team1.cityfarm.dto.FollowRequestDto;
 import com.team1.cityfarm.dto.FollowResponseDto;
 import com.team1.cityfarm.dto.FollowerResponseDto;
 import com.team1.cityfarm.global.response.ApiResponse;
-import com.team1.cityfarm.global.security.CustomUserDetails;
+import com.team1.cityfarm.global.security.user.CustomUserDetails;
 import com.team1.cityfarm.service.FollowService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
