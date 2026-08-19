@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { HomeIcon, PersonIcon, ShieldIcon } from "./icons";
+import { HomeIcon, PersonIcon, ShieldIcon, TicketIcon } from "./icons";
 import { useAuthStore } from "@/store/authStore";
 
 export function AppShell({ header, children, showNav = true, noPadding = false }) {
@@ -33,6 +33,15 @@ export function AppShell({ header, children, showNav = true, noPadding = false }
           >
             <HomeIcon size={22} />
             <span className="text-[11px]">홈</span>
+          </Link>
+          <Link
+            href="/subscription"
+            className={`flex h-full flex-1 flex-col items-center justify-center gap-0.5 ${
+              pathname.startsWith("/subscription") ? "text-ink" : "text-ink-muted"
+            }`}
+          >
+            <TicketIcon size={22} />
+            <span className="text-[11px]">구독</span>
           </Link>
           <Link
             href="/profile"

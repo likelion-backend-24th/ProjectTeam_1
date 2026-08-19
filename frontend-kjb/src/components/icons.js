@@ -101,3 +101,38 @@ export function SendIcon({ size = 18, className }) {
     </svg>
   );
 }
+
+export function TicketIcon({ size = 22, className }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4Z" />
+      <path d="M13 6v12" strokeDasharray="2 3" />
+    </svg>
+  );
+}
+
+export function CardIcon({ size = 22, className }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <rect x="2.5" y="5" width="19" height="14" rx="2.5" />
+      <path d="M2.5 10h19" />
+    </svg>
+  );
+}
+
+export function ReceiptIcon({ size = 22, className }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <path d="M6 2h12v20l-3-2-3 2-3-2-3 2Z" />
+      <path d="M8.5 8h7M8.5 12h7" />
+    </svg>
+  );
+}
+
+export function ChevronRightIcon({ size = 20, className }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <path d="m9 6 6 6-6 6" />
+    </svg>
+  );
+}
