@@ -41,7 +41,7 @@ public class ClassEnrollment {
     @JoinColumn(name = "order_id")
     private Long orderId;
 
-    @JoinColumn(name = "subscription_id")
+    @Column(name = "subscription_pass_id")
     private Long subscriptionId;
 
     @CreationTimestamp
