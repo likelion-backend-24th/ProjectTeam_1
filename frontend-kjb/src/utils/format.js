@@ -29,3 +29,28 @@ export function formatRelativeTime(isoString) {
 
   return date.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
 }
+
+export function formatDate(isoString) {
+  if (!isoString) return "-";
+  const date = parseServerDate(isoString);
+  if (Number.isNaN(date.getTime())) return isoString;
+  return date.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" });
+}
+
+export function formatDateTime(isoString) {
+  if (!isoString) return "-";
+  const date = parseServerDate(isoString);
+  if (Number.isNaN(date.getTime())) return isoString;
+  return date.toLocaleString("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export function formatCurrency(amount) {
+  if (amount === null || amount === undefined) return "-";
+  return `${Number(amount).toLocaleString("ko-KR")}원`;
+}
