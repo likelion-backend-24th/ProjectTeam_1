@@ -22,7 +22,6 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OneDayClassRepository oneDayClassRepository;
     private final UserRepository userRepository;
-
     private final ClassEnrollmentService classEnrollmentService;
 
     @Transactional

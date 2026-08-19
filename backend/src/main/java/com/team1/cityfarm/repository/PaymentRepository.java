@@ -10,12 +10,9 @@ public interface PaymentRepository
         extends JpaRepository<Payment, Long> {
 
     Optional<Payment> findByOrderId(Long orderId);
-
     Optional<Payment> findByPortonePaymentId(String portonePaymentId);
-
     List<Payment> findByOrderUserId(Long userId);
-
     List<Payment> findByOrderUserIdOrderByCreatedAtDesc(Long userId);
-
     boolean existsByPortonePaymentId(String portonePaymentId);
+    Optional<Payment> findByOrderMerchantOrderId(String merchantOrderId);
 }

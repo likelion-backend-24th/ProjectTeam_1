@@ -1,10 +1,7 @@
 package com.team1.cityfarm.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -14,7 +11,7 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Getter
+@Getter@Setter
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -48,4 +45,6 @@ public class Order {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+
 }

@@ -40,8 +40,24 @@ public enum CustomError {
     USER_STATUS_ERROR(HttpStatus.BAD_REQUEST,"STATUS에서 정의하지 않은 활동상태입니다."),
 
     //기타 예외
+    PORTONE_BILLING_FAILED(HttpStatus.BAD_REQUEST,"빌링키 정기 결제 요청 실패"),
+    PORTONE_CANCEL_FAILED(HttpStatus.BAD_REQUEST,"결제 취소 실패"),
+    SUBSCRIPTION_PASS_NOT_FOUND(HttpStatus.NOT_FOUND,"보유중인 구독권을 찾을 수 없습니다"),
+    DUPLICATE_SUBSCRIPTION(HttpStatus.CONFLICT,"이미 활성중인 구독 정보입니다"),
+    SUBSCRIPTION_NOT_FOUND(HttpStatus.NOT_FOUND,"활성중인 구독 정보가 없습니다"),
+    BILLING_KEY_NOT_FOUND(HttpStatus.NOT_FOUND,"해당 빌링키가 존재하지 않습니다"),
+    CANNOT_REFUND(HttpStatus.FORBIDDEN,"환불 불가"),
+    DUPLICATE_SETTLEMENT(HttpStatus.CONFLICT,"이미 존재하는 정산 데이터"),
+    PAYMENT_FAILED(HttpStatus.FORBIDDEN,"결제 검증 실패"),
+    INVALID_PAYMENT_AMOUNT(HttpStatus.NOT_MODIFIED,"결제 금액 불일치"),
+    INVALID_ORDER_STATUS(HttpStatus.BAD_REQUEST,"올바르지 않은 주문 상태입니다"),
+    ORDER_NOT_FOUND(HttpStatus.NOT_FOUND,"주문을 찾을 수 없습니다"),
+    DUPLICATE_PAYMENT(HttpStatus.CONFLICT,"이미 처리된 결제처리 입니다"),
     ONE_DAY_CLASS_NOT_FOUND(HttpStatus.NOT_FOUND,"찾을 수 없는 클래스 입니다"),
-    ALREADY_ENROLLED_CLASS(HttpStatus.BAD_REQUEST,"이미 수강중인 클래스입니다");
+    ALREADY_ENROLLED_CLASS(HttpStatus.BAD_REQUEST,"이미 수강중인 클래스입니다"),
+    PAYMENT_NOT_FOUND(HttpStatus.NO_CONTENT,"결제 정보 조회 실패"),
+    PORTONE_API_ERROR(HttpStatus.INTERNAL_SERVER_ERROR,"API 취소 요청 실패");
+
 
     private final HttpStatus httpStatus;
     private final String message;

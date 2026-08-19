@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -47,7 +48,7 @@ public class ClassEnrollmentService {
         // 2. PENDING 상태 수강 신청 객체 생성
         ClassEnrollment enrollment = ClassEnrollment.builder()
                 .oneDayClass(oneDayClass)
-                .user(user)                       // User 엔티티 필드명 확인 후 필요시 변경
+                .user(user)
                 .status(EnrollmentStatus.PENDING)
                 .paymentType(PaymentType.GENERAL)
                 .orderId(order.getId())
@@ -61,10 +62,35 @@ public class ClassEnrollmentService {
      * (PaymentService 결제 검증 성공 후 호출)
      */
     @Transactional
-    public void confirmEnrollment(Long orderId) {
+    public ClassEnrollment confirmEnrollment(Long orderId) {
         ClassEnrollment enrollment = classEnrollmentRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new CustomException(CustomError.ONE_DAY_CLASS_NOT_FOUND));
 
         enrollment.setStatus(EnrollmentStatus.CONFIRMED);
+
+        return enrollment;
+    }
+
+
+    //수강권 사용 여부 확인
+    //수강 일시가 현재 시각 이전이면 이미 진행된 클래스로 판단
+    public boolean isEnrollmentUsed(Long orderId) {
+        return classEnrollmentRepository.findByOrderId(orderId)
+                .map(enrollment -> {
+                    LocalDateTime classTime = enrollment.getOneDayClass().getDate();
+                    return classTime != null && classTime.isBefore(LocalDateTime.now());
+                })
+                .orElse(false);
+    }
+
+
+   //수강 신청 취소 처리
+   //(PaymentService 결제 취소 시 사용)
+    @Transactional
+    public void cancelEnrollment(Long orderId) {
+        ClassEnrollment enrollment = classEnrollmentRepository.findByOrderId(orderId)
+                .orElseThrow(() -> new CustomException(CustomError.ONE_DAY_CLASS_NOT_FOUND));
+
+        enrollment.setStatus(EnrollmentStatus.CANCELLED);
     }
 }
