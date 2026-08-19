@@ -16,4 +16,6 @@ public interface FarmRepository extends JpaRepository<Farm, Long> {
     // 지역명으로 검색
     Page<Farm> findByLocationContaining(String location, Pageable pageable);
 
+    // 타이틀로 검색
+    Page<Farm> findByTitleContaining(String title, Pageable pageable);
 }

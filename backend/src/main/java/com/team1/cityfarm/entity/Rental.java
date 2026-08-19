@@ -34,6 +34,10 @@ public class Rental {
     @Builder.Default
     private RentalStatus rentalStatus = RentalStatus.REQUESTED;
 
+    // 설명
+    @Column(length = 500)
+    private String description;
+
     // 등록일
     @CreationTimestamp
     @Column(updatable = false)
