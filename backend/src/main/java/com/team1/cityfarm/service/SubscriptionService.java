@@ -69,6 +69,15 @@ public class SubscriptionService {
             throw new IllegalStateException("이미 활성화된 정기 구독이 존재합니다.");
         }
 
+        // 프론트가 보낸 billingKeyId로 우리 DB의 BillingKey row를 직접 조회해 실제 PortOne 키 값을 꺼내 쓴다
+        // (클라이언트가 PortOne 키 문자열을 직접 들고 다니지 않도록).
+        BillingKey billingKeyEntity = billingKeyRepository.findById(request.getBillingKeyId())
+                .orElseThrow(() -> new CustomException(CustomError.BILLING_KEY_NOT_FOUND));
+        if (!billingKeyEntity.getUser().getId().equals(userId)) {
+            throw new CustomException(CustomError.AUTH_UNAUTHORIZED);
+        }
+        String billingKey = billingKeyEntity.getBillingKeyEncrypted();
+
         // 요금제(PlanType)에 따른 결제 금액 설정
         int price = calculatePrice(request.getPlanType());
         String orderName = request.getPlanType().name() + " 정기구독";
@@ -78,7 +87,7 @@ public class SubscriptionService {
 
         // 포트원 빌링키 결제 요청 (실패 시 CustomException 발생 및 트랜잭션 롤백)
         PortonePaymentResponseDto portOnePayment = portonePaymentClient.payWithBillingKey(
-                request.getBillingKey(), paymentId, orderName, price, user.getId());
+                billingKey, paymentId, orderName, price, user.getId());
 
         // 결제 성공 시 구독(Subscription) 엔티티 생성
         LocalDateTime now = LocalDateTime.now();
@@ -132,7 +141,7 @@ public class SubscriptionService {
         paymentRepository.save(payment);
 
         // 다음(2회차) 결제를 PortOne 예약결제 API로 미리 예약해둔다.
-        createNextSchedule(subscription, request.getBillingKey(), orderName, price, 2, oneMonthLater);
+        createNextSchedule(subscription, billingKey, billingKeyEntity.getId(), orderName, price, 2, oneMonthLater);
 
         return SubscriptionResponseDto.from(subscription);
     }
@@ -143,7 +152,8 @@ public class SubscriptionService {
      * 해당 회차를 역추적하는 데 사용된다({@link #renewSubscription}).
      */
     private void createNextSchedule(
-            Subscription subscription, String billingKey, String orderName, int amount, int round, LocalDateTime scheduledAt
+            Subscription subscription, String billingKey, Long billingKeyId,
+            String orderName, int amount, int round, LocalDateTime scheduledAt
     ) {
         String nextPaymentId = "BE24-CITYFARM-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         PortonePaymentScheduleResponseDto scheduleResponse = portonePaymentClient.schedulePayment(
@@ -157,6 +167,7 @@ public class SubscriptionService {
                 .amount(amount)
                 .status(ScheduleStatus.SCHEDULED)
                 .paymentId(nextPaymentId)
+                .billingKeyId(billingKeyId)
                 .portoneScheduleId(scheduleResponse != null && scheduleResponse.getSchedule() != null
                         ? scheduleResponse.getSchedule().getId() : null)
                 .build();
@@ -241,16 +252,15 @@ public class SubscriptionService {
             subscription.setStatus(SubscriptionStatus.CANCELLED);
             subscription.setCancelledAt(LocalDateTime.now());
         } else {
-            String billingKey = billingKeyRepository.findByUserId(user.getId())
-                    .map(BillingKey::getBillingKeyEncrypted)
-                    .orElse(null);
+            BillingKey billingKeyEntity = billingKeyRepository.findByUserId(user.getId()).orElse(null);
 
-            if (billingKey == null) {
+            if (billingKeyEntity == null) {
                 log.error("[구독 갱신] 다음 회차 예약 실패 - 빌링키를 찾을 수 없음. userId: {}", user.getId());
             } else {
                 String orderName = subscription.getPlanType().name() + " 정기구독";
                 int price = calculatePrice(subscription.getPlanType());
-                createNextSchedule(subscription, billingKey, orderName, price, schedule.getRound() + 1, newPeriodEnd);
+                createNextSchedule(subscription, billingKeyEntity.getBillingKeyEncrypted(), billingKeyEntity.getId(),
+                        orderName, price, schedule.getRound() + 1, newPeriodEnd);
             }
         }
 
@@ -310,6 +320,42 @@ public class SubscriptionService {
 
         // 다음 주기에 해지되도록 상태 변경
         subscription.setCancelAtPeriodEnd(true);
+    }
+
+    /**
+     * [카드 변경] 활성 구독의 SCHEDULED 예약을 새 빌링키로 옮긴다.
+     * 예약이 없으면(구독이 없거나 이미 실행/취소된 상태) 아무 것도 하지 않는다.
+     * PortOne이 예약 걸린 빌링키의 삭제를 막기 때문에(409 PaymentScheduleAlreadyExistsError),
+     * BillingKeyService가 이전 키를 지우기 전에 반드시 먼저 호출해야 한다.
+     * 실패하면 예외를 그대로 던져서(트랜잭션 롤백) 호출부가 새 카드 저장까지 함께 취소하도록 한다.
+     */
+    @Transactional
+    public void migrateActiveScheduleToNewBillingKey(Long userId, BillingKey newBillingKey) {
+        Subscription subscription = subscriptionRepository.findByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE)
+                .orElse(null);
+        if (subscription == null) {
+            return;
+        }
+
+        SubscriptionSchedule oldSchedule = subscriptionScheduleRepository
+                .findBySubscriptionIdAndStatus(subscription.getId(), ScheduleStatus.SCHEDULED)
+                .orElse(null);
+        if (oldSchedule == null || oldSchedule.getStatus() != ScheduleStatus.SCHEDULED) {
+            return;
+        }
+
+        if (oldSchedule.getPortoneScheduleId() != null) {
+            portonePaymentClient.cancelSchedule(oldSchedule.getPortoneScheduleId());
+        }
+        oldSchedule.setStatus(ScheduleStatus.CANCELLED);
+
+        String orderName = subscription.getPlanType().name() + " 정기구독";
+        createNextSchedule(
+                subscription, newBillingKey.getBillingKeyEncrypted(), newBillingKey.getId(),
+                orderName, oldSchedule.getAmount(), oldSchedule.getRound(), oldSchedule.getScheduledAt()
+        );
+
+        log.info("[카드 변경 - 예약 마이그레이션 완료] subscriptionId: {}, round: {}", subscription.getId(), oldSchedule.getRound());
     }
 
     /**
@@ -402,6 +448,31 @@ public class SubscriptionService {
 
         log.info("[구독 수강권 복구] enrollmentId: {}, passId: {}, 복구 후 잔여: {}",
                 enrollmentId, pass.getId(), pass.getRemainingCount());
+    }
+
+    /**
+     * 8. [구독 만료 배치] 해지 예약(cancelAtPeriodEnd=true)됐고 currentPeriodEnd가 지난 ACTIVE
+     * 구독을 CANCELLED로 정리한다. 예약결제 자체는 해지 예약 시점에 이미 취소돼서 더 이상
+     * 웹훅이 오지 않으므로(=renewSubscription이 호출될 일이 없으므로), 이 상태 전환은
+     * PortOne 웹훅이 아니라 이 배치가 전담한다. SubscriptionExpirationScheduler에서 주기적으로 호출.
+     */
+    @Transactional
+    public int expireCancelledSubscriptions() {
+        List<Subscription> targets = subscriptionRepository
+                .findByStatusAndCancelAtPeriodEndTrueAndCurrentPeriodEndBefore(
+                        SubscriptionStatus.ACTIVE, LocalDateTime.now());
+
+        LocalDateTime now = LocalDateTime.now();
+        for (Subscription subscription : targets) {
+            subscription.setStatus(SubscriptionStatus.CANCELLED);
+            subscription.setCancelledAt(now);
+        }
+
+        if (!targets.isEmpty()) {
+            log.info("[구독 만료 배치] {}건 CANCELLED 처리", targets.size());
+        }
+
+        return targets.size();
     }
 
     // ==========================================
