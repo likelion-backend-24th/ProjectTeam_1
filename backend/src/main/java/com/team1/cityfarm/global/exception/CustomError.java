@@ -36,8 +36,14 @@ public enum CustomError {
     COMMENT_NOT_OWNER(HttpStatus.FORBIDDEN, "댓글 수정/삭제 권한이 없습니다."),
     REPLY_NOT_OWNER(HttpStatus.FORBIDDEN, "답글 수정/삭제 권한이 없습니다."),
 
-    BOARD_TYPE_ERROR(HttpStatus.BAD_REQUEST, "잘못된 검색 타입입니다."),
-    USER_STATUS_ERROR(HttpStatus.BAD_REQUEST, "STATUS에서 정의하지 않은 활동상태입니다."),
+    BOARD_TYPE_ERROR(HttpStatus.BAD_REQUEST,"잘못된 검색 타입입니다."),
+    USER_STATUS_ERROR(HttpStatus.BAD_REQUEST,"STATUS에서 정의하지 않은 활동상태입니다."),
+
+    // 팔로우 예외
+    FOLLOW_NOT_FOUND(HttpStatus.NOT_FOUND, "팔로우 정보를 찾을 수 없습니다."),
+    FOLLOW_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 팔로우한 사용자입니다."),
+    FOLLOW_SELF_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "자기 자신은 팔로우할 수 없습니다."),
+    FOLLOW_NOT_OWNER(HttpStatus.FORBIDDEN, "본인의 팔로우만 취소할 수 있습니다."),
 
     //기타 예외
     PORTONE_BILLING_FAILED(HttpStatus.BAD_REQUEST, "빌링키 정기 결제 요청 실패"),
@@ -63,7 +69,13 @@ public enum CustomError {
     ENROLLMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "수강 신청 내역을 찾을 수 없습니다"),
     ENROLLMENT_NOT_OWNER(HttpStatus.FORBIDDEN, "본인의 신청 내역만 접근할 수 있습니다"),
     NOT_HOST_ROLE(HttpStatus.FORBIDDEN, "호스트 권한이 필요합니다"),
-    CLASS_NOT_OWNER(HttpStatus.FORBIDDEN, "본인이 개설한 클래스만 접근할 수 있습니다");
+    CLASS_NOT_OWNER(HttpStatus.FORBIDDEN, "본인이 개설한 클래스만 접근할 수 있습니다"),
+
+    //    밭 임대 예외
+    FARM_IMAGE_LIMIT(HttpStatus.BAD_REQUEST, "사진은 최대 5장까지 올릴 수 있습니다."),
+
+    //    빌링 예외
+    BILLING_KEY_VERIFY_FAILED(HttpStatus.BAD_REQUEST, "빌링키 검증에 실패했습니다.");
 
     private final HttpStatus httpStatus;
     private final String message;
