@@ -54,6 +54,8 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/board", "/api/board/**")
                         .permitAll()
+                        .requestMatchers(HttpMethod.GET,"/api/onedayclass","/api/onedayclass/**")
+                        .permitAll()
                         .requestMatchers("/api/admin/**")
                         .hasRole("ADMIN")
                         .anyRequest().authenticated()
