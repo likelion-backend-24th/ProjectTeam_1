@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Getter
+@Getter@Table(name = "settlements")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Settlement {
 
