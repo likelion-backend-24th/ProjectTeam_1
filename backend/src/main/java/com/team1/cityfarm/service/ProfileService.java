@@ -1,7 +1,6 @@
 package com.team1.cityfarm.service;
 
 import com.team1.cityfarm.dto.BoardResponseDto;
-import com.team1.cityfarm.dto.ProfileRequestDto;
 import com.team1.cityfarm.entity.User;
 import com.team1.cityfarm.global.exception.CustomError;
 import com.team1.cityfarm.global.exception.CustomException;
@@ -9,7 +8,6 @@ import com.team1.cityfarm.repository.BoardLikeRepository;
 import com.team1.cityfarm.repository.UserRepository;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
