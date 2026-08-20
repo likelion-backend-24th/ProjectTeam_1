@@ -187,4 +187,18 @@ public class PaymentService {
 
         return PaymentResponseDto.from(payment);
     }
+
+    /**
+     * [결제 전체 취소/환불 — orderId 기준]
+     * ClassEnrollment 쪽에서는 paymentId가 아니라 orderId만 들고 있는 경우가 많아 추가한 진입점.
+     * 검증/취소 로직은 {@link #cancelPayment}와 완전히 동일하다(GENERAL 주문만 취소 가능,
+     * 24시간 이내/미사용 조건 등은 checkRefundEligibility에서 그대로 적용됨).
+     */
+    @Transactional
+    public PaymentResponseDto cancelPaymentByOrderId(Long userId, Long orderId, PaymentCancelRequestDto request) {
+        Payment payment = paymentRepository.findByOrderId(orderId)
+                .orElseThrow(() -> new CustomException(CustomError.PAYMENT_NOT_FOUND));
+
+        return cancelPayment(userId, payment.getId(), request);
+    }
 }

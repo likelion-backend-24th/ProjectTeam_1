@@ -1,5 +1,7 @@
 package com.team1.cityfarm.portone;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.team1.cityfarm.global.exception.CustomError;
 import com.team1.cityfarm.global.exception.CustomException;
 import lombok.extern.slf4j.Slf4j;
@@ -17,17 +19,31 @@ import java.util.Map;
 public class PortonePaymentClient {
 
     private final RestClient restClient;
+    private final ObjectMapper objectMapper;
+
 
     // 생성자에서 공통 헤더(Authorization, Content-Type)를 미리 세팅하여 중복 제거
     public PortonePaymentClient(
             @Value("${portone.api-secret}") String apiSecret,
-            @Value("${portone.api.base-url:https://api.portone.io}") String baseUrl
+            @Value("${portone.api.base-url:https://api.portone.io}") String baseUrl,
+            ObjectMapper objectMapper
     ) {
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
                 .defaultHeader("Authorization", "PortOne " + apiSecret)
                 .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                 .build();
+        this.objectMapper = objectMapper;
+    }
+
+    // DELETE 요청 중 일부(/payment-schedules)는 실제 바디 대신 requestBody라는 이름의
+    // 쿼리 파라미터에 JSON을 그대로 실어 보내야 한다(PortOne V2 OpenAPI 스펙 기준).
+    private String toJson(Object value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     /**
@@ -154,9 +170,12 @@ public class PortonePaymentClient {
      */
     public void cancelSchedule(String portoneScheduleId) {
         try {
+            String requestBody = toJson(Map.of("scheduleIds", java.util.List.of(portoneScheduleId)));
             restClient.method(org.springframework.http.HttpMethod.DELETE)
-                    .uri("/payment-schedules")
-                    .body(Map.of("scheduleIds", java.util.List.of(portoneScheduleId)))
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/payment-schedules")
+                            .queryParam("requestBody", requestBody)
+                            .build())
                     .retrieve()
                     .toBodilessEntity();
 
@@ -173,15 +192,43 @@ public class PortonePaymentClient {
      */
     public void cancelScheduleByBillingKey(String billingKey) {
         try {
+            String requestBody = toJson(Map.of("billingKey", billingKey));
             restClient.method(org.springframework.http.HttpMethod.DELETE)
-                    .uri("/payment-schedules")
-                    .body(Map.of("billingKey", billingKey))
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/payment-schedules")
+                            .queryParam("requestBody", requestBody)
+                            .build())
                     .retrieve()
                     .toBodilessEntity();
 
             log.info("[PortOne API] 결제 예약 취소 성공 - billingKey 기준");
         } catch (Exception e) {
             log.error("[PortOne API] 결제 예약 취소 실패 - error: {}", e.getMessage());
+            throw new CustomException(CustomError.PORTONE_CANCEL_FAILED);
+        }
+    }
+
+    /**
+     * [PortOne V2 API 빌링키 해지]
+     * 카드 변경 시, 마이그레이션이 끝나 더 이상 아무 것도 참조하지 않는 이전 빌링키를 PortOne에서 제거한다.
+     * reason은 body가 아니라 query parameter로 전달해야 한다(PortOne V2 OpenAPI 스펙 기준).
+     * 이미 예약결제가 걸려있는 빌링키를 지우려 하면 409(PaymentScheduleAlreadyExistsError)가 나므로,
+     * 호출 전에 반드시 해당 빌링키의 예약을 먼저 취소/마이그레이션해야 한다.
+     */
+    public void deleteBillingKey(String billingKey, String reason) {
+        try {
+            restClient.method(org.springframework.http.HttpMethod.DELETE)
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/billing-keys/{billingKey}")
+                            .queryParam("reason", reason)
+                            .build(billingKey))
+                    .retrieve()
+                    .toBodilessEntity();
+
+            log.info("[PortOne API] 빌링키 해지 성공 - billingKey: {}", billingKey);
+        } catch (Exception e) {
+            log.error("[PortOne API] 빌링키 해지 실패 - billingKey: {}, error: {}", billingKey, e.getMessage());
+            // 이 실패는 트랜잭션을 막지 않도록 호출부(BillingKeyService)에서 예외를 삼킬 예정
             throw new CustomException(CustomError.PORTONE_CANCEL_FAILED);
         }
     }
