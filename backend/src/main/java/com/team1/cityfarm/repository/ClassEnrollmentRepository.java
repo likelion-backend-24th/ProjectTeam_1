@@ -15,9 +15,6 @@ public interface ClassEnrollmentRepository extends JpaRepository<ClassEnrollment
 //    원데이클래스 유저 신청 내역 조회(마이페이지)
     List<ClassEnrollment> findByUser_Id(Long userId);
 
-//    중복신청 확인용
-    Optional<ClassEnrollment> findByOneDayClass_IdAndUser_Id(Long onDayClassId, Long userId);
-
     // orderId 기반 수강신청 조회 (결제 성공 후 PENDING -> CONFIRMED 변경 시 사용)
     Optional<ClassEnrollment> findByOrderId(Long orderId);
 
@@ -25,12 +22,12 @@ public interface ClassEnrollmentRepository extends JpaRepository<ClassEnrollment
     boolean existsByOneDayClassIdAndUserIdAndStatusIn(
             Long classId,
             Long userId,
-            java.util.List<EnrollmentStatus> statuses
+            List<EnrollmentStatus> statuses
     );
 
     // 정원확인용 (PENDING 또는 CONFIRMED 상태인 신청 인원 수 확인)
     long countByOneDayClassIdAndStatusIn(
             Long classId,
-            java.util.List<EnrollmentStatus> statuses
+            List<EnrollmentStatus> statuses
     );
 }

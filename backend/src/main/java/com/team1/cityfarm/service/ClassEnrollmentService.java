@@ -1,5 +1,7 @@
 package com.team1.cityfarm.service;
 
+import com.team1.cityfarm.dto.EnrollmentApplicantResponseDto;
+import com.team1.cityfarm.dto.MyEnrollmentResponseDto;
 import com.team1.cityfarm.entity.*;
 import com.team1.cityfarm.global.exception.CustomError;
 import com.team1.cityfarm.global.exception.CustomException;
@@ -12,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +34,10 @@ public class ClassEnrollmentService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
 
-        OneDayClass oneDayClass = oneDayClassRepository.findById(classId)
+         /*동시 신청으로 인한 정원 초과/중복 신청을 막기 위해 클래스 row에 락을 걸고
+         같은 classId에 대한 동시 요청은 이 트랜잭션이 끝날 때까지 대기하게 되어
+         아래 중복/정원 체크가 순차적 진행.*/
+        OneDayClass oneDayClass = oneDayClassRepository.findByIdForUpdate(classId)
                 .orElseThrow(() -> new CustomException(CustomError.ONE_DAY_CLASS_NOT_FOUND));
 
         // 1. 이미 결제 진행 중이거나 수강 확정된 내역이 있는지 중복 검증
@@ -67,14 +73,15 @@ public class ClassEnrollmentService {
         return classEnrollmentRepository.save(enrollment);
     }
 
-    /**
-     * [결제 완료 처리] PENDING -> CONFIRMED 상태 변경
-     * (PaymentService 결제 검증 성공 후 호출)
-     */
+
     @Transactional
     public ClassEnrollment confirmEnrollment(Long orderId) {
         ClassEnrollment enrollment = classEnrollmentRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new CustomException(CustomError.ONE_DAY_CLASS_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(CustomError.ENROLLMENT_NOT_FOUND));
+
+        if (enrollment.getStatus() == EnrollmentStatus.CANCELLED){
+            throw new CustomException(CustomError.INVALID_ORDER_STATUS);
+        }
 
         enrollment.setStatus(EnrollmentStatus.CONFIRMED);
 
@@ -95,12 +102,38 @@ public class ClassEnrollmentService {
 
 
    //수강 신청 취소 처리
-   //(PaymentService 결제 취소 시 사용)
-    @Transactional
-    public void cancelEnrollment(Long orderId) {
-        ClassEnrollment enrollment = classEnrollmentRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new CustomException(CustomError.ONE_DAY_CLASS_NOT_FOUND));
+   @Transactional
+   public void cancelEnrollment(Long orderId) {
+       ClassEnrollment enrollment = classEnrollmentRepository.findByOrderId(orderId)
+               .orElseThrow(() -> new CustomException(CustomError.ENROLLMENT_NOT_FOUND));
 
-        enrollment.setStatus(EnrollmentStatus.CANCELLED);
+       if (enrollment.getStatus() == EnrollmentStatus.CANCELLED) {
+           return;
+       }
+
+       enrollment.setStatus(EnrollmentStatus.CANCELLED);
+   }
+
+//    마이페이지 - 내 신청내역 조회
+    public List<MyEnrollmentResponseDto> getMyEnrollment(Long userId){
+        return classEnrollmentRepository.findByUser_Id(userId).stream()
+                .map(MyEnrollmentResponseDto::from)
+                .collect(Collectors.toList());
     }
+
+//    호스트 - 내 클래스 신청자 목록 조회
+    public List<EnrollmentApplicantResponseDto> getApplicant(Long classId,Long hostId){
+        OneDayClass oneDayClass = oneDayClassRepository.findById(classId)
+                .orElseThrow(()-> new CustomException(CustomError.ONE_DAY_CLASS_NOT_FOUND));
+
+        if (!oneDayClass.getHost().getId().equals(hostId)){
+            throw new CustomException(CustomError.CLASS_NOT_OWNER);
+        }
+
+        return classEnrollmentRepository.findByOneDayClass_Id(classId).stream()
+                .map(EnrollmentApplicantResponseDto::from)
+                .collect(Collectors.toList());
+    }
+
+
 }

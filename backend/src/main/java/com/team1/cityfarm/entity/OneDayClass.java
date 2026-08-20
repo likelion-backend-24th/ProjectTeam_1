@@ -1,10 +1,7 @@
 package com.team1.cityfarm.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -16,13 +13,14 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "classes")
+@Builder
 public class OneDayClass {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "host_id", nullable = false)
     private User host;
 
@@ -35,7 +33,7 @@ public class OneDayClass {
     @Column(nullable = false)
     private LocalDateTime date;
 
-    @Column(nullable = false, length = 200)
+    @Column(nullable = false, length = 100)
     private String location;
 
     @Column(nullable = false)
