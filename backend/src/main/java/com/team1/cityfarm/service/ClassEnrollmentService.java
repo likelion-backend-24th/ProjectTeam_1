@@ -94,8 +94,8 @@ public class ClassEnrollmentService {
     }
 
 
-    //수강 신청 취소 처리
-    //(PaymentService 결제 취소 시 사용)
+   //수강 신청 취소 처리
+   //(PaymentService 결제 취소 시 사용)
     @Transactional
     public void cancelEnrollment(Long orderId) {
         ClassEnrollment enrollment = classEnrollmentRepository.findByOrderId(orderId)
