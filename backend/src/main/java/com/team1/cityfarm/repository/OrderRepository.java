@@ -1,6 +1,8 @@
 package com.team1.cityfarm.repository;
 
 import com.team1.cityfarm.entity.Order;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -13,6 +15,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     boolean existsByMerchantOrderId(String merchantOrderId);
 
     List<Order> findByUserId(Long userId);
+
+    Page<Order> findOrdersByUserId(Long userId, Pageable pageable);
 
     List<Order> findByUserIdOrderByCreatedAtDesc(Long userId);
 

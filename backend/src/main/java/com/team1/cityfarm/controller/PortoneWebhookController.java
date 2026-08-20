@@ -1,10 +1,10 @@
 package com.team1.cityfarm.controller;
 
-import com.team1.cityfarm.portone.PortoneWebhookDto;
 import com.team1.cityfarm.service.PortoneWebhookService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
@@ -16,21 +16,20 @@ public class PortoneWebhookController {
     private final PortoneWebhookService portoneWebhookService;
 
     /**
-     * [PortOne Webhook 수신 엔드포인트]
-     * PortOne 결제/자동결제 비동기 결과 수신 (사용자 인증X)
+     * PortOne 웹훅 수신 엔드포인트
+     * 헤더값(웹훅 ID, 서명)과 원본 JSON(rawPayload)을 그대로 전달합니다.
      */
     @PostMapping
-    public ResponseEntity<String> handleWebhook(
-            @RequestHeader(value = "x-portone-signature", required = false) String signature,
-            @RequestBody PortoneWebhookDto webhookDto
+    public ResponseEntity<Void> handleWebhook(
+            @RequestHeader(value = "webhook-id", required = false) String webhookId,
+            @RequestHeader(value = "webhook-signature", required = false) String signature,
+            @RequestBody String rawPayload
     ) {
-        log.info("[PortOne Webhook Received] type: {}, paymentId: {}",
-                webhookDto.getType(),
-                webhookDto.getData() != null ? webhookDto.getData().getPaymentId() : "N/A");
+        log.info("[PortOne Webhook 수신] webhookId: {}", webhookId);
 
-        portoneWebhookService.processWebhook(webhookDto);
+        portoneWebhookService.processWebhook(webhookId, signature, rawPayload);
 
-        // PortOne 서버가 재시도를 멈출 수 있도록 정상 수신(200 OK) 응답
-        return ResponseEntity.ok("OK");
+        // 웹훅은 항상 200 OK를 반환하여 포트원 측의 재시도를 방지해야 합니다.
+        return ResponseEntity.ok().build();
     }
 }

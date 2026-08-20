@@ -45,7 +45,7 @@ public class PaymentController {
             @PathVariable Long paymentId,
             @RequestBody(required = false) PaymentCancelRequestDto request
     ) {
-        PaymentResponseDto response = paymentService.cancelPayment(paymentId, request);
+        PaymentResponseDto response = paymentService.cancelPayment(customUserDetails.getUserId(), paymentId, request);
         return ResponseEntity.ok(response);
     }
 }
