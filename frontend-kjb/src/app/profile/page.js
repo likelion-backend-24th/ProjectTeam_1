@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/navigation"; // 앗, Link는 next/link에서 가져와야 합니다!
 import LinkComponent from "next/link";
 import { useRouter } from "next/navigation";
 import { AppShell, PageHeader } from "@/components/AppShell";
@@ -28,9 +27,9 @@ function ProfileView() {
   const [nicknameInput, setNicknameInput] = useState(profile?.nickname ?? "");
   const [isSaving, setIsSaving] = useState(false);
 
-  // 💡 비밀번호 변경 모달 상태 관리
+  // 비밀번호 변경 모달 상태 관리
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [passwordStep, setPasswordStep] = useState(1); // 1: 현재 비밀번호 확인, 2: 새 비밀번호 변경하기
+  const [passwordStep, setPasswordStep] = useState(1); // 1: 현재 비밀번호 확인, 2: 새 비밀번호 변경
   const [currentPasswordInput, setCurrentPasswordInput] = useState("");
   const [newPasswordInput, setNewPasswordInput] = useState("");
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
@@ -83,8 +82,8 @@ function ProfileView() {
     }
   }
 
-  // 💡 1단계: 현재 비밀번호 확인 핸들러
-  async function handleVerifyCurrentPassword(e: React.FormEvent) {
+  // 1단계: 현재 비밀번호 확인 핸들러 (타입 지정 제거)
+  async function handleVerifyCurrentPassword(e) {
     e.preventDefault();
     if (!currentPasswordInput) {
       showToast("현재 비밀번호를 입력해주세요.", "error");
@@ -94,9 +93,8 @@ function ProfileView() {
     setIsPasswordLoading(true);
     try {
       await checkPassword({ currentPassword: currentPasswordInput });
-      // 검증 성공 시 2단계(새 비밀번호 입력)로 전환
       setPasswordStep(2);
-      setCurrentPasswordInput(""); // 입력값 초기화
+      setCurrentPasswordInput("");
     } catch (err) {
       showToast(err instanceof ApiError ? err.message : "현재 비밀번호가 일치하지 않아요.", "error");
     } finally {
@@ -104,8 +102,8 @@ function ProfileView() {
     }
   }
 
-  // 💡 2단계: 새 비밀번호 변경 핸들러
-  async function handleChangeNewPassword(e: React.FormEvent) {
+  // 2단계: 새 비밀번호 변경 핸들러 (타입 지정 제거)
+  async function handleChangeNewPassword(e) {
     e.preventDefault();
     if (!newPasswordInput) {
       showToast("새 비밀번호를 입력해주세요.", "error");
@@ -193,7 +191,7 @@ function ProfileView() {
 
       <ReadonlyField label="이메일" value={profile?.email} />
 
-      {/* 💡 비밀번호 변경 버튼 (클릭 시 모달 오픈) */}
+      {/* 비밀번호 변경 버튼 */}
       <button
         type="button"
         onClick={() => setIsPasswordModalOpen(true)}
@@ -228,7 +226,7 @@ function ProfileView() {
         {isWithdrawing ? "탈퇴 처리 중..." : "회원 탈퇴"}
       </button>
 
-      {/* 💡 비밀번호 변경 모달 팝업 */}
+      {/* 비밀번호 변경 모달 팝업 */}
       {isPasswordModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-sm rounded-2xl bg-surface p-6 shadow-lg">
