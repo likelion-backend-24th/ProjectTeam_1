@@ -3,9 +3,13 @@ package com.team1.cityfarm.controller;
 import com.team1.cityfarm.dto.OneDayClassRequestDto;
 import com.team1.cityfarm.dto.OneDayClassResponseDto;
 import com.team1.cityfarm.dto.OneDayClassSummaryDto;
+import com.team1.cityfarm.entity.ClassEnrollment;
+import com.team1.cityfarm.entity.PaymentType;
 import com.team1.cityfarm.global.response.ApiResponse;
 import com.team1.cityfarm.global.security.user.CustomUserDetails;
 import com.team1.cityfarm.service.OneDayClassService;
+import com.team1.cityfarm.service.PaymentService;
+import com.team1.cityfarm.service.SubscriptionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,6 +23,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Tag(name = "원데이클래스 API", description = "원데이클래스 조회, 등록 API")
 @RestController
 @RequiredArgsConstructor
@@ -26,6 +32,8 @@ import org.springframework.web.bind.annotation.*;
 public class OneDayClassController {
 
     private final OneDayClassService oneDayClassService;
+    private final PaymentService paymentService;
+    private final SubscriptionService subscriptionService;
 
     @Operation(summary = "원데이클래스 목록 조회",
             description = "원데이클래스 목록을 페이징하여 조회합니다.")
@@ -59,6 +67,31 @@ public class OneDayClassController {
 
         return ApiResponse.success("클래스 등록 성공", oneDayClassService.createOneDayClass(hostId, requestDto));
 
+    }
+
+    @Operation(summary = "클래스 취소", description = "호스트가 자신의 클래스를 취소하고, 신청건들을 환불/수강권 복구 처리",
+    security = @SecurityRequirement(name = "BearerAuth"))
+    @PostMapping("/{classId}/cancel")
+    public ApiResponse<Void> cancelClass(@PathVariable Long classId,
+                                         @AuthenticationPrincipal CustomUserDetails customUserDetails){
+
+        Long hostId = customUserDetails.getUserId();
+        List<ClassEnrollment> cancelledEnrollments = oneDayClassService.cancelClass(classId, hostId);
+
+        for (ClassEnrollment enrollment : cancelledEnrollments) {
+            if (enrollment.getPaymentType() == PaymentType.GENERAL) {
+                paymentService.cancelPaymentByOrderId(
+                        enrollment.getUser().getId(),
+                        enrollment.getOrderId(),
+                        null
+                );
+
+            } else if (enrollment.getPaymentType() == PaymentType.SUBSCRIPTION) {
+                subscriptionService.restorePassByEnrollmentId(enrollment.getId());
+            }
+        }
+
+        return ApiResponse.success("클래스 취소 완료");
     }
 
 }
