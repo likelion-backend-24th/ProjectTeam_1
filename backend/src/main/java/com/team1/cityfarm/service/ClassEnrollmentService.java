@@ -173,13 +173,28 @@ public class ClassEnrollmentService {
 
         if (!classEnrollment.getUser().getId().equals(userId)) {
             throw new CustomException(CustomError.ENROLLMENT_NOT_OWNER);
-            }
-
-            if (classEnrollment.getStatus() == EnrollmentStatus.CANCELLED){
-                return classEnrollment;
         }
 
-            classEnrollment.setStatus(EnrollmentStatus.CANCELLED);
+        if (classEnrollment.getPaymentType() != PaymentType.SUBSCRIPTION) {
+            throw new CustomException(CustomError.INVALID_ORDER_STATUS);
+        }
+
+        if (classEnrollment.getStatus() == EnrollmentStatus.CANCELLED) {
             return classEnrollment;
+        }
+
+        classEnrollment.setStatus(EnrollmentStatus.CANCELLED);
+        return classEnrollment;
+    }
+
+    @Transactional
+    public List<ClassEnrollment> cancelAllEnrollmentsForClass(Long classId) {
+        List<ClassEnrollment> targets = classEnrollmentRepository.findByOneDayClass_Id(classId).stream()
+                .filter(e -> e.getStatus() == EnrollmentStatus.PENDING || e.getStatus() == EnrollmentStatus.CONFIRMED)
+                .collect(Collectors.toList());
+
+        targets.forEach(e -> e.setStatus(EnrollmentStatus.CANCELLED));
+
+        return targets;
     }
 }
