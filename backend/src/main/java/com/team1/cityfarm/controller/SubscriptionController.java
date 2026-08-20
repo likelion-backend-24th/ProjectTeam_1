@@ -2,6 +2,7 @@ package com.team1.cityfarm.controller;
 
 import com.team1.cityfarm.dto.PassResponseDto;
 import com.team1.cityfarm.dto.SubscriptionCreateRequestDto;
+import com.team1.cityfarm.dto.SubscriptionPassUsageResponseDto;
 import com.team1.cityfarm.dto.SubscriptionResponseDto;
 import com.team1.cityfarm.global.security.user.CustomUserDetails;
 import com.team1.cityfarm.service.SubscriptionService;
@@ -60,5 +61,16 @@ public class SubscriptionController {
             @PathVariable Long subscriptionId) {
         PassResponseDto pass = subscriptionService.getSubscriptionPass(userDetails.getUserId(), subscriptionId);
         return ResponseEntity.ok(pass);
+    }
+
+    /**
+     * 5. 특정 수강권의 사용 내역 조회
+     */
+    @GetMapping("/passes/{passId}/usages")
+    public ResponseEntity<List<SubscriptionPassUsageResponseDto>> getPassUsages(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long passId) {
+        List<SubscriptionPassUsageResponseDto> usages = subscriptionService.getPassUsages(userDetails.getUserId(), passId);
+        return ResponseEntity.ok(usages);
     }
 }

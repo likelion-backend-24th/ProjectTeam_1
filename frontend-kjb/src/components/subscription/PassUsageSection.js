@@ -4,9 +4,6 @@ import { useEffect, useState } from "react";
 import { getSubscriptionPassUsages } from "@/lib/api/subscription";
 import { formatDate } from "@/utils/format";
 
-// TODO(backend): SubscriptionPassUsage 조회 API가 아직 없다. API가 생기면
-// getSubscriptionPassUsages(passId)의 본문만 실제 apiRequest 호출로 교체하면
-// 이 컴포넌트는 그대로 동작한다.
 export function PassUsageSection({ passId }) {
   const [usages, setUsages] = useState(null);
   const [unavailable, setUnavailable] = useState(false);

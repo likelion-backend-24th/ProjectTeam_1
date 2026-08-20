@@ -1,8 +1,10 @@
 package com.team1.cityfarm.service;
 
+import com.team1.cityfarm.dto.MyEnrollmentResponseDto;
 import com.team1.cityfarm.dto.PassResponseDto;
 import com.team1.cityfarm.dto.SubscriptionCreateRequestDto;
 import com.team1.cityfarm.dto.SubscriptionPassDto;
+import com.team1.cityfarm.dto.SubscriptionPassUsageResponseDto;
 import com.team1.cityfarm.dto.SubscriptionResponseDto;
 import com.team1.cityfarm.entity.*;
 import com.team1.cityfarm.global.exception.CustomError;
@@ -14,6 +16,7 @@ import com.team1.cityfarm.repository.BillingKeyRepository;
 import com.team1.cityfarm.repository.OrderRepository;
 import com.team1.cityfarm.repository.PaymentRepository;
 import com.team1.cityfarm.repository.SubscriptionPassRepository;
+import com.team1.cityfarm.repository.SubscriptionPassUsageRepository;
 import com.team1.cityfarm.repository.SubscriptionRepository;
 import com.team1.cityfarm.repository.SubscriptionScheduleRepository;
 import com.team1.cityfarm.repository.UserRepository;
@@ -34,11 +37,13 @@ public class SubscriptionService {
     private final SubscriptionRepository subscriptionRepository;
     private final UserRepository userRepository;
     private final SubscriptionPassRepository subscriptionPassRepository;
+    private final SubscriptionPassUsageRepository subscriptionPassUsageRepository;
     private final SubscriptionScheduleRepository subscriptionScheduleRepository;
     private final BillingKeyRepository billingKeyRepository;
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
     private final PortonePaymentClient portonePaymentClient;
+    private final ClassEnrollmentService classEnrollmentService;
 
     /**
      * 1. 내 활성 구독 정보 조회
@@ -72,7 +77,8 @@ public class SubscriptionService {
         String paymentId = "BE24-CITYFARM-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
         // 포트원 빌링키 결제 요청 (실패 시 CustomException 발생 및 트랜잭션 롤백)
-        portonePaymentClient.payWithBillingKey(request.getBillingKey(), paymentId, orderName, price, user.getId());
+        PortonePaymentResponseDto portOnePayment = portonePaymentClient.payWithBillingKey(
+                request.getBillingKey(), paymentId, orderName, price, user.getId());
 
         // 결제 성공 시 구독(Subscription) 엔티티 생성
         LocalDateTime now = LocalDateTime.now();
@@ -102,6 +108,28 @@ public class SubscriptionService {
                 .build();
 
         subscriptionPassRepository.save(pass);
+
+        // 1회차 결제도 결제 내역/정산 조회에서 동일하게 보이도록 Order/Payment 기록을 남긴다
+        // (2회차 이후는 renewSubscription에서 동일한 패턴으로 기록됨).
+        Order order = Order.builder()
+                .user(user)
+                .amount(price)
+                .merchantOrderId(paymentId)
+                .orderType(OrderType.SUBSCRIPTION)
+                .orderStatus(OrderStatus.PAID)
+                .subscription(subscription)
+                .build();
+        orderRepository.save(order);
+
+        Payment payment = Payment.builder()
+                .order(order)
+                .portonePaymentId(paymentId)
+                .payMethod(portOnePayment.getPayMethodType())
+                .amount(price)
+                .status(PaymentStatus.PAID)
+                .approvedAt(portOnePayment.getApprovedAtParsed() != null ? portOnePayment.getApprovedAtParsed() : now)
+                .build();
+        paymentRepository.save(payment);
 
         // 다음(2회차) 결제를 PortOne 예약결제 API로 미리 예약해둔다.
         createNextSchedule(subscription, request.getBillingKey(), orderName, price, 2, oneMonthLater);
@@ -194,7 +222,7 @@ public class SubscriptionService {
         subscription.setCurrentPeriodEnd(newPeriodEnd);
 
         // 이전 회차 수강권 만료 처리 후 새 회차 수강권 발급
-        subscriptionPassRepository.findBySubscriptionId(subscription.getId())
+        subscriptionPassRepository.findBySubscriptionIdAndStatus(subscription.getId(), PassStatus.ACTIVE)
                 .ifPresent(oldPass -> oldPass.setStatus(PassStatus.EXPIRED));
 
         int passCount = getPassCount(subscription.getPlanType());
@@ -254,6 +282,9 @@ public class SubscriptionService {
 
     /**
      * 3. 정기 구독 해지 예약 (다음 결제일에 갱신 방지)
+     * 다음 회차 결제는 가입/직전 갱신 시점에 이미 PortOne에 예약되어 있으므로,
+     * DB 플래그만 세우는 것으로는 다음 결제를 막을 수 없다. 예약된 PortOne 스케줄을
+     * 함께 취소해야 실제로 "다음 결제일에 갱신 방지"가 된다.
      */
     @Transactional
     public void cancelSubscriptionAtPeriodEnd(Long userId, Long subscriptionId) {
@@ -265,6 +296,18 @@ public class SubscriptionService {
             throw new IllegalArgumentException("권한이 없습니다.");
         }
 
+        if (subscription.isCancelAtPeriodEnd()) {
+            return; // 이미 해지 예약된 구독 (멱등 처리)
+        }
+
+        subscriptionScheduleRepository.findBySubscriptionIdAndStatus(subscriptionId, ScheduleStatus.SCHEDULED)
+                .ifPresent(schedule -> {
+                    if (schedule.getPortoneScheduleId() != null) {
+                        portonePaymentClient.cancelSchedule(schedule.getPortoneScheduleId());
+                    }
+                    schedule.setStatus(ScheduleStatus.CANCELLED);
+                });
+
         // 다음 주기에 해지되도록 상태 변경
         subscription.setCancelAtPeriodEnd(true);
     }
@@ -274,7 +317,7 @@ public class SubscriptionService {
      */
     @Transactional(readOnly = true)
     public PassResponseDto getSubscriptionPass(Long userId, Long subscriptionId) {
-        SubscriptionPass pass = subscriptionPassRepository.findBySubscriptionId(subscriptionId)
+        SubscriptionPass pass = subscriptionPassRepository.findBySubscriptionIdAndStatus(subscriptionId, PassStatus.ACTIVE)
                 .orElseThrow(() -> new IllegalArgumentException("해당 구독의 수강권 정보를 찾을 수 없습니다."));
 
         // 본인의 수강권인지 검증
@@ -283,6 +326,58 @@ public class SubscriptionService {
         }
 
         return PassResponseDto.from(pass);
+    }
+
+    /**
+     * 5. 구독 수강권으로 원데이클래스 신청 (결제 없이 즉시 확정)
+     * 클래스 가격과 무관하게 보유 수강권 1개를 차감하고 수강 신청을 CONFIRMED로 생성한다.
+     */
+    @Transactional
+    public MyEnrollmentResponseDto enrollClassWithPass(Long userId, Long classId) {
+        Subscription subscription = subscriptionRepository.findByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE)
+                .orElseThrow(() -> new CustomException(CustomError.SUBSCRIPTION_NOT_FOUND));
+
+        SubscriptionPass pass = subscriptionPassRepository
+                .findBySubscriptionIdAndStatusAndRemainingCountGreaterThan(subscription.getId(), PassStatus.ACTIVE, 0)
+                .orElseThrow(() -> new CustomException(CustomError.SUBSCRIPTION_PASS_EXHAUSTED));
+
+        // 정원/중복 검증 및 CONFIRMED 상태 수강 신청 생성 (락은 ClassEnrollmentService가 담당)
+        ClassEnrollment enrollment = classEnrollmentService.createConfirmedEnrollmentByPass(userId, classId, subscription.getId());
+
+        // 수강권 차감
+        pass.setRemainingCount(pass.getRemainingCount() - 1);
+        if (pass.getRemainingCount() <= 0) {
+            pass.setStatus(PassStatus.EXHAUSTED);
+        }
+
+        SubscriptionPassUsage usage = SubscriptionPassUsage.builder()
+                .subscriptionPass(pass)
+                .enrollment(enrollment)
+                .usedAt(LocalDateTime.now())
+                .build();
+        subscriptionPassUsageRepository.save(usage);
+
+        log.info("[구독 수강권 사용] userId: {}, subscriptionId: {}, passId: {}, classId: {}, 잔여: {}",
+                userId, subscription.getId(), pass.getId(), classId, pass.getRemainingCount());
+
+        return MyEnrollmentResponseDto.from(enrollment);
+    }
+
+    /**
+     * 6. 특정 수강권의 사용 내역 조회
+     */
+    @Transactional(readOnly = true)
+    public List<SubscriptionPassUsageResponseDto> getPassUsages(Long userId, Long passId) {
+        SubscriptionPass pass = subscriptionPassRepository.findById(passId)
+                .orElseThrow(() -> new CustomException(CustomError.SUBSCRIPTION_PASS_NOT_FOUND));
+
+        if (!pass.getSubscription().getUser().getId().equals(userId)) {
+            throw new CustomException(CustomError.AUTH_UNAUTHORIZED);
+        }
+
+        return subscriptionPassUsageRepository.findBySubscriptionPassIdOrderByCreatedAtDesc(passId).stream()
+                .map(SubscriptionPassUsageResponseDto::from)
+                .toList();
     }
 
     // ==========================================

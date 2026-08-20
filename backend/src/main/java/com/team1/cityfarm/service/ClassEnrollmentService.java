@@ -34,13 +34,51 @@ public class ClassEnrollmentService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
 
-         /*동시 신청으로 인한 정원 초과/중복 신청을 막기 위해 클래스 row에 락을 걸고
-         같은 classId에 대한 동시 요청은 이 트랜잭션이 끝날 때까지 대기하게 되어
-         아래 중복/정원 체크가 순차적 진행.*/
+        OneDayClass oneDayClass = lockAndValidateEnrollable(classId, userId);
+
+        // PENDING 상태 수강 신청 객체 생성 (일반 결제는 PortOne 결제 승인 후 confirmEnrollment로 CONFIRMED 전환)
+        ClassEnrollment enrollment = ClassEnrollment.builder()
+                .oneDayClass(oneDayClass)
+                .user(user)
+                .status(EnrollmentStatus.PENDING)
+                .paymentType(PaymentType.GENERAL)
+                .orderId(order.getId())
+                .build();
+
+        return classEnrollmentRepository.save(enrollment);
+    }
+
+    /**
+     * [구독 수강권 결제] 별도 결제 승인 없이 즉시 CONFIRMED 상태로 수강 신청을 생성한다.
+     * 수강권 차감은 호출자(SubscriptionService)가 담당한다.
+     */
+    @Transactional
+    public ClassEnrollment createConfirmedEnrollmentByPass(Long userId, Long classId, Long subscriptionId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
+
+        OneDayClass oneDayClass = lockAndValidateEnrollable(classId, userId);
+
+        ClassEnrollment enrollment = ClassEnrollment.builder()
+                .oneDayClass(oneDayClass)
+                .user(user)
+                .status(EnrollmentStatus.CONFIRMED)
+                .paymentType(PaymentType.SUBSCRIPTION)
+                .subscriptionId(subscriptionId)
+                .build();
+
+        return classEnrollmentRepository.save(enrollment);
+    }
+
+    /**
+     * 동시 신청으로 인한 정원 초과/중복 신청을 막기 위해 클래스 row에 락을 걸고
+     * 같은 classId에 대한 동시 요청은 이 트랜잭션이 끝날 때까지 대기하게 되어
+     * 중복/정원 체크가 순차적으로 진행되도록 보장한다.
+     */
+    private OneDayClass lockAndValidateEnrollable(Long classId, Long userId) {
         OneDayClass oneDayClass = oneDayClassRepository.findByIdForUpdate(classId)
                 .orElseThrow(() -> new CustomException(CustomError.ONE_DAY_CLASS_NOT_FOUND));
 
-        // 1. 이미 결제 진행 중이거나 수강 확정된 내역이 있는지 중복 검증
         boolean alreadyEnrolled = classEnrollmentRepository.existsByOneDayClassIdAndUserIdAndStatusIn(
                 classId,
                 userId,
@@ -51,7 +89,6 @@ public class ClassEnrollmentService {
             throw new CustomException(CustomError.ALREADY_ENROLLED_CLASS);
         }
 
-        // 2. 정원 초과 여부 검증
         long enrolledCount = classEnrollmentRepository.countByOneDayClassIdAndStatusIn(
                 classId,
                 List.of(EnrollmentStatus.PENDING, EnrollmentStatus.CONFIRMED)
@@ -61,16 +98,7 @@ public class ClassEnrollmentService {
             throw new CustomException(CustomError.CLASS_CAPACITY_EXCEEDED);
         }
 
-        // 3. PENDING 상태 수강 신청 객체 생성
-        ClassEnrollment enrollment = ClassEnrollment.builder()
-                .oneDayClass(oneDayClass)
-                .user(user)
-                .status(EnrollmentStatus.PENDING)
-                .paymentType(PaymentType.GENERAL)
-                .orderId(order.getId())
-                .build();
-
-        return classEnrollmentRepository.save(enrollment);
+        return oneDayClass;
     }
 
 

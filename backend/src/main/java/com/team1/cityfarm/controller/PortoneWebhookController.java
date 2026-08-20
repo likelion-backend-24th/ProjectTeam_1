@@ -22,12 +22,13 @@ public class PortoneWebhookController {
     @PostMapping
     public ResponseEntity<Void> handleWebhook(
             @RequestHeader(value = "webhook-id", required = false) String webhookId,
+            @RequestHeader(value = "webhook-timestamp", required = false) String timestamp,
             @RequestHeader(value = "webhook-signature", required = false) String signature,
             @RequestBody String rawPayload
     ) {
         log.info("[PortOne Webhook 수신] webhookId: {}", webhookId);
 
-        portoneWebhookService.processWebhook(webhookId, signature, rawPayload);
+        portoneWebhookService.processWebhook(webhookId, timestamp, signature, rawPayload);
 
         // 웹훅은 항상 200 OK를 반환하여 포트원 측의 재시도를 방지해야 합니다.
         return ResponseEntity.ok().build();

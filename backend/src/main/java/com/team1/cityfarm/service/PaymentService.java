@@ -126,6 +126,12 @@ public class PaymentService {
             return RefundEligibilityResponseDto.fail("ALREADY_CANCELLED");
         }
 
+        // 구독(정기결제) 주문은 ClassEnrollment가 없어 이 취소 플로우로 처리할 수 없다.
+        // 구독 해지는 SubscriptionService.cancelSubscriptionAtPeriodEnd로 처리한다.
+        if (payment.getOrder().getOrderType() != OrderType.GENERAL) {
+            return RefundEligibilityResponseDto.fail("UNSUPPORTED_ORDER_TYPE");
+        }
+
         if (payment.getCreatedAt().plusHours(24).isBefore(LocalDateTime.now())) {
             return RefundEligibilityResponseDto.fail("REFUND_DEADLINE_EXCEEDED");
         }

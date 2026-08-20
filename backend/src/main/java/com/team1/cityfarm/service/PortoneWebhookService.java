@@ -36,13 +36,21 @@ public class PortoneWebhookService {
     private String webhookSecret;
 
     @Transactional
-    public void processWebhook(String webhookId, String signature, String rawPayload) {
+    public void processWebhook(String webhookId, String timestamp, String signature, String rawPayload) {
         // 1. [보안] 서명 검증 및 헤더 유무 확인
-        if (webhookId == null || signature == null) {
+        if (webhookId == null || timestamp == null || signature == null) {
             log.warn("[Webhook 에러] 헤더 누락");
             return;
         }
-        verifySignature(rawPayload, signature);
+
+        // 서명 검증 실패는 웹훅 엔드포인트가 반드시 200을 반환해야 한다는 규칙을 깨지 않도록
+        // 여기서 예외를 흡수하고 조용히 중단한다(컨트롤러까지 전파되면 401/500이 나가버림).
+        try {
+            verifySignature(webhookId, timestamp, rawPayload, signature);
+        } catch (Exception e) {
+            log.error("[Webhook 서명 검증 실패로 처리 중단] webhookId: {}", webhookId, e);
+            return;
+        }
 
         // 2. [멱등성] 이미 처리된 웹훅인지 검증
         if (webhookInboxRepository.existsByWebhookId(webhookId)) {
@@ -153,25 +161,56 @@ public class PortoneWebhookService {
     }
 
     /**
-     * PortOne V2 HMAC-SHA256 서명 검증 로직
+     * PortOne V2(Svix 규격) 웹훅 서명 검증.
+     * 서명 대상 문자열은 "{webhookId}.{timestamp}.{rawPayload}" 이며,
+     * webhook-signature 헤더는 공백으로 구분된 "v1,<base64signature>" 토큰이 하나 이상 올 수 있다.
+     * secret은 "whsec_" 접두사를 제거한 뒤 Base64 디코딩한 바이트를 HMAC 키로 사용한다.
      */
-    private void verifySignature(String payload, String signature) {
+    private void verifySignature(String webhookId, String timestamp, String payload, String signatureHeader) {
         try {
-            Mac mac = Mac.getInstance("HmacSHA256");
-            SecretKeySpec secretKeySpec = new SecretKeySpec(webhookSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-            mac.init(secretKeySpec);
+            byte[] secretBytes = decodeWebhookSecret(webhookSecret);
+            String signedContent = webhookId + "." + timestamp + "." + payload;
 
-            byte[] hashBytes = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(secretBytes, "HmacSHA256"));
+            byte[] hashBytes = mac.doFinal(signedContent.getBytes(StandardCharsets.UTF_8));
             String expectedSignature = Base64.getEncoder().encodeToString(hashBytes);
 
-            // PortOne의 signature 형식에 따라 직접 비교하거나 파싱이 필요할 수 있습니다.
-            if (!signature.contains(expectedSignature) && !signature.equals(expectedSignature)) {
-                log.error("[Webhook 서명 불일치] 해킹/위조 의심 요청");
+            boolean matched = false;
+            for (String token : signatureHeader.trim().split("\\s+")) {
+                String candidate = token.contains(",") ? token.substring(token.indexOf(',') + 1) : token;
+                if (constantTimeEquals(candidate, expectedSignature)) {
+                    matched = true;
+                    break;
+                }
+            }
+
+            if (!matched) {
+                log.error("[Webhook 서명 불일치] 해킹/위조 의심 요청 - webhookId: {}", webhookId);
                 throw new CustomException(CustomError.AUTH_UNAUTHORIZED);
             }
+        } catch (CustomException e) {
+            throw e;
         } catch (Exception e) {
             log.error("[Webhook 서명 검증 실패]", e);
             throw new CustomException(CustomError.AUTH_UNAUTHORIZED);
         }
+    }
+
+    private byte[] decodeWebhookSecret(String secret) {
+        String raw = secret.startsWith("whsec_") ? secret.substring("whsec_".length()) : secret;
+        try {
+            return Base64.getDecoder().decode(raw);
+        } catch (IllegalArgumentException e) {
+            // 발급받은 secret이 Base64 형식이 아닌 경우를 대비한 안전한 폴백
+            return secret.getBytes(StandardCharsets.UTF_8);
+        }
+    }
+
+    private boolean constantTimeEquals(String a, String b) {
+        return java.security.MessageDigest.isEqual(
+                a.getBytes(StandardCharsets.UTF_8),
+                b.getBytes(StandardCharsets.UTF_8)
+        );
     }
 }
