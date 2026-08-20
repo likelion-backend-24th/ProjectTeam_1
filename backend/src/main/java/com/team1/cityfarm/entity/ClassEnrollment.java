@@ -7,11 +7,12 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
-@Entity@Builder
+@Entity
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @Table(name = "class_enrollments")
 public class ClassEnrollment {
 
@@ -35,10 +36,10 @@ public class ClassEnrollment {
     @Column(nullable = false)
     private PaymentType paymentType;
 
-    @Column(name = "order_id")
+    @JoinColumn(name = "order_id")
     private Long orderId;
 
-    @Column(name = "subscription_id")
+    @JoinColumn(name = "subscription_id")
     private Long subscriptionId;
 
     @CreationTimestamp

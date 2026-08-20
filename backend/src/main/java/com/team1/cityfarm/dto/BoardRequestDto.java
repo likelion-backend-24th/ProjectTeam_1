@@ -19,4 +19,5 @@ public record BoardRequestDto(
         @Schema(description = "게시글 카테고리", example = "FREE")
         @NotNull(message = "카테고리는 필수입니다.")
         Category category
-) {}
+) {
+}

@@ -27,4 +27,10 @@ public interface ClassEnrollmentRepository extends JpaRepository<ClassEnrollment
             Long userId,
             java.util.List<EnrollmentStatus> statuses
     );
+
+    // 정원확인용 (PENDING 또는 CONFIRMED 상태인 신청 인원 수 확인)
+    long countByOneDayClassIdAndStatusIn(
+            Long classId,
+            java.util.List<EnrollmentStatus> statuses
+    );
 }

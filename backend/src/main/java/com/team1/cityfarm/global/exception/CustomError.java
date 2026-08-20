@@ -56,7 +56,8 @@ public enum CustomError {
     ONE_DAY_CLASS_NOT_FOUND(HttpStatus.NOT_FOUND,"찾을 수 없는 클래스 입니다"),
     ALREADY_ENROLLED_CLASS(HttpStatus.BAD_REQUEST,"이미 수강중인 클래스입니다"),
     PAYMENT_NOT_FOUND(HttpStatus.NO_CONTENT,"결제 정보 조회 실패"),
-    PORTONE_API_ERROR(HttpStatus.INTERNAL_SERVER_ERROR,"API 취소 요청 실패");
+    PORTONE_API_ERROR(HttpStatus.INTERNAL_SERVER_ERROR,"API 취소 요청 실패"),
+    CLASS_CAPACITY_EXCEEDED(HttpStatus.BAD_REQUEST,"클래스 정원이 초과되었습니다");
 
 
     private final HttpStatus httpStatus;
