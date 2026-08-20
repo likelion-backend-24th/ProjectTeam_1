@@ -38,12 +38,12 @@ public class OrderController {
         return ResponseEntity.ok(response);
     }
 
-//    @GetMapping("/me")
-//    public ResponseEntity<Page<OrderResponseDto>> getMyOrders(
-//            @AuthenticationPrincipal CustomUserDetails userDetails,
-//            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
-//    ) {
-//        Page<OrderResponseDto> response = orderService.getMyOrders(userDetails.getUserId(), pageable);
-//        return ResponseEntity.ok(response);
-//    }
+    @GetMapping("/me")
+    public ResponseEntity<Page<OrderResponseDto>> getMyOrders(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        Page<OrderResponseDto> response = orderService.getMyOrders(userDetails.getUserId(), pageable);
+        return ResponseEntity.ok(response);
+    }
 }

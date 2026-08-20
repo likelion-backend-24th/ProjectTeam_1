@@ -7,6 +7,8 @@ import com.team1.cityfarm.entity.BillingKeyStatus;
 import com.team1.cityfarm.entity.User;
 import com.team1.cityfarm.global.exception.CustomError;
 import com.team1.cityfarm.global.exception.CustomException;
+import com.team1.cityfarm.portone.PortoneBillingKeyResponseDto;
+import com.team1.cityfarm.portone.PortonePaymentClient;
 import com.team1.cityfarm.repository.BillingKeyRepository;
 import com.team1.cityfarm.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ public class BillingKeyService {
 
     private final BillingKeyRepository billingKeyRepository;
     private final UserRepository userRepository;
+    private final PortonePaymentClient portonePaymentClient;
 
     /**
      * [내 빌링키 조회]
@@ -55,11 +58,21 @@ public class BillingKeyService {
 
     /**
      * [빌링키 발급 확정 및 저장]
+     * 프론트엔드(PortOne SDK)가 방금 발급받은 빌링키 값을 그대로 신뢰하지 않고,
+     * PortOne API로 해당 빌링키를 단건 조회해 실제로 발급(ISSUED)된 값인지 검증한 뒤 저장한다.
      */
     @Transactional
-    public BillingKeyResponseDto confirmIssuance(String issueId, Long userId) {
+    public BillingKeyResponseDto confirmIssuance(String issueId, String billingKey, Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
+
+        PortoneBillingKeyResponseDto portOneBillingKey = portonePaymentClient.getBillingKeyDetails(billingKey);
+
+        if (!"ISSUED".equalsIgnoreCase(portOneBillingKey.getStatus())
+                || !billingKey.equals(portOneBillingKey.getBillingKey())) {
+            log.error("[빌링키 검증 실패] userId: {}, issueId: {}, status: {}", userId, issueId, portOneBillingKey.getStatus());
+            throw new CustomException(CustomError.BILLING_KEY_VERIFY_FAILED);
+        }
 
         // 기존 빌링키가 존재할 경우 삭제 또는 교체 처리
         billingKeyRepository.findByUserId(userId)
@@ -67,16 +80,16 @@ public class BillingKeyService {
 
         LocalDateTime now = LocalDateTime.now();
 
-        // BillingKey 엔티티 생성
-        BillingKey billingKey = BillingKey.builder()
+        // BillingKey 엔티티 생성 (PortOne이 실제로 발급한 빌링키 값을 저장)
+        BillingKey entity = BillingKey.builder()
                 .user(user)
-                .billingKeyEncrypted("encrypted_" + issueId) // 실제 암호화 모듈 연동 가능
+                .billingKeyEncrypted(portOneBillingKey.getBillingKey()) // 실제 암호화 모듈 연동 가능
                 .status(BillingKeyStatus.ACTIVE)
                 .issuedAt(now)
                 .expiredAt(now.plusYears(3)) // 기본 3년 유효기간 예시
                 .build();
 
-        BillingKey savedKey = billingKeyRepository.save(billingKey);
+        BillingKey savedKey = billingKeyRepository.save(entity);
         log.info("[빌링키 등록 완료] userId: {}, billingKeyId: {}", userId, savedKey.getId());
 
         return BillingKeyResponseDto.from(savedKey);
