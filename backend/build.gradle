@@ -46,7 +46,10 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
-    // 8. Test
+    // 8. Spring Security & OAuth2 Client
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
+    // 9. Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
     runtimeOnly 'com.mysql:mysql-connector-j'

@@ -4,7 +4,7 @@ import com.team1.cityfarm.dto.LoginRequestDto;
 import com.team1.cityfarm.dto.LoginResponseDto;
 import com.team1.cityfarm.dto.RefreshTokenRequestDto;
 import com.team1.cityfarm.dto.SignupRequestDto;
-import com.team1.cityfarm.global.security.CustomUserDetails;
+import com.team1.cityfarm.global.security.user.CustomUserDetails;
 import com.team1.cityfarm.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;

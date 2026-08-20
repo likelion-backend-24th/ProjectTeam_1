@@ -5,6 +5,7 @@ on:
     branches: [ "feat/Docker" ]
     paths:
       - 'backend/**'
+      - 'docker-compose.yml' # docker-compose.yml 변경 시에도 CD 감지
 
 jobs:
   # 1) 이미지 빌드 후 GHCR에 push
@@ -19,10 +20,13 @@ jobs:
       # 1) 소스코드 체크아웃
       - uses: actions/checkout@v4
 
-      # 2) GitHub Secrets의 내용으로 application-secret.yml 파일 생성 👈 이 부분 추가!
+      # 2) GitHub Secrets의 내용으로 application-secret.yml 파일 생성
+      # 2) GitHub Secrets의 내용으로 application-secret.yml 파일 생성
       - name: Create application-secret.yml
         run: |
-          echo "${{ secrets.APPLICATION_SECRET_YML }}" > ./backend/src/main/resources/application-secret.yml
+          cat << 'EOF' > ./backend/src/main/resources/application-secret.yml
+          ${{ secrets.APPLICATION_SECRET_YML }}
+          EOF
 
       # 1-1) GitHub 계정/레포명을 전부 소문자로 변환 (GHCR 필수 규격)
       - name: Lowercase Repository Name
@@ -57,6 +61,21 @@ jobs:
     needs: build-image
     runs-on: ubuntu-latest
     steps:
+      # 2-1) 최신 docker-compose.yml을 가져오기 위한 체크아웃
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      # 2-2) 루트에 위치한 docker-compose.yml을 EC2로 복사
+      - name: Copy docker-compose.yml via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "docker-compose.yml" # 💡 루트 경로의 파일 복사
+          target: "~/cityfarm"
+
+      # 2-3) SSH 접속 후 배포 수행
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1
         with:
@@ -75,53 +94,11 @@ jobs:
             # 3) .env 파일 생성
             echo "DB_PASSWORD=$DB_PASSWORD" > .env
             
-            # 4) docker-compose.yml 직접 자동 생성 (SCP 실패 위험 제거)
-            cat << 'EOF' > docker-compose.yml
-            version: '3.8'
-
-            services:
-              db:
-                image: mysql:8.0
-                container_name: cityfarm-DB
-                restart: always
-                environment:
-                  MYSQL_DATABASE: cityfarm
-                  MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-                ports:
-                  - "3306:3306"
-                volumes:
-                  - mysql_data:/var/lib/mysql
-                healthcheck:
-                  test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-                  interval: 10s
-                  timeout: 5s
-                  retries: 5
-
-              app:
-                image: ${IMAGE_NAME}:latest
-                container_name: cityfarm-backend
-                restart: always
-                ports:
-                  - "8080:8080"
-                depends_on:
-                  db:
-                    condition: service_healthy
-                environment:
-                  SPRING_PROFILES_ACTIVE: prod
-                  SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/cityfarm?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
-                  SPRING_DATASOURCE_USERNAME: root
-                  SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-
-            volumes:
-              mysql_data:
-            EOF
-            
-            # 5) 최신 이미지 pull 및 컨테이너 실행
+            # 4) 최신 이미지 pull 및 백엔드(app) 서비스만 재기동
             docker pull "$IMAGE_NAME":latest
-            docker compose down || true
-            docker compose up -d
+            docker compose up -d app
             
-            # 6) 안 쓰는 이미지 정리
+            # 5) 안 쓰는 이미지 정리
             docker image prune -f
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

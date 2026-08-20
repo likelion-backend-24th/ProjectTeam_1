@@ -1,21 +1,22 @@
 package com.team1.cityfarm.controller;
 
+import com.team1.cityfarm.dto.PasswordCheckRequestDto; // 새로 만들 DTO
+import com.team1.cityfarm.dto.PasswordChangeRequestDto; // 새로 만들 DTO
+import com.team1.cityfarm.dto.ProfileRequestDto;
 import com.team1.cityfarm.dto.ProfileResponseDto;
 import com.team1.cityfarm.entity.User;
 import com.team1.cityfarm.global.response.ApiResponse;
-import com.team1.cityfarm.global.security.CustomUserDetails;
-import com.team1.cityfarm.repository.UserRepository;
+import com.team1.cityfarm.global.security.user.CustomUserDetails;
 import com.team1.cityfarm.service.ProfileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "프로필 API", description = "내 프로필 조회 API")
+@Tag(name = "프로필 API", description = "내 프로필 조회 및 수정 API")
 @SecurityRequirement(name = "BearerAuth")
 @RestController
 @RequiredArgsConstructor
@@ -29,9 +30,46 @@ public class ProfileController {
     @GetMapping
     public ApiResponse<ProfileResponseDto> getMyProfile(
             @AuthenticationPrincipal CustomUserDetails customUserDetails
-            ) {
+    ) {
         User user = profileService.getUser(customUserDetails.getUserId());
 
         return ApiResponse.success("프로필 조회 성공", new ProfileResponseDto(user));
+    }
+
+    @Operation(summary = "내 프로필 수정",
+            description = "jwt에 저장된 userId와 새로운 닉네임 정보를 받아 프로필을 수정합니다.")
+    @PatchMapping
+    public ApiResponse<Void> updateMyProfile(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @RequestBody @Valid ProfileRequestDto profileRequestDto
+    ) {
+        profileService.updateProfile(customUserDetails.getUserId(), profileRequestDto.getNickname());
+
+        return ApiResponse.success("프로필 수정 성공", null);
+    }
+
+    @Operation(summary = "현재 비밀번호 확인",
+            description = "비밀번호 변경 전, 입력한 현재 비밀번호가 올바른지 검증합니다.")
+    @PostMapping("/check-password")
+    public ApiResponse<Boolean> checkPassword(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @RequestBody @Valid PasswordCheckRequestDto requestDto
+    ) {
+        boolean isMatch = profileService.checkCurrentPassword(customUserDetails.getUserId(), requestDto.getCurrentPassword());
+
+        // 일치하지 않으면 서비스에서 예외를 던지거나, 여기서 false를 리턴할 수 있습니다.
+        return ApiResponse.success("비밀번호 확인 성공", isMatch);
+    }
+
+    @Operation(summary = "비밀번호 변경",
+            description = "새로운 비밀번호를 받아 유저의 비밀번호를 변경합니다.")
+    @PatchMapping("/password")
+    public ApiResponse<Void> updatePassword(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @RequestBody @Valid PasswordChangeRequestDto requestDto
+    ) {
+        profileService.changePassword(customUserDetails.getUserId(), requestDto.getNewPassword());
+
+        return ApiResponse.success("비밀번호 변경 성공", null);
     }
 }

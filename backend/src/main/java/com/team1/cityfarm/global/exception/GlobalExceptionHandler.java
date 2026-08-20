@@ -22,6 +22,7 @@ public class GlobalExceptionHandler {
     // 알 수 없는 서버 내부 에러(500) 일괄 처리
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneralException(Exception e) {
+        e.printStackTrace();
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다."));
