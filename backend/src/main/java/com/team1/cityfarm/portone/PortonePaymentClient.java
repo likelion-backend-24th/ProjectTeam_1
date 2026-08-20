@@ -149,6 +149,25 @@ public class PortonePaymentClient {
     }
 
     /**
+     * [PortOne V2 API 결제 예약 취소 (특정 예약 건 단위)]
+     * 구독 해지 예약 시, 이미 잡혀 있는 다음 회차 예약 하나만 취소한다.
+     */
+    public void cancelSchedule(String portoneScheduleId) {
+        try {
+            restClient.method(org.springframework.http.HttpMethod.DELETE)
+                    .uri("/payment-schedules")
+                    .body(Map.of("scheduleIds", java.util.List.of(portoneScheduleId)))
+                    .retrieve()
+                    .toBodilessEntity();
+
+            log.info("[PortOne API] 결제 예약 취소 성공 - scheduleId: {}", portoneScheduleId);
+        } catch (Exception e) {
+            log.error("[PortOne API] 결제 예약 취소 실패 - scheduleId: {}, error: {}", portoneScheduleId, e.getMessage());
+            throw new CustomException(CustomError.PORTONE_CANCEL_FAILED);
+        }
+    }
+
+    /**
      * [PortOne V2 API 결제 예약 취소 (빌링키 기준 전체 취소)]
      * 구독 해지 시 해당 빌링키에 걸린 모든 미실행 예약을 취소한다.
      */

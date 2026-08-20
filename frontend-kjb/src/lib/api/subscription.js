@@ -24,11 +24,6 @@ export function getSubscriptionPasses(subscriptionId) {
   return apiRequest(`/api/subscriptions/${subscriptionId}/passes`);
 }
 
-// TODO(backend): SubscriptionPassUsage 조회 API가 아직 정의되지 않았다.
-// 임의로 엔드포인트를 만들지 말라는 요구사항에 따라, 백엔드 계약이 확정되면
-// 아래 시그니처를 유지한 채 본문만 apiRequest 호출로 교체한다.
-export function getSubscriptionPassUsages(_passId) {
-  return Promise.reject(
-    new Error("NOT_IMPLEMENTED: 수강권 사용 내역 조회 API가 아직 백엔드에 구현되지 않았습니다."),
-  );
+export function getSubscriptionPassUsages(passId) {
+  return apiRequest(`/api/subscriptions/passes/${passId}/usages`);
 }

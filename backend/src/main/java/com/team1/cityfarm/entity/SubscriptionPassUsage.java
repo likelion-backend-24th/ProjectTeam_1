@@ -17,7 +17,9 @@ import java.time.LocalDateTime;
         }
 )
 @Getter
+@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class SubscriptionPassUsage {
 
     @Id
