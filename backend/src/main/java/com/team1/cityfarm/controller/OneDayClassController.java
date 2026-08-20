@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -23,8 +24,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Tag(name = "원데이클래스 API", description = "원데이클래스 조회, 등록 API")
 @RestController
 @RequiredArgsConstructor
@@ -78,17 +81,27 @@ public class OneDayClassController {
         Long hostId = customUserDetails.getUserId();
         List<ClassEnrollment> cancelledEnrollments = oneDayClassService.cancelClass(classId, hostId);
 
-        for (ClassEnrollment enrollment : cancelledEnrollments) {
-            if (enrollment.getPaymentType() == PaymentType.GENERAL) {
-                paymentService.cancelPaymentByOrderId(
-                        enrollment.getUser().getId(),
-                        enrollment.getOrderId(),
-                        null
-                );
+        List<Long> failedEnrollmentIds = new ArrayList<>();
 
-            } else if (enrollment.getPaymentType() == PaymentType.SUBSCRIPTION) {
-                subscriptionService.restorePassByEnrollmentId(enrollment.getId());
+        for (ClassEnrollment enrollment : cancelledEnrollments) {
+            try {
+                if (enrollment.getPaymentType() == PaymentType.GENERAL) {
+                    paymentService.refundForHostCancelledClass(
+                            enrollment.getOrderId(),
+                            "호스트에 의한 클래스 취소"
+                    );
+                } else if (enrollment.getPaymentType() == PaymentType.SUBSCRIPTION) {
+                    subscriptionService.restorePassByEnrollmentId(enrollment.getId());
+                }
+            } catch (Exception e) {
+                log.error("[클래스 취소 - 환불/복구 실패] enrollmentId: {}, userId: {}, reason: {}",
+                        enrollment.getId(), enrollment.getUser().getId(), e.getMessage());
+                failedEnrollmentIds.add(enrollment.getId());
             }
+        }
+
+        if (!failedEnrollmentIds.isEmpty()) {
+            log.warn("[클래스 취소 - 일부 환불/복구 실패] classId: {}, 실패한 enrollmentId 목록: {}", classId, failedEnrollmentIds);
         }
 
         return ApiResponse.success("클래스 취소 완료");
