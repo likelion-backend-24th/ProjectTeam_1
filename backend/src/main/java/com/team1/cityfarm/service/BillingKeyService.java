@@ -28,6 +28,7 @@ public class BillingKeyService {
     private final BillingKeyRepository billingKeyRepository;
     private final UserRepository userRepository;
     private final PortonePaymentClient portonePaymentClient;
+    private final SubscriptionService subscriptionService;
 
     /**
      * [내 빌링키 조회]
@@ -74,9 +75,9 @@ public class BillingKeyService {
             throw new CustomException(CustomError.BILLING_KEY_VERIFY_FAILED);
         }
 
-        // 기존 빌링키가 존재할 경우 삭제 또는 교체 처리
-        billingKeyRepository.findByUserId(userId)
-                .ifPresent(billingKeyRepository::delete);
+        // 새 키를 저장하기 전에 기존 키를 먼저 확보해둔다 — 저장 뒤에 findByUserId를 다시 부르면
+        // 잠깐 2건이 돼서 단건 조회(Optional)가 깨진다.
+        BillingKey oldKey = billingKeyRepository.findByUserId(userId).orElse(null);
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -90,6 +91,21 @@ public class BillingKeyService {
                 .build();
 
         BillingKey savedKey = billingKeyRepository.save(entity);
+
+        if (oldKey != null) {
+            // 1. 이전 키에 예약이 걸려있으면 새 키로 마이그레이션 (실패하면 여기서 예외 -> 전체 롤백,
+            //    새 카드 저장도 함께 취소되어 구독이 조용히 끊기는 상황을 막는다)
+            subscriptionService.migrateActiveScheduleToNewBillingKey(userId, savedKey);
+
+            // 2. 이제 아무 것도 참조하지 않는 이전 키를 PortOne에서 정리 — 실패해도 트랜잭션은 유지
+            try {
+                portonePaymentClient.deleteBillingKey(oldKey.getBillingKeyEncrypted(), "카드 변경으로 인한 이전 빌링키 해지");
+            } catch (Exception e) {
+                log.error("[이전 빌링키 해지 실패 - 무시하고 진행] userId: {}, oldBillingKeyId: {}", userId, oldKey.getId(), e);
+            }
+            billingKeyRepository.delete(oldKey);
+        }
+
         log.info("[빌링키 등록 완료] userId: {}, billingKeyId: {}", userId, savedKey.getId());
 
         return BillingKeyResponseDto.from(savedKey);
