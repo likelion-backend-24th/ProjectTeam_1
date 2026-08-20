@@ -15,7 +15,8 @@ import java.time.LocalDateTime;
                 )
         }
 )
-@Getter
+@Getter@Builder
+@AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class WebhookInbox {
 

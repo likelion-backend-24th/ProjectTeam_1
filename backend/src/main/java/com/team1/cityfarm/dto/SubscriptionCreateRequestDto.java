@@ -13,4 +13,5 @@ import lombok.NoArgsConstructor;
 public class SubscriptionCreateRequestDto {
 
     private SubscriptionPlanType planType;
+    private String billingKey; // 포트원 프론트엔드 SDK에서 발급받은 빌링키 추가
 }

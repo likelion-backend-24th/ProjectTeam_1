@@ -71,7 +71,6 @@ public class ClassEnrollmentService {
         return enrollment;
     }
 
-
     //수강권 사용 여부 확인
     //수강 일시가 현재 시각 이전이면 이미 진행된 클래스로 판단
     public boolean isEnrollmentUsed(Long orderId) {
@@ -82,7 +81,6 @@ public class ClassEnrollmentService {
                 })
                 .orElse(false);
     }
-
 
    //수강 신청 취소 처리
    //(PaymentService 결제 취소 시 사용)
