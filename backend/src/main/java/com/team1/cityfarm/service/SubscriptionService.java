@@ -252,7 +252,7 @@ public class SubscriptionService {
             subscription.setStatus(SubscriptionStatus.CANCELLED);
             subscription.setCancelledAt(LocalDateTime.now());
         } else {
-            BillingKey billingKeyEntity = billingKeyRepository.findByUserId(user.getId()).orElse(null);
+            BillingKey billingKeyEntity = billingKeyRepository.findByUserIdAndStatus(user.getId(), BillingKeyStatus.ACTIVE).orElse(null);
 
             if (billingKeyEntity == null) {
                 log.error("[구독 갱신] 다음 회차 예약 실패 - 빌링키를 찾을 수 없음. userId: {}", user.getId());
@@ -356,6 +356,20 @@ public class SubscriptionService {
         );
 
         log.info("[카드 변경 - 예약 마이그레이션 완료] subscriptionId: {}, round: {}", subscription.getId(), oldSchedule.getRound());
+    }
+
+    /**
+     * [빌링키 단독 삭제 가드용] 이 유저의 활성 구독에 아직 실행되지 않은(SCHEDULED) 예약결제가
+     * 걸려있는지 확인한다. 걸려있으면 대체 카드 없이 빌링키를 삭제해선 안 된다(다음 회차 결제
+     * 수단이 없어짐). BillingKeyService.revokeMyBillingKey에서 사용.
+     */
+    @Transactional(readOnly = true)
+    public boolean hasActiveScheduledPayment(Long userId) {
+        return subscriptionRepository.findByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE)
+                .map(subscription -> subscriptionScheduleRepository
+                        .findBySubscriptionIdAndStatus(subscription.getId(), ScheduleStatus.SCHEDULED)
+                        .isPresent())
+                .orElse(false);
     }
 
     /**

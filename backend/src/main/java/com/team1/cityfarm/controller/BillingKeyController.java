@@ -53,4 +53,18 @@ public class BillingKeyController {
         BillingKeyResponseDto response = billingKeyService.confirmIssuance(issueId, billingKey, customUserDetails.getUserId());
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * [빌링키 단독 삭제]
+     * DELETE /api/billing-keys/me
+     * 카드 교체 없이 등록된 카드만 삭제한다. 활성 구독에 다음 회차 예약이 걸려있으면 409로 거부된다.
+     */
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> revokeMyBillingKey(
+            @RequestParam(value = "reason", required = false) String reason,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
+    ) {
+        billingKeyService.revokeMyBillingKey(customUserDetails.getUserId(), reason);
+        return ResponseEntity.ok().build();
+    }
 }

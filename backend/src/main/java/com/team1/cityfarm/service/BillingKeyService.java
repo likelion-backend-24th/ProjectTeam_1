@@ -35,7 +35,7 @@ public class BillingKeyService {
      * 빌링키가 없으면 404 CustomException을 발생시킵니다.
      */
     public BillingKeyResponseDto getMyActiveBillingKey(Long userId) {
-        BillingKey billingKey = billingKeyRepository.findByUserId(userId)
+        BillingKey billingKey = billingKeyRepository.findByUserIdAndStatus(userId, BillingKeyStatus.ACTIVE)
                 .orElseThrow(() -> new CustomException(CustomError.BILLING_KEY_NOT_FOUND));
 
         return BillingKeyResponseDto.from(billingKey);
@@ -75,9 +75,8 @@ public class BillingKeyService {
             throw new CustomException(CustomError.BILLING_KEY_VERIFY_FAILED);
         }
 
-        // 새 키를 저장하기 전에 기존 키를 먼저 확보해둔다 — 저장 뒤에 findByUserId를 다시 부르면
-        // 잠깐 2건이 돼서 단건 조회(Optional)가 깨진다.
-        BillingKey oldKey = billingKeyRepository.findByUserId(userId).orElse(null);
+        // 새 키를 저장하기 전에 기존 ACTIVE 키를 먼저 확보해둔다.
+        BillingKey oldKey = billingKeyRepository.findByUserIdAndStatus(userId, BillingKeyStatus.ACTIVE).orElse(null);
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -103,11 +102,36 @@ public class BillingKeyService {
             } catch (Exception e) {
                 log.error("[이전 빌링키 해지 실패 - 무시하고 진행] userId: {}, oldBillingKeyId: {}", userId, oldKey.getId(), e);
             }
-            billingKeyRepository.delete(oldKey);
+            // 하드 삭제 대신 REVOKED로 남긴다(이력 보존). PortOne 쪽에서는 이미 해지됐으므로
+            // 이 row의 billingKeyEncrypted 값을 다시 결제/예약 요청에 재사용하면 안 된다 — 항상
+            // findByUserIdAndStatus(ACTIVE)로만 "현재 쓰는 키"를 조회할 것.
+            oldKey.updateBillingKeyStatus(BillingKeyStatus.REVOKED);
         }
 
         log.info("[빌링키 등록 완료] userId: {}, billingKeyId: {}", userId, savedKey.getId());
 
         return BillingKeyResponseDto.from(savedKey);
+    }
+
+    /**
+     * [빌링키 단독 삭제 (카드 교체 없이 그냥 삭제)]
+     * 활성 구독에 아직 실행되지 않은 예약결제가 걸려있으면 삭제를 막는다 — 대체 카드 없이
+     * 지우면 다음 회차 결제 수단이 사라져서 구독이 조용히 끊긴다. 하드 삭제 대신 REVOKED로 남긴다.
+     */
+    @Transactional
+    public void revokeMyBillingKey(Long userId, String reason) {
+        BillingKey activeKey = billingKeyRepository.findByUserIdAndStatus(userId, BillingKeyStatus.ACTIVE)
+                .orElseThrow(() -> new CustomException(CustomError.BILLING_KEY_NOT_FOUND));
+
+        if (subscriptionService.hasActiveScheduledPayment(userId)) {
+            throw new CustomException(CustomError.BILLING_KEY_IN_USE);
+        }
+
+        String revokeReason = (reason != null && !reason.isBlank()) ? reason : "사용자 요청에 의한 카드 삭제";
+
+        portonePaymentClient.deleteBillingKey(activeKey.getBillingKeyEncrypted(), revokeReason);
+        activeKey.updateBillingKeyStatus(BillingKeyStatus.REVOKED);
+
+        log.info("[빌링키 삭제 완료] userId: {}, billingKeyId: {}", userId, activeKey.getId());
     }
 }
