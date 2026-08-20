@@ -174,8 +174,8 @@ public class PortonePaymentClient {
             restClient.method(org.springframework.http.HttpMethod.DELETE)
                     .uri(uriBuilder -> uriBuilder
                             .path("/payment-schedules")
-                            .queryParam("requestBody", requestBody)
-                            .build())
+                            .queryParam("requestBody", "{requestBody}")
+                            .build(requestBody))
                     .retrieve()
                     .toBodilessEntity();
 
@@ -196,8 +196,8 @@ public class PortonePaymentClient {
             restClient.method(org.springframework.http.HttpMethod.DELETE)
                     .uri(uriBuilder -> uriBuilder
                             .path("/payment-schedules")
-                            .queryParam("requestBody", requestBody)
-                            .build())
+                            .queryParam("requestBody", "{requestBody}")
+                            .build(requestBody))
                     .retrieve()
                     .toBodilessEntity();
 
@@ -220,8 +220,8 @@ public class PortonePaymentClient {
             restClient.method(org.springframework.http.HttpMethod.DELETE)
                     .uri(uriBuilder -> uriBuilder
                             .path("/billing-keys/{billingKey}")
-                            .queryParam("reason", reason)
-                            .build(billingKey))
+                            .queryParam("reason", "{reason}")
+                            .build(billingKey, reason))
                     .retrieve()
                     .toBodilessEntity();
 
