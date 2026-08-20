@@ -107,7 +107,7 @@ public class ClassEnrollmentService {
         ClassEnrollment enrollment = classEnrollmentRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new CustomException(CustomError.ENROLLMENT_NOT_FOUND));
 
-        if (enrollment.getStatus() == EnrollmentStatus.CANCELLED){
+        if (enrollment.getStatus() == EnrollmentStatus.CANCELLED) {
             throw new CustomException(CustomError.INVALID_ORDER_STATUS);
         }
 
@@ -129,32 +129,32 @@ public class ClassEnrollmentService {
     }
 
 
-   //수강 신청 취소 처리
-   @Transactional
-   public void cancelEnrollment(Long orderId) {
-       ClassEnrollment enrollment = classEnrollmentRepository.findByOrderId(orderId)
-               .orElseThrow(() -> new CustomException(CustomError.ENROLLMENT_NOT_FOUND));
+    //수강 신청 취소 처리
+    @Transactional
+    public void cancelEnrollment(Long orderId) {
+        ClassEnrollment enrollment = classEnrollmentRepository.findByOrderId(orderId)
+                .orElseThrow(() -> new CustomException(CustomError.ENROLLMENT_NOT_FOUND));
 
-       if (enrollment.getStatus() == EnrollmentStatus.CANCELLED) {
-           return;
-       }
+        if (enrollment.getStatus() == EnrollmentStatus.CANCELLED) {
+            return;
+        }
 
-       enrollment.setStatus(EnrollmentStatus.CANCELLED);
-   }
+        enrollment.setStatus(EnrollmentStatus.CANCELLED);
+    }
 
-//    마이페이지 - 내 신청내역 조회
-    public List<MyEnrollmentResponseDto> getMyEnrollment(Long userId){
+    //    마이페이지 - 내 신청내역 조회
+    public List<MyEnrollmentResponseDto> getMyEnrollment(Long userId) {
         return classEnrollmentRepository.findByUser_Id(userId).stream()
                 .map(MyEnrollmentResponseDto::from)
                 .collect(Collectors.toList());
     }
 
-//    호스트 - 내 클래스 신청자 목록 조회
-    public List<EnrollmentApplicantResponseDto> getApplicant(Long classId,Long hostId){
+    //    호스트 - 내 클래스 신청자 목록 조회
+    public List<EnrollmentApplicantResponseDto> getApplicant(Long classId, Long hostId) {
         OneDayClass oneDayClass = oneDayClassRepository.findById(classId)
-                .orElseThrow(()-> new CustomException(CustomError.ONE_DAY_CLASS_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(CustomError.ONE_DAY_CLASS_NOT_FOUND));
 
-        if (!oneDayClass.getHost().getId().equals(hostId)){
+        if (!oneDayClass.getHost().getId().equals(hostId)) {
             throw new CustomException(CustomError.CLASS_NOT_OWNER);
         }
 
@@ -163,5 +163,23 @@ public class ClassEnrollmentService {
                 .collect(Collectors.toList());
     }
 
+    /*    구독 수강권 신청 취소 enrollmentId 기준으로 조회(orderId/subcriptionId는 유일하지 않아 사용 불가)
+        수강권 복구는 호출자(subcriptionService)가 담당.*/
+    @Transactional
+    public ClassEnrollment cancelEnrollmentByPass(Long enrollmentId, Long userId) {
 
+        ClassEnrollment classEnrollment = classEnrollmentRepository.findById(enrollmentId)
+                .orElseThrow(() -> new CustomException(CustomError.ENROLLMENT_NOT_FOUND));
+
+        if (!classEnrollment.getUser().getId().equals(userId)) {
+            throw new CustomException(CustomError.ENROLLMENT_NOT_OWNER);
+            }
+
+            if (classEnrollment.getStatus() == EnrollmentStatus.CANCELLED){
+                return classEnrollment;
+        }
+
+            classEnrollment.setStatus(EnrollmentStatus.CANCELLED);
+            return classEnrollment;
+    }
 }
