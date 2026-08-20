@@ -13,3 +13,25 @@ export function updateProfile(payload) {
     body: payload,
   });
 }
+
+// 현재 비밀번호 확인 API 호출
+export function checkPassword(payload) {
+  return apiRequest("/api/profile/check-password", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: payload,
+  });
+}
+
+// 새 비밀번호 변경 API 호출
+export function updatePassword(payload) {
+  return apiRequest("/api/profile/password", {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: payload,
+  });
+}

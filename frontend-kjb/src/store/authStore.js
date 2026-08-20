@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { clearAccessToken, getAccessToken, setAccessToken } from "@/lib/api/client";
-import { getMyProfile, updateProfile } from "@/lib/api/profile"; // 👈 이 부분 추가
+import { getMyProfile, updateProfile, checkPassword, updatePassword } from "@/lib/api/profile"; // 👈 checkPassword, updatePassword 추가
 import { login as loginApi, logout as logoutApi, withdraw as withdrawApi } from "@/lib/api/auth";
 import { decodeJwtPayload } from "@/lib/jwt";
 
@@ -75,5 +75,15 @@ export const useAuthStore = create((set, get) => ({
     set((state) => ({
       profile: updatedProfile ?? { ...state.profile, ...payload },
     }));
+  },
+
+  // 현재 비밀번호 확인 액션
+  checkPassword: async (payload) => {
+    return await checkPassword(payload);
+  },
+
+  // 비밀번호 변경 액션
+  changePassword: async (payload) => {
+    await updatePassword(payload);
   },
 }));
