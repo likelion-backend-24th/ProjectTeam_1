@@ -31,6 +31,9 @@ public record FarmResponseDto(
         @Schema(description = "임대 기간", example = "6")
         int rentalMonths,
 
+        @Schema(description = "대표 사진 URL", example = "/uploads/farms/xxxx.jpg")
+        String thumbnailUrl,
+
         @Schema(description = "밭 설명", example = "계곡 옆에 햇볕이 잘 듭니다.")
         String description,
 
@@ -40,7 +43,7 @@ public record FarmResponseDto(
         @Schema(description = "등록 일시", example = "2026-08-19")
         String createdAt
 ) {
-    public static FarmResponseDto from(Farm farm){
+    public static FarmResponseDto from(Farm farm, String thumbnailUrl) {
         return new FarmResponseDto(
                 farm.getId(),
                 farm.getUser().getNickname(),
@@ -50,6 +53,7 @@ public record FarmResponseDto(
                 farm.getArea(),
                 farm.getMonthlyRent(),
                 farm.getRentalMonths(),
+                thumbnailUrl,
                 farm.getDescription(),
                 farm.getFarmStatus(),
                 farm.getCreatedAt().toString()
