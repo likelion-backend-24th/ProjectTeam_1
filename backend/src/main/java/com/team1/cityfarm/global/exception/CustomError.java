@@ -65,18 +65,23 @@ public enum CustomError {
     PAYMENT_NOT_FOUND(HttpStatus.NO_CONTENT, "결제 정보 조회 실패"),
     PORTONE_API_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "API 취소 요청 실패"),
 
-    //    원데이클래스 예외
+    // 원데이클래스 예외
     CLASS_CAPACITY_EXCEEDED(HttpStatus.BAD_REQUEST, "클래스 정원이 초과되었습니다"),
     ENROLLMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "수강 신청 내역을 찾을 수 없습니다"),
     ENROLLMENT_NOT_OWNER(HttpStatus.FORBIDDEN, "본인의 신청 내역만 접근할 수 있습니다"),
     NOT_HOST_ROLE(HttpStatus.FORBIDDEN, "호스트 권한이 필요합니다"),
     CLASS_NOT_OWNER(HttpStatus.FORBIDDEN, "본인이 개설한 클래스만 접근할 수 있습니다"),
 
-    //    밭 임대 예외
+    // 밭 임대 예외
     FARM_IMAGE_LIMIT(HttpStatus.BAD_REQUEST, "사진은 최대 5장까지 올릴 수 있습니다."),
 
-    //    빌링 예외
-    BILLING_KEY_VERIFY_FAILED(HttpStatus.BAD_REQUEST, "빌링키 검증에 실패했습니다.");
+    // 빌링 예외
+    BILLING_KEY_VERIFY_FAILED(HttpStatus.BAD_REQUEST, "빌링키 검증에 실패했습니다."),
+
+    // 정산 예외
+    SETTLEMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "정산 정보를 찾을 수 없습니다."),
+    ALREADY_COMPLETED_SETTLEMENT(HttpStatus.BAD_REQUEST, "이미 지급 완료된 정산 건입니다."),
+    ALREADY_CANCELLED_SETTLEMENT(HttpStatus.BAD_REQUEST, "이미 취소된 정산 건입니다.");
 
     private final HttpStatus httpStatus;
     private final String message;

@@ -37,4 +37,17 @@ public class AdminController {
 
         return ResponseEntity.ok(adminService.modifyUser(id,dto));
     }
+
+    /**
+     * [관리자] 정산 지급 완료 처리
+     */
+    @Operation(summary = "정산 지급 완료 처리",
+            description = "관리자가 특정 정산 건을 지급 완료(COMPLETED) 상태로 변경합니다.")
+    @PatchMapping("/settlements/{settlementId}/payout")
+    public ResponseEntity<Void> payoutSettlement(
+            @PathVariable Long settlementId
+    ) {
+        adminService.processSettlementPayout(settlementId);
+        return ResponseEntity.ok().build();
+    }
 }

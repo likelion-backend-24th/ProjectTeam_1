@@ -1,5 +1,6 @@
 package com.team1.cityfarm.service;
 
+import com.team1.cityfarm.dto.SettlementResponseDto;
 import com.team1.cityfarm.entity.*;
 import com.team1.cityfarm.global.exception.CustomError;
 import com.team1.cityfarm.global.exception.CustomException;
@@ -12,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -64,5 +67,34 @@ public class SettlementService {
                 savedSettlement.getId(), host.getId(), order.getId(), settlementAmount.intValue());
 
         return savedSettlement;
+    }
+
+    /**
+     * [호스트용] 내 정산 내역 목록 조회
+     */
+    public List<SettlementResponseDto> getHostSettlements(Long hostId) {
+        List<Settlement> settlements = settlementRepository.findByHostIdOrderByCreatedAtDesc(hostId);
+        return settlements.stream()
+                .map(SettlementResponseDto::new) // 혹은 프로젝트 내 정산 응답 DTO 변환 방식에 맞게 조정
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * [관리자용] 정산 지급 완료 처리
+     */
+    @Transactional
+    public void completeSettlement(Long settlementId) {
+        Settlement settlement = settlementRepository.findById(settlementId)
+                .orElseThrow(() -> new CustomException(CustomError.SETTLEMENT_NOT_FOUND));
+
+        // 이미 완료되었거나 취소된 건인지 체크
+        if (settlement.getStatus() == SettlementStatus.COMPLETED) {
+            throw new CustomException(CustomError.ALREADY_COMPLETED_SETTLEMENT); // 혹은 적절한 에러 코드
+        }
+
+        // 엔티티에 구현되어 있는 complete() 메서드 호출 (상태 변경 + 완료 시각 갱신)
+        settlement.complete();
+
+        log.info("[정산 지급 완료 처리] Settlement ID: {}", settlement.getId());
     }
 }

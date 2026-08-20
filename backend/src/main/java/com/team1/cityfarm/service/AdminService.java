@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AdminService {
     private final UserRepository userRepository;
+    private final SettlementService settlementService;
 
     //user 전체 조회
     @Transactional(readOnly = true)
@@ -33,4 +34,11 @@ public class AdminService {
         return UserResponseDto.from(loadUser);
     }
 
+    /**
+     * [관리자] 정산 지급 완료 처리
+     */
+    @Transactional
+    public void processSettlementPayout(Long settlementId) {
+        settlementService.completeSettlement(settlementId);
+    }
 }
