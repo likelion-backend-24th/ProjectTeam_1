@@ -20,11 +20,11 @@ public class ClassEnrollment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "class_id", nullable = false)
     private OneDayClass oneDayClass;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
@@ -36,10 +36,10 @@ public class ClassEnrollment {
     @Column(nullable = false)
     private PaymentType paymentType;
 
-    @JoinColumn(name = "order_id")
+    @Column(name = "order_id")
     private Long orderId;
 
-    @JoinColumn(name = "subscription_id")
+    @Column(name = "subscription_id")
     private Long subscriptionId;
 
     @CreationTimestamp

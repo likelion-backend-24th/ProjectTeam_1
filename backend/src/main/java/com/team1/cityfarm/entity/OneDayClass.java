@@ -22,7 +22,7 @@ public class OneDayClass {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "host_id", nullable = false)
     private User host;
 
@@ -35,7 +35,7 @@ public class OneDayClass {
     @Column(nullable = false)
     private LocalDateTime date;
 
-    @Column(nullable = false, length = 200)
+    @Column(nullable = false, length = 100)
     private String location;
 
     @Column(nullable = false)
