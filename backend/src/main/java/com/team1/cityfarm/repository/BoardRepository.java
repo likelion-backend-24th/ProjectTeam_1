@@ -7,6 +7,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface BoardRepository extends JpaRepository<Board, Long> {
 
@@ -25,5 +27,8 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
     Page<Board> findByCategoryAndContentContaining(Category category, String keyword, Pageable pageable);
 
     Page<Board> findByCategoryAndUser_Nickname(Category category, String keyword, Pageable pageable);
+
+    // 피드 목록 조회 (팔로우한 사용자들의 게시글)
+    Page<Board> findByUser_IdIn(List<Long> userIds, Pageable pageable);
 
 }
