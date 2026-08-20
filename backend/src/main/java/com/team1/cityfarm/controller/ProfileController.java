@@ -1,5 +1,6 @@
 package com.team1.cityfarm.controller;
 
+import com.team1.cityfarm.dto.BoardResponseDto;
 import com.team1.cityfarm.dto.PasswordCheckRequestDto; // 새로 만들 DTO
 import com.team1.cityfarm.dto.PasswordChangeRequestDto; // 새로 만들 DTO
 import com.team1.cityfarm.dto.ProfileRequestDto;
@@ -13,6 +14,10 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -71,5 +76,17 @@ public class ProfileController {
         profileService.changePassword(customUserDetails.getUserId(), requestDto.getNewPassword());
 
         return ApiResponse.success("비밀번호 변경 성공", null);
+    }
+
+    @Operation(summary = "좋아요한 게시글 목록 조회",
+            description = "로그인한 사용자가 좋아요한 게시글 목록을 최신순으로 조회합니다.")
+    @PostMapping("/likes")
+    public ApiResponse<Page<BoardResponseDto>> getLikedBoards(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        Page<BoardResponseDto> result = profileService.getLikedBoards(customUserDetails.getUserId(), pageable);
+
+        return ApiResponse.success("좋아요한 게시글 목록 조회 성공", result);
     }
 }
