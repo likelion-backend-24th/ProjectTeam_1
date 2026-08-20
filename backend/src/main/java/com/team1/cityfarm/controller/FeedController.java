@@ -2,7 +2,7 @@ package com.team1.cityfarm.controller;
 
 import com.team1.cityfarm.dto.BoardResponseDto;
 import com.team1.cityfarm.global.response.ApiResponse;
-import com.team1.cityfarm.global.security.CustomUserDetails;
+import com.team1.cityfarm.global.security.user.CustomUserDetails;
 import com.team1.cityfarm.service.FeedService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
