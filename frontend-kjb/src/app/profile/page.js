@@ -5,7 +5,7 @@ import LinkComponent from "next/link";
 import { useRouter } from "next/navigation";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { RequireAuth } from "@/components/RequireAuth";
-import { ChevronRightIcon, ReceiptIcon, TicketIcon, LockIcon } from "@/components/icons";
+import { ChevronRightIcon, ReceiptIcon, TicketIcon } from "@/components/icons";
 import { useAuthStore } from "@/store/authStore";
 import { useToastStore } from "@/store/toastStore";
 import { ApiError } from "@/lib/api/client";
@@ -198,7 +198,7 @@ function ProfileView() {
         className="flex w-full items-center justify-between rounded-xl bg-surface px-4 py-3.5 text-left"
       >
         <span className="flex items-center gap-2.5 text-[15px] font-semibold text-ink">
-          <LockIcon size={20} />
+          <TicketIcon size={20} />
           비밀번호 변경
         </span>
         <ChevronRightIcon size={18} className="text-ink-muted" />
