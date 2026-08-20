@@ -21,4 +21,8 @@ public interface SubscriptionScheduleRepository
     List<SubscriptionSchedule> findByStatus(
             ScheduleStatus status
     );
+
+    Optional<SubscriptionSchedule> findByPaymentId(
+            String paymentId
+    );
 }

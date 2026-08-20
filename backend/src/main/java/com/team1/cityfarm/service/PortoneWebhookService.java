@@ -29,7 +29,7 @@ public class PortoneWebhookService {
     private final OrderRepository orderRepository;
     private final PortonePaymentClient portOnePaymentClient;
     private final PaymentService paymentService;
-    // private final SubscriptionService subscriptionService; // 향후 3단계에서 추가 예정
+    private final SubscriptionService subscriptionService;
     private final ObjectMapper objectMapper;
 
     @Value("${portone.webhook-secret}")
@@ -51,8 +51,9 @@ public class PortoneWebhookService {
         }
 
         try {
-            // 3. payload 파싱 후 paymentId 추출
+            // 3. payload 파싱 후 type/paymentId 추출
             JsonNode rootNode = objectMapper.readTree(rawPayload);
+            String type = rootNode.path("type").asText(null);
             String paymentId = rootNode.path("data").path("paymentId").asText(null);
 
             if (paymentId == null) { // 포트원 V2 버전에 따라 JSON 필드명이 다를 수 있음
@@ -60,8 +61,13 @@ public class PortoneWebhookService {
             }
 
             if (paymentId != null) {
-                // 4. 결제 상태 처리 로직 위임
-                handlePaymentPaid(paymentId);
+                // 4. 웹훅 타입별 처리 로직 위임
+                // 예약결제(정기결제) 실행 시에도 전용 타입 없이 동일한 Transaction.Paid/Failed로 온다.
+                if ("Transaction.Failed".equals(type)) {
+                    handlePaymentFailed(paymentId);
+                } else {
+                    handlePaymentPaid(paymentId);
+                }
             }
 
             // 5. 처리 완료 후 WebhookInbox 저장 (이후 동일 webhookId 진입 시 2번에서 방어)
@@ -90,24 +96,30 @@ public class PortoneWebhookService {
             return;
         }
 
-        // 2. 해당 결제건의 Order 조회 (가맹점 주문번호 추출 필요)
-        // 주의: 웹훅 Payload에는 merchantOrderId가 있을 수도 없을 수도 있으므로 단건 조회를 통해 가져오거나 Order와 직접 매핑
-        // 여기서는 단건 조회된 주문명이 있다고 가정 (결제 시 order_name 등에 세팅 시)
-        // **포트원 V2는 paymentId로 Payment 조회 -> 연관 Order를 찾는 흐름이 필요할 수 있습니다.**
-        // 아래는 Order에 merchantOrderId 가 잘 들어왔다고 가정
-        String merchantOrderId = portOnePayment.getId(); // FIXME: PortOne 결제 객체에서 가맹점 주문번호(merchant_id)를 꺼내야 함
+        // 2. 해당 결제건의 Order 조회
+        // 컨벤션: 결제 요청 시 PortOne에 넘기는 paymentId를 우리 merchantOrderId와 동일한 값으로 발급한다
+        // (OrderService.createClassOrder가 만드는 "BE24-CITYFARM-" + UUID를 프론트가 그대로 결제창의 paymentId로 사용).
+        // 따라서 웹훅에서 파싱한 paymentId 자체가 곧 merchantOrderId이며, PortOne 단건 조회 결과의 id와도 항상 같아야 한다.
+        if (!paymentId.equals(portOnePayment.getId())) {
+            log.error("[Webhook] paymentId 불일치 - 웹훅: {}, PortOne 단건조회: {}", paymentId, portOnePayment.getId());
+            return;
+        }
 
-        Order order = orderRepository.findByMerchantOrderId(merchantOrderId)
+        Order order = orderRepository.findByMerchantOrderId(paymentId)
                 .orElse(null);
 
         if (order == null) {
-            log.warn("[Webhook] 매핑되는 주문(Order)을 찾을 수 없음. merchantOrderId: {}", merchantOrderId);
+            // 일반 주문(Order)이 아니면 구독 정기결제(예약결제) 회차일 수 있으므로 paymentId로 다시 조회한다.
+            if (subscriptionService.renewSubscription(paymentId, portOnePayment)) {
+                return;
+            }
+            log.warn("[Webhook] 매핑되는 주문(Order)/구독 스케줄을 찾을 수 없음. paymentId: {}", paymentId);
             return;
         }
 
         // 3. [동시성 방어] 이미 브라우저(PaymentService.verifyAndCompletePayment)에서 PAID로 처리했다면 스킵
         if (order.getOrderStatus() == OrderStatus.PAID) {
-            log.info("[Webhook] 이미 클라이언트 요청으로 처리된 결제건. merchantOrderId: {}", merchantOrderId);
+            log.info("[Webhook] 이미 클라이언트 요청으로 처리된 결제건. merchantOrderId: {}", paymentId);
             return;
         }
 
@@ -127,10 +139,17 @@ public class PortoneWebhookService {
                 portOnePayment.getApprovedAtParsed()
         );
 
-        /*
-         * 향후 [3단계]에서 구독 연장(SUBSCRIPTION) 결제도 처리하게 될 경우,
-         * 여기서 order.getOrderType() == OrderType.SUBSCRIPTION 분기 처리 추가.
-         */
+    }
+
+    /**
+     * 결제 실패(Transaction.Failed) 웹훅 처리.
+     * 현재는 구독 정기결제(예약결제) 실패만 반영한다 — 일반 주문은 결제창에서 실패가 그대로
+     * 사용자에게 노출되고 Order가 PENDING으로 남을 뿐이라 별도 서버 처리가 필요 없다.
+     */
+    private void handlePaymentFailed(String paymentId) {
+        if (!subscriptionService.handleScheduleFailed(paymentId)) {
+            log.info("[Webhook] 구독 스케줄이 아닌 결제 실패 - 처리 생략. paymentId: {}", paymentId);
+        }
     }
 
     /**

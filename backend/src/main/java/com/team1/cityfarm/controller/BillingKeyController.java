@@ -41,13 +41,16 @@ public class BillingKeyController {
     /**
      * [빌링키 발급 확정 및 저장]
      * POST /api/billing-keys/confirm
+     * PortOne SDK가 프론트엔드에 돌려준 발급 결과(billingKey)를 함께 전달받아
+     * 백엔드가 PortOne API로 재조회·검증한 뒤에만 저장한다.
      */
     @PostMapping("/confirm")
     public ResponseEntity<BillingKeyResponseDto> confirmIssuance(
             @RequestParam("issueId") String issueId,
+            @RequestParam("billingKey") String billingKey,
             @AuthenticationPrincipal CustomUserDetails customUserDetails
     ) {
-        BillingKeyResponseDto response = billingKeyService.confirmIssuance(issueId, customUserDetails.getUserId());
+        BillingKeyResponseDto response = billingKeyService.confirmIssuance(issueId, billingKey, customUserDetails.getUserId());
         return ResponseEntity.ok(response);
     }
 }
