@@ -53,6 +53,7 @@ public enum CustomError {
     SUBSCRIPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "활성중인 구독 정보가 없습니다"),
     BILLING_KEY_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 빌링키가 존재하지 않습니다"),
     BILLING_KEY_STATUS_NOT_FOUND(HttpStatus.BAD_REQUEST,"빌링키 상태 오류"),
+    BILLING_KEY_IN_USE(HttpStatus.CONFLICT, "구독 결제 예약이 걸려있어 카드를 삭제할 수 없습니다. 카드 변경 또는 구독 해지를 먼저 진행해주세요."),
     SUBSCRIPTION_PASS_EXHAUSTED(HttpStatus.BAD_REQUEST, "구독 수강권 잔여 횟수가 없습니다"),
     CANNOT_REFUND(HttpStatus.FORBIDDEN, "환불 불가"),
     DUPLICATE_SETTLEMENT(HttpStatus.CONFLICT, "이미 존재하는 정산 데이터"),
