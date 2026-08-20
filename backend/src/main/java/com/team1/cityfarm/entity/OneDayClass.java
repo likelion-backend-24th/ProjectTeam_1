@@ -48,4 +48,9 @@ public class OneDayClass {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private ClassStatus status = ClassStatus.OPEN;
 }

@@ -3,9 +3,7 @@ package com.team1.cityfarm.service;
 import com.team1.cityfarm.dto.OneDayClassRequestDto;
 import com.team1.cityfarm.dto.OneDayClassResponseDto;
 import com.team1.cityfarm.dto.OneDayClassSummaryDto;
-import com.team1.cityfarm.entity.OneDayClass;
-import com.team1.cityfarm.entity.RoleType;
-import com.team1.cityfarm.entity.User;
+import com.team1.cityfarm.entity.*;
 import com.team1.cityfarm.global.exception.CustomError;
 import com.team1.cityfarm.global.exception.CustomException;
 import com.team1.cityfarm.repository.OneDayClassRepository;
@@ -16,12 +14,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class OneDayClassService {
     private final OneDayClassRepository oneDayClassRepository;
     private final UserRepository userRepository;
+    private final ClassEnrollmentService classEnrollmentService;
 
     //    등록
     @Transactional
@@ -57,6 +58,25 @@ public class OneDayClassService {
                 .orElseThrow(() -> new CustomException(CustomError.ONE_DAY_CLASS_NOT_FOUND));
 
         return OneDayClassResponseDto.from(oneDayClass);
+    }
+
+    //    클래스 취소
+    @Transactional
+    public List<ClassEnrollment> cancelClass(Long classId, Long hostId) {
+        OneDayClass oneDayClass = oneDayClassRepository.findById(classId)
+                .orElseThrow(() -> new CustomException(CustomError.ONE_DAY_CLASS_NOT_FOUND));
+
+        if (!oneDayClass.getHost().getId().equals(hostId)) {
+            throw new CustomException(CustomError.CLASS_NOT_OWNER);
+        }
+
+        if (oneDayClass.getStatus() == ClassStatus.CANCELLED) {
+            return List.of(); // 멱등 처리
+        }
+
+        oneDayClass.setStatus(ClassStatus.CANCELLED);
+
+        return classEnrollmentService.cancelAllEnrollmentsForClass(classId);
     }
 
 }
