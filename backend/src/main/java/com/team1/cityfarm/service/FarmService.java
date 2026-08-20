@@ -36,10 +36,12 @@ public class FarmService {
             throw new CustomException(CustomError.AUTH_FORBIDDEN);
         }
 
+        // 사진 특정 수 넘으면 등록 거부
         if (images != null && images.size() > 5) {
             throw new CustomException(CustomError.FARM_IMAGE_LIMIT);
         }
 
+        // Farm DB 저장
         Farm farm = Farm.builder()
                 .user(user)
                 .title(requestDto.title())
@@ -51,8 +53,10 @@ public class FarmService {
                 .description(requestDto.description())
                 .build();
 
+        // 대표 사진 경로 담을 변수(사진 없으면 null로 남은 아직 구현 안했기 때문)
         Farm savedFarm = farmRepository.save(farm);
 
+        // 사진 업로드 로직
         String thumbnailUrl = null;
         if (images != null && !images.isEmpty()){
             for (int i = 0; i < images.size(); i++){
@@ -64,6 +68,7 @@ public class FarmService {
                         .build();
                 farmImageRepository.save(farmImage);
 
+                // 첫 번째 사진을 대표 사진으로 설정
                 if(i == 0){
                     thumbnailUrl = imagesUrl;
                 }
