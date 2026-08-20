@@ -15,6 +15,7 @@ public class MyEnrollmentResponseDto {
 
     private Long enrollmentId;
     private Long classId;
+    private Long orderId;
     private String classTitle;
     private LocalDateTime classDate;
     private String classLocation;
@@ -25,6 +26,7 @@ public class MyEnrollmentResponseDto {
         return MyEnrollmentResponseDto.builder()
                 .enrollmentId(entity.getId())
                 .classId(entity.getOneDayClass().getId())
+                .orderId(entity.getOrderId())
                 .classTitle(entity.getOneDayClass().getTitle())
                 .classDate(entity.getOneDayClass().getDate())
                 .classLocation(entity.getOneDayClass().getLocation())
