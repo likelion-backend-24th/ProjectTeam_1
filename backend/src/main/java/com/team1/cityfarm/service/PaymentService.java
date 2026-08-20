@@ -201,4 +201,35 @@ public class PaymentService {
 
         return cancelPayment(userId, payment.getId(), request);
     }
+
+    /**
+     * [호스트의 클래스 취소로 인한 환불]
+     * 사용자 귀책이 아니므로 checkRefundEligibility(24시간 이내/미사용 조건)를 건너뛰고 전액 환불한다.
+     * 소유권 검증도 하지 않는다 — "이 사람이 이 클래스의 호스트인지"는 호출부
+     * (OneDayClassService.cancelClass)에서 이미 검증됐다는 전제. 이미 취소된 결제는 멱등하게 스킵한다.
+     * ClassEnrollment 상태는 여기서 건드리지 않는다 — 호스트 클래스 취소 흐름에서
+     * classEnrollmentService.cancelAllEnrollmentsForClass가 이미 처리했다는 전제.
+     */
+    @Transactional
+    public void refundForHostCancelledClass(Long orderId, String reason) {
+        Payment payment = paymentRepository.findByOrderId(orderId)
+                .orElseThrow(() -> new CustomException(CustomError.PAYMENT_NOT_FOUND));
+
+        if (payment.getStatus() == PaymentStatus.CANCELLED) {
+            return;
+        }
+        if (payment.getOrder().getOrderType() != OrderType.GENERAL) {
+            // 수강권(SUBSCRIPTION)으로 신청한 건은 이 경로로 오면 안 됨 - SubscriptionService.restorePassByEnrollmentId로 처리
+            log.warn("[호스트 클래스 취소 환불 스킵] GENERAL 주문이 아님 - orderId: {}", orderId);
+            return;
+        }
+
+        portOnePaymentClient.cancelPayment(payment.getPortonePaymentId(), reason);
+
+        payment.cancel(reason, LocalDateTime.now());
+        payment.getOrder().setOrderStatus(OrderStatus.CANCELLED);
+
+        log.info("[호스트 클래스 취소 환불 완료] orderId: {}, paymentId: {}, reason: {}",
+                orderId, payment.getId(), reason);
+    }
 }
