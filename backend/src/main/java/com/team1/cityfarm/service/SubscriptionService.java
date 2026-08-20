@@ -380,6 +380,30 @@ public class SubscriptionService {
                 .toList();
     }
 
+    /**
+     * 7. [수강권 복구] enrollmentId 기준
+     * ClassEnrollment 쪽에서 수강권으로 신청한 건을 취소할 때 호출한다. 사용했던 수강권의
+     * remainingCount를 1 되돌리고, EXHAUSTED 상태였다면 ACTIVE로 되돌린다(EXPIRED는 그대로 둠 —
+     * 이미 기간이 지난 수강권은 복구돼도 다시 쓸 수 없어야 함). 소유권 검증은 호출부
+     * (ClassEnrollmentService)에서 이미 끝났다고 가정하고 여기서는 하지 않는다.
+     */
+    @Transactional
+    public void restorePassByEnrollmentId(Long enrollmentId) {
+        SubscriptionPassUsage usage = subscriptionPassUsageRepository.findByEnrollmentId(enrollmentId)
+                .orElseThrow(() -> new CustomException(CustomError.SUBSCRIPTION_PASS_NOT_FOUND));
+
+        SubscriptionPass pass = usage.getSubscriptionPass();
+        pass.setRemainingCount(pass.getRemainingCount() + 1);
+        if (pass.getStatus() == PassStatus.EXHAUSTED) {
+            pass.setStatus(PassStatus.ACTIVE);
+        }
+
+        subscriptionPassUsageRepository.delete(usage);
+
+        log.info("[구독 수강권 복구] enrollmentId: {}, passId: {}, 복구 후 잔여: {}",
+                enrollmentId, pass.getId(), pass.getRemainingCount());
+    }
+
     // ==========================================
     // 헬퍼 메서드 (비즈니스 요구사항에 맞게 수정)
     // ==========================================

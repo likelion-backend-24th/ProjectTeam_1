@@ -1,5 +1,7 @@
 package com.team1.cityfarm.entity;
 
+import com.team1.cityfarm.global.exception.CustomError;
+import com.team1.cityfarm.global.exception.CustomException;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -45,4 +47,9 @@ public class BillingKey {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    public void updateBillingKeyStatus(BillingKeyStatus status){
+        if(status == null) throw new CustomException(CustomError.BILLING_KEY_STATUS_NOT_FOUND);
+        this.status = status;
+    }
 }
