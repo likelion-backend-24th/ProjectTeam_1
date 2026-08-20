@@ -30,7 +30,7 @@ function ProfileView() {
 
   // 💡 비밀번호 변경 모달 상태 관리
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [passwordStep, setPasswordStep] = useState(1); // 1: 현재 비밀번호 확인, 2: 새 비밀번호 변경
+  const [passwordStep, setPasswordStep] = useState(1); // 1: 현재 비밀번호 확인, 2: 새 비밀번호 변경하기
   const [currentPasswordInput, setCurrentPasswordInput] = useState("");
   const [newPasswordInput, setNewPasswordInput] = useState("");
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
