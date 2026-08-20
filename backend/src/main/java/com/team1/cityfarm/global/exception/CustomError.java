@@ -36,6 +36,14 @@ public enum CustomError {
     COMMENT_NOT_OWNER(HttpStatus.FORBIDDEN, "댓글 수정/삭제 권한이 없습니다."),
     REPLY_NOT_OWNER(HttpStatus.FORBIDDEN, "답글 수정/삭제 권한이 없습니다."),
 
+    BOARD_TYPE_ERROR(HttpStatus.BAD_REQUEST,"잘못된 검색 타입입니다."),
+    USER_STATUS_ERROR(HttpStatus.BAD_REQUEST,"STATUS에서 정의하지 않은 활동상태입니다."),
+
+    // 팔로우 예외
+    FOLLOW_NOT_FOUND(HttpStatus.NOT_FOUND, "팔로우 정보를 찾을 수 없습니다."),
+    FOLLOW_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 팔로우한 사용자입니다."),
+    FOLLOW_SELF_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "자기 자신은 팔로우할 수 없습니다."),
+    FOLLOW_NOT_OWNER(HttpStatus.FORBIDDEN, "본인의 팔로우만 취소할 수 있습니다.");
     BOARD_TYPE_ERROR(HttpStatus.BAD_REQUEST, "잘못된 검색 타입입니다."),
     USER_STATUS_ERROR(HttpStatus.BAD_REQUEST, "STATUS에서 정의하지 않은 활동상태입니다."),
 
