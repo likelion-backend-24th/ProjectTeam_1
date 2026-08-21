@@ -12,6 +12,7 @@ import org.springframework.web.client.RestClient;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -20,12 +21,13 @@ public class PortonePaymentClient {
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
-
+    private final String webhookNoticeUrl;
 
     // 생성자에서 공통 헤더(Authorization, Content-Type)를 미리 세팅하여 중복 제거
     public PortonePaymentClient(
             @Value("${portone.api-secret}") String apiSecret,
             @Value("${portone.api.base-url:https://api.portone.io}") String baseUrl,
+            @Value("${portone.webhook-notice-url}") String webhookNoticeUrl,
             ObjectMapper objectMapper
     ) {
         this.restClient = RestClient.builder()
@@ -34,6 +36,7 @@ public class PortonePaymentClient {
                 .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                 .build();
         this.objectMapper = objectMapper;
+        this.webhookNoticeUrl = webhookNoticeUrl;
     }
 
     // DELETE 요청 중 일부(/payment-schedules)는 실제 바디 대신 requestBody라는 이름의
@@ -106,7 +109,10 @@ public class PortonePaymentClient {
                     "orderName", orderName,
                     "amount", Map.of("total", amount),
                     "currency", "KRW",
-                    "customer", Map.of("id", String.valueOf(userId))
+                    "customer", Map.of("id", String.valueOf(userId)),
+                    // 스토어를 여러 팀이 공용으로 쓰고 있어 콘솔에 팀별 웹훅 URL을 등록할 수 없다.
+                    // 결제 요청 시 noticeUrls로 직접 지정하면 콘솔 설정보다 우선 적용된다.
+                    "noticeUrls", List.of(webhookNoticeUrl)
             );
 
             PortonePaymentResponseDto response = restClient.post()
@@ -145,7 +151,10 @@ public class PortonePaymentClient {
                             "orderName", orderName,
                             "customer", Map.of("id", String.valueOf(userId)),
                             "amount", Map.of("total", amount),
-                            "currency", "KRW"
+                            "currency", "KRW",
+                            // 예약결제는 PortOne이 나중에 자동 실행하므로, 그 결과를 통지받을 웹훅 주소가
+                            // 이 필드 없이는 아예 없다(스토어 공용이라 콘솔 등록 불가 - payWithBillingKey와 동일한 이유).
+                            "noticeUrls", List.of(webhookNoticeUrl)
                     ),
                     "timeToPay", timeToPay.atZone(ZoneId.of("Asia/Seoul")).toInstant().toString()
             );

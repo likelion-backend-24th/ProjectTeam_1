@@ -58,6 +58,7 @@ portone:
   store-id: ${PORTONE_STORE_ID}               # 우리팀 상점 아이디
   api-secret: ${PORTONE_API_SECRET}           # API Secret
   webhook-secret: ${PORTONE_WEBHOOK_SECRET}   # 웹훅 시크릿
+  webhook-notice-url: ${PORTONE_WEBHOOK_NOTICE_URL:http://54.86.192.52:8080/api/payments/webhooks/portone} # 콘솔에 웹훅 URL을 등록할 수 없어(스토어 공용) 결제/예약 요청 시 noticeUrls로 직접 전달하는 우리 서버 웹훅 주소. 포트(8080) 필수 - Dockerfile EXPOSE 8080 기준, 리버스프록시 없음
   api:
     base-url: https://api.portone.io
   channel-key:

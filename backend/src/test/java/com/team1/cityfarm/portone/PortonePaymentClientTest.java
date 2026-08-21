@@ -35,7 +35,7 @@ class PortonePaymentClientTest {
         // 생성자는 내부에서 RestClient를 직접 만들어버려서 밖에서 주입할 방법이 없다.
         // 프로덕션 코드는 안 건드리고, 생성 후 리플렉션으로 restClient 필드만
         // MockRestServiceServer에 바인딩된 것으로 교체한다.
-        client = new PortonePaymentClient("test-secret", "https://api.portone.io", new ObjectMapper());
+        client = new PortonePaymentClient("test-secret", "https://api.portone.io", "https://test.example.com/api/webhooks/portone", new ObjectMapper());
 
         RestClient.Builder builder = RestClient.builder().baseUrl("https://api.portone.io");
         mockServer = MockRestServiceServer.bindTo(builder).build();
@@ -62,6 +62,7 @@ class PortonePaymentClientTest {
                 .andExpect(jsonPath("$.billingKey").value("bk_1"))
                 .andExpect(jsonPath("$.amount.total").value(30000))
                 .andExpect(jsonPath("$.customer.id").value("42"))
+                .andExpect(jsonPath("$.noticeUrls[0]").value("https://test.example.com/api/webhooks/portone"))
                 .andRespond(withSuccess("{\"id\":\"pay_2\",\"status\":\"FAILED\"}", MediaType.APPLICATION_JSON));
 
         assertThatThrownBy(() ->
@@ -91,6 +92,7 @@ class PortonePaymentClientTest {
                 .andExpect(method(HttpMethod.POST))
                 .andExpect(jsonPath("$.payment.billingKey").value("bk_1"))
                 .andExpect(jsonPath("$.payment.amount.total").value(30000))
+                .andExpect(jsonPath("$.payment.noticeUrls[0]").value("https://test.example.com/api/webhooks/portone"))
                 .andExpect(jsonPath("$.timeToPay").exists())
                 .andRespond(withSuccess("{\"schedule\":{\"id\":\"sch_1\",\"status\":\"SCHEDULED\"}}", MediaType.APPLICATION_JSON));
 

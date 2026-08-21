@@ -1,5 +1,6 @@
 package com.team1.cityfarm.service;
 
+import com.team1.cityfarm.dto.OneDayClassDescriptionUpdateDto;
 import com.team1.cityfarm.dto.OneDayClassRequestDto;
 import com.team1.cityfarm.dto.OneDayClassResponseDto;
 import com.team1.cityfarm.dto.OneDayClassSummaryDto;
@@ -56,6 +57,21 @@ public class OneDayClassService {
     public OneDayClassResponseDto getClassDetail(Long classId) {
         OneDayClass oneDayClass = oneDayClassRepository.findById(classId)
                 .orElseThrow(() -> new CustomException(CustomError.ONE_DAY_CLASS_NOT_FOUND));
+
+        return OneDayClassResponseDto.from(oneDayClass);
+    }
+
+    //    수업 설명 수정
+    @Transactional
+    public OneDayClassResponseDto updateDescription(Long classId, Long hostId, OneDayClassDescriptionUpdateDto requestDto) {
+        OneDayClass oneDayClass = oneDayClassRepository.findById(classId)
+                .orElseThrow(() -> new CustomException(CustomError.ONE_DAY_CLASS_NOT_FOUND));
+
+        if (!oneDayClass.getHost().getId().equals(hostId)) {
+            throw new CustomException(CustomError.CLASS_NOT_OWNER);
+        }
+
+        oneDayClass.setDescription(requestDto.getDescription());
 
         return OneDayClassResponseDto.from(oneDayClass);
     }

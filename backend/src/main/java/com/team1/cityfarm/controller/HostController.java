@@ -1,12 +1,14 @@
 package com.team1.cityfarm.controller;
 
 import com.team1.cityfarm.dto.SettlementResponseDto;
+import com.team1.cityfarm.global.security.user.CustomUserDetails;
 import com.team1.cityfarm.service.SettlementService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,10 +30,11 @@ public class HostController {
      */
     @Operation(summary = "내 정산 내역 조회",
             description = "로그인한 호스트의 정산 내역 리스트를 최신순으로 조회합니다.")
-    @GetMapping("/settlements/{hostId}") // 혹은 토큰 기반으로 hostId를 추출하는 방식에 맞춰 수정 가능
+    @GetMapping("/settlements")
     public ResponseEntity<List<SettlementResponseDto>> getMySettlements(
-            @PathVariable Long hostId
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
+        Long hostId = userDetails.getUserId();
         List<SettlementResponseDto> response = settlementService.getHostSettlements(hostId);
         return ResponseEntity.ok(response);
     }

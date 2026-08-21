@@ -24,7 +24,7 @@ public class Settlement {
      * 어떤 주문으로 발생한 정산인지
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id", nullable = false)
+    @JoinColumn(name = "order_id")
     private Order order;
 
     /**

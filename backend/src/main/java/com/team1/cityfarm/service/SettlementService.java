@@ -70,6 +70,36 @@ public class SettlementService {
     }
 
     /**
+     * [구독 수강권 사용 시 호출] Order 없이 클래스 가격 기준으로 정산(PENDING) 데이터 생성
+     */
+    @Transactional
+    public Settlement createPendingSettlementForPass(User host, Long classId, int classPrice) {
+        // 정산 금액 계산 (클래스 가격 * 50 / 100)
+        BigDecimal paymentAmount = BigDecimal.valueOf(classPrice);
+
+        BigDecimal settlementAmount = paymentAmount
+                .multiply(CLASS_SETTLEMENT_RATE)
+                .divide(new BigDecimal("100"), 0, RoundingMode.FLOOR); // 원 단위 이하 절사
+
+        // Settlement 엔티티 생성 및 저장 (order는 null)
+        Settlement settlement = Settlement.builder()
+                .order(null)
+                .host(host)
+                .settlementType(SettlementType.ONE_DAY_CLASS) // 프로젝트 정책에 맞는 타입 사용
+                .paymentAmount(classPrice)
+                .settlementRate(CLASS_SETTLEMENT_RATE)
+                .settlementAmount(settlementAmount.intValue())
+                .build();
+
+        Settlement savedSettlement = settlementRepository.save(settlement);
+
+        log.info("[수강권 정산 데이터 생성 완료] Settlement ID: {}, Host ID: {}, Class ID: {}, Settlement Amount: {}원",
+                savedSettlement.getId(), host.getId(), classId, settlementAmount.intValue());
+
+        return savedSettlement;
+    }
+
+    /**
      * [호스트용] 내 정산 내역 목록 조회
      */
     public List<SettlementResponseDto> getHostSettlements(Long hostId) {
@@ -80,7 +110,18 @@ public class SettlementService {
     }
 
     /**
-     * [관리자용] 정산 지급 완료 처리
+     * [관리자용] 전체 정산내역 목록 조회
+     */
+    public List<SettlementResponseDto> getAdminSettlements() {
+        List<Settlement> settlements = settlementRepository.findAllByOrderByIdDesc();
+
+        return settlements.stream()
+                .map(SettlementResponseDto::from) // 엔티티 -> DTO 변환 메서드 (프로젝트 스타일 맞춤)
+                .toList();
+    }
+
+    /**
+     * [관리자용] 정산 지급완료 처리
      */
     @Transactional
     public void completeSettlement(Long settlementId) {
@@ -96,5 +137,17 @@ public class SettlementService {
         settlement.complete();
 
         log.info("[정산 지급 완료 처리] Settlement ID: {}", settlement.getId());
+    }
+
+    /**
+     * [환불 시 호출] 주문 ID로 정산 취소 처리
+     */
+    @Transactional
+    public void cancelSettlementByOrderId(Long orderId) {
+        settlementRepository.findByOrderId(orderId)
+                .ifPresent(settlement -> {
+                    settlement.cancel();
+                    log.info("[정산 취소 완료] Settlement ID: {}, Order ID: {}", settlement.getId(), orderId);
+                });
     }
 }
