@@ -41,6 +41,12 @@ public class User {
     @Builder.Default
     private RoleType roleType = RoleType.USER;
 
+    private String businessName;
+
+    private String businessRegistrationNumber;
+
+    private String businessAddress;
+
     @CreationTimestamp
     @Column(updatable = false, name = "created_at")
     private LocalDateTime createdAt;
@@ -61,5 +67,17 @@ public class User {
             throw new CustomException(CustomError.USER_STATUS_ERROR);
         }
         this.roleType = roleType;
+    }
+
+    public void promoteToHost(String businessName,String businessAddress, String businessRegistrationNumber){
+
+        if (this.roleType == RoleType.HOST || this.roleType == RoleType.ADMIN){
+            throw new CustomException(CustomError.ALREADY_HOST_ROLE);
+        }
+
+        this.businessName = businessName;
+        this.businessAddress = businessAddress;
+        this.businessRegistrationNumber = businessRegistrationNumber;
+        this.roleType = RoleType.HOST;
     }
 }

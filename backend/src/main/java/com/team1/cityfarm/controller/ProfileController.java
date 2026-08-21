@@ -1,10 +1,6 @@
 package com.team1.cityfarm.controller;
 
-import com.team1.cityfarm.dto.BoardResponseDto;
-import com.team1.cityfarm.dto.PasswordCheckRequestDto; // 새로 만들 DTO
-import com.team1.cityfarm.dto.PasswordChangeRequestDto; // 새로 만들 DTO
-import com.team1.cityfarm.dto.ProfileRequestDto;
-import com.team1.cityfarm.dto.ProfileResponseDto;
+import com.team1.cityfarm.dto.*;
 import com.team1.cityfarm.entity.User;
 import com.team1.cityfarm.global.response.ApiResponse;
 import com.team1.cityfarm.global.security.user.CustomUserDetails;
@@ -88,5 +84,15 @@ public class ProfileController {
         Page<BoardResponseDto> result = profileService.getLikedBoards(customUserDetails.getUserId(), pageable);
 
         return ApiResponse.success("좋아요한 게시글 목록 조회 성공", result);
+    }
+    @Operation(summary = "호스트 승격 신청",
+    description = "사업자 정보(사업자명, 사업자등록번호, 사업장주소)를 제출하면 별도 심사 없이 즉시 HOST로 전환.")
+    @PostMapping("/host-promotion")
+    public ApiResponse<Void> promoteToHost(@AuthenticationPrincipal CustomUserDetails customUserDetails,
+                                           @RequestBody @Valid HostPromotionRequestDto requestDto){
+
+        profileService.promoteToHost(customUserDetails.getUserId(), requestDto);
+
+        return ApiResponse.success("호스트 전환 완료");
     }
 }
