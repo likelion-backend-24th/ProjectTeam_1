@@ -208,31 +208,33 @@ function ProfileView() {
       <div className="flex flex-col gap-2">
         <ProfileLinkRow href="/subscription" icon={<TicketIcon size={20} />} label="내 구독" />
 
-        {/* 결제 내역 + 정산 내역 통합 카드 */}
-        <div className="flex flex-col rounded-xl bg-surface">
+        {/* 결제 내역 + 정산 내역 좌우 2분할 카드 */}
+        <div className="flex w-full items-center rounded-xl bg-surface">
+          {/* 왼쪽: 결제 내역 */}
           <LinkComponent
             href="/profile/payments"
-            className="flex items-center justify-between px-4 py-3.5 transition-colors hover:bg-surface-strong/50 rounded-t-xl"
+            className="flex flex-1 items-center justify-between px-4 py-3.5 transition-colors hover:bg-surface-strong/50 rounded-l-xl"
           >
-            <span className="flex items-center gap-2.5 text-[15px] font-semibold text-ink">
-              <ReceiptIcon size={20} />
+            <span className="flex items-center gap-2 text-[15px] font-semibold text-ink">
+              <ReceiptIcon size={19} />
               결제 내역
             </span>
-            <ChevronRightIcon size={18} className="text-ink-muted" />
+            <ChevronRightIcon size={16} className="text-ink-muted" />
           </LinkComponent>
 
-          {/* 중앙 구분선 */}
-          <div className="mx-4 h-[1px] bg-border-subtle/50" />
+          {/* 세로 구분선 */}
+          <div className="h-5 w-[1px] bg-border-subtle/60" />
 
+          {/* 오른쪽: 정산 내역 */}
           <LinkComponent
             href="/host/settlements"
-            className="flex items-center justify-between px-4 py-3.5 transition-colors hover:bg-surface-strong/50 rounded-b-xl"
+            className="flex flex-1 items-center justify-between px-4 py-3.5 transition-colors hover:bg-surface-strong/50 rounded-r-xl"
           >
-            <span className="flex items-center gap-2.5 text-[15px] font-semibold text-ink">
-              <ReceiptIcon size={20} />
+            <span className="flex items-center gap-2 text-[15px] font-semibold text-ink">
+              <ReceiptIcon size={19} />
               정산 내역
             </span>
-            <ChevronRightIcon size={18} className="text-ink-muted" />
+            <ChevronRightIcon size={16} className="text-ink-muted" />
           </LinkComponent>
         </div>
       </div>
