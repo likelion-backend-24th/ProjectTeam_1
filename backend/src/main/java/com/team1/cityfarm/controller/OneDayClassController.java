@@ -1,5 +1,6 @@
 package com.team1.cityfarm.controller;
 
+import com.team1.cityfarm.dto.OneDayClassDescriptionUpdateDto;
 import com.team1.cityfarm.dto.OneDayClassRequestDto;
 import com.team1.cityfarm.dto.OneDayClassResponseDto;
 import com.team1.cityfarm.dto.OneDayClassSummaryDto;
@@ -70,6 +71,19 @@ public class OneDayClassController {
 
         return ApiResponse.success("클래스 등록 성공", oneDayClassService.createOneDayClass(hostId, requestDto));
 
+    }
+
+    @Operation(summary = "클래스 설명 수정",
+            description = "호스트가 자신의 클래스 설명(description)을 수정합니다.",
+            security = @SecurityRequirement(name = "BearerAuth"))
+    @PatchMapping("/{classId}")
+    public ApiResponse<OneDayClassResponseDto> updateDescription(@PathVariable Long classId,
+                                                                  @Valid @RequestBody OneDayClassDescriptionUpdateDto requestDto,
+                                                                  @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+
+        Long hostId = customUserDetails.getUserId();
+
+        return ApiResponse.success("클래스 설명 수정 성공", oneDayClassService.updateDescription(classId, hostId, requestDto));
     }
 
     @Operation(summary = "클래스 취소", description = "호스트가 자신의 클래스를 취소하고, 신청건들을 환불/수강권 복구 처리",
