@@ -50,7 +50,8 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/h2-console/**",
                                 "/login/oauth2/code/**",
-                                "/oauth2/**"
+                                "/oauth2/**",
+                                "/api/payments/webhooks/**" // PortOne 서버가 JWT 없이 호출 - 자체 서명(HMAC) 검증으로만 인증
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/board", "/api/board/**")
                         .permitAll()
