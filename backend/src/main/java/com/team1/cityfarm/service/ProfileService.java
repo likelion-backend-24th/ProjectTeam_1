@@ -1,6 +1,7 @@
 package com.team1.cityfarm.service;
 
 import com.team1.cityfarm.dto.BoardResponseDto;
+import com.team1.cityfarm.dto.HostPromotionRequestDto;
 import com.team1.cityfarm.entity.User;
 import com.team1.cityfarm.global.exception.CustomError;
 import com.team1.cityfarm.global.exception.CustomException;
@@ -65,5 +66,17 @@ public class ProfileService {
     public Page<BoardResponseDto> getLikedBoards(Long userId, Pageable pageable) {
         return boardLikeRepository.findByUser_IdOrderByCreatedAtDesc(userId, pageable)
                 .map(boardLike -> BoardResponseDto.from(boardLike.getBoard()));
+    }
+
+//    USER -> HOST 승격
+    @Transactional
+    public void promoteToHost(Long userId, HostPromotionRequestDto requestDto){
+        User user = getUser(userId);
+        user.promoteToHost(
+                requestDto.getBusinessName(),
+                requestDto.getBusinessAddress(),
+                requestDto.getBusinessRegistrationNumber()
+        );
+
     }
 }

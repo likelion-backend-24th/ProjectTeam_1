@@ -73,6 +73,7 @@ public enum CustomError {
     ENROLLMENT_NOT_OWNER(HttpStatus.FORBIDDEN, "본인의 신청 내역만 접근할 수 있습니다"),
     NOT_HOST_ROLE(HttpStatus.FORBIDDEN, "호스트 권한이 필요합니다"),
     CLASS_NOT_OWNER(HttpStatus.FORBIDDEN, "본인이 개설한 클래스만 접근할 수 있습니다"),
+    ALREADY_HOST_ROLE(HttpStatus.BAD_REQUEST, "이미 호스트 권한을 가지고 있습니다"),
 
     // 밭 임대 예외
     FARM_IMAGE_LIMIT(HttpStatus.BAD_REQUEST, "사진은 최대 5장까지 올릴 수 있습니다."),
