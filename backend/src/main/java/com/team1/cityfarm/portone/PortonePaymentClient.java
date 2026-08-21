@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 import java.time.LocalDateTime;
@@ -65,19 +66,40 @@ public class PortonePaymentClient {
         }
     }
 
+    private static final int BILLING_KEY_LOOKUP_MAX_ATTEMPTS = 3;
+    private static final long BILLING_KEY_LOOKUP_RETRY_DELAY_MS = 500;
+
     /**
      * [PortOne V2 API 빌링키 단건 조회]
+     * 프론트에서 SDK 발급 응답을 받은 직후 바로 조회하면, PortOne 쪽에 빌링키가 아직
+     * 반영되기 전이라 404(BILLING_KEY_NOT_FOUND)가 날 수 있다. 그 경우에만 짧게 재시도한다.
      */
     public PortoneBillingKeyResponseDto getBillingKeyDetails(String billingKey) {
-        try {
-            return restClient.get()
-                    .uri("/billing-keys/{billingKey}", billingKey)
-                    .retrieve()
-                    .body(PortoneBillingKeyResponseDto.class);
-        } catch (Exception e) {
-            log.error("[PortOne API 빌링키 조회 실패] billingKey: {}", billingKey, e);
-            throw new CustomException(CustomError.PORTONE_API_ERROR);
+        for (int attempt = 1; attempt <= BILLING_KEY_LOOKUP_MAX_ATTEMPTS; attempt++) {
+            try {
+                return restClient.get()
+                        .uri("/billing-keys/{billingKey}", billingKey)
+                        .retrieve()
+                        .body(PortoneBillingKeyResponseDto.class);
+            } catch (HttpClientErrorException.NotFound e) {
+                if (attempt == BILLING_KEY_LOOKUP_MAX_ATTEMPTS) {
+                    log.error("[PortOne API 빌링키 조회 실패 - 재시도 소진] billingKey: {}", billingKey, e);
+                    throw new CustomException(CustomError.PORTONE_API_ERROR);
+                }
+                log.warn("[PortOne API 빌링키 조회 재시도 {}/{}] billingKey: {} - 아직 반영되지 않음",
+                        attempt, BILLING_KEY_LOOKUP_MAX_ATTEMPTS, billingKey);
+                try {
+                    Thread.sleep(BILLING_KEY_LOOKUP_RETRY_DELAY_MS);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new CustomException(CustomError.PORTONE_API_ERROR);
+                }
+            } catch (Exception e) {
+                log.error("[PortOne API 빌링키 조회 실패] billingKey: {}", billingKey, e);
+                throw new CustomException(CustomError.PORTONE_API_ERROR);
+            }
         }
+        throw new CustomException(CustomError.PORTONE_API_ERROR);
     }
 
     /**
