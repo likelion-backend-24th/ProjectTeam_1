@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@Tag(name = "호스트 API", description = "호스트 전용 API")
+@Tag(name = "호스트 API", description = "호스트 전용 API입니다.")
 @SecurityRequirement(name = "BearerAuth")
 @RestController
 @RequestMapping("/api/host")
@@ -28,7 +28,7 @@ public class HostController {
     /**
      * [호스트] 내 정산 내역 목록 조회
      */
-    @Operation(summary = "내 정산 내역 조회",
+    @Operation(summary = "내 정산내역 조회",
             description = "로그인한 호스트의 정산 내역 리스트를 최신순으로 조회합니다.")
     @GetMapping("/settlements")
     public ResponseEntity<List<SettlementResponseDto>> getMySettlements(
