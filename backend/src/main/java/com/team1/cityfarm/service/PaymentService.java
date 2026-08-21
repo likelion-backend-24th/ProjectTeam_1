@@ -182,6 +182,9 @@ public class PaymentService {
         // 5. ClassEnrollment 상태 변경
         classEnrollmentService.cancelEnrollment(order.getId());
 
+        // 6. 정산 취소 (환불된 주문이 관리자에게 지급 대상으로 남지 않도록)
+        settlementService.cancelSettlementByOrderId(order.getId());
+
         log.info("[결제 취소 완료] paymentId: {}, merchantOrderId: {}, reason: {}",
                 paymentId, order.getMerchantOrderId(), cancelReason);
 
@@ -228,6 +231,8 @@ public class PaymentService {
 
         payment.cancel(reason, LocalDateTime.now());
         payment.getOrder().setOrderStatus(OrderStatus.CANCELLED);
+
+        settlementService.cancelSettlementByOrderId(orderId);
 
         log.info("[호스트 클래스 취소 환불 완료] orderId: {}, paymentId: {}, reason: {}",
                 orderId, payment.getId(), reason);

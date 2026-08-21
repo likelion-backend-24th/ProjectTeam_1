@@ -33,6 +33,7 @@ class SubscriptionServiceMigrationTest {
     @Mock private PaymentRepository paymentRepository;
     @Mock private com.team1.cityfarm.portone.PortonePaymentClient portonePaymentClient;
     @Mock private ClassEnrollmentService classEnrollmentService;
+    @Mock private SettlementService settlementService;
 
     private SubscriptionService service;
 
@@ -41,7 +42,8 @@ class SubscriptionServiceMigrationTest {
         service = new SubscriptionService(
                 subscriptionRepository, userRepository, subscriptionPassRepository,
                 subscriptionPassUsageRepository, subscriptionScheduleRepository, billingKeyRepository,
-                orderRepository, paymentRepository, portonePaymentClient, classEnrollmentService
+                orderRepository, paymentRepository, portonePaymentClient, classEnrollmentService,
+                settlementService
         );
     }
 
