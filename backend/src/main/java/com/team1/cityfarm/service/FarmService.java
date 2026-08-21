@@ -11,7 +11,10 @@ import com.team1.cityfarm.global.exception.CustomException;
 import com.team1.cityfarm.repository.FarmImageRepository;
 import com.team1.cityfarm.repository.FarmRepository;
 import com.team1.cityfarm.repository.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -76,5 +79,18 @@ public class FarmService {
         }
 
         return FarmResponseDto.from(savedFarm, thumbnailUrl);
+    }
+
+    // 밭 등록 (F-161)
+    @Transactional(readOnly = true)
+    public Page<FarmResponseDto> getFarms(Pageable pageable) {
+        Page<Farm> farms = farmRepository.findAll(pageable);
+
+        return farms.map(farm -> {
+            String thumbnailUrl = farmImageRepository.findFirstByFarm_IdOrderByIdAsc(farm.getId())
+                    .map(FarmImage::getImageUrl)
+                    .orElse(null);
+            return FarmResponseDto.from(farm, thumbnailUrl);
+        });
     }
 }
