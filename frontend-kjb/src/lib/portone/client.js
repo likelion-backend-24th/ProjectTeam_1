@@ -9,8 +9,16 @@
 
 const PORTONE_SDK_URL = "https://cdn.portone.io/v2/browser-sdk.js";
 
-export const PORTONE_STORE_ID = process.env.NEXT_PUBLIC_PORTONE_STORE_ID ?? null;
-export const PORTONE_CHANNEL_KEY = process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY ?? null;
+// storeId/channelKey는 공개 식별자라 기본값을 여기 그대로 둔다(API_BASE_URL과 동일한 방식).
+// 다른 값으로 테스트하고 싶으면 .env.local에서 NEXT_PUBLIC_PORTONE_* 로 덮어쓰면 된다.
+export const PORTONE_STORE_ID =
+  process.env.NEXT_PUBLIC_PORTONE_STORE_ID || "store-7bbf73b9-f318-4e1b-b3c4-731f79710136";
+// 일반 결제(토스) 채널키
+export const PORTONE_CHANNEL_KEY_NORMAL =
+  process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY_NORMAL || "channel-key-c5723eb4-9ee3-4df3-9c56-129d13d4e9d6";
+// 정기결제(빌링키) 채널키
+export const PORTONE_CHANNEL_KEY_BILLING =
+  process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY_BILLING || "channel-key-c0736ef7-925d-4de6-8f52-4cc89c502688";
 
 let sdkLoadPromise = null;
 
@@ -38,52 +46,59 @@ export function loadPortOneSdk() {
 }
 
 /**
- * TODO(backend/PortOne 설정 확정 후 연결):
  * 백엔드가 생성한 주문(order)을 기준으로 PortOne 결제창을 호출한다.
  * order는 반드시 서버 응답(getOrder/createOrder 결과)에서 온 값을 그대로 사용해야 하며,
  * 프론트에서 amount 등을 재계산하거나 덮어쓰지 않는다.
  *
- * @param {{ order: { merchantOrderId: string, amount: number, orderName: string } }} params
- * @returns {Promise<{ paymentId: string, code?: string, message?: string }>}
+ * @param {{ order: { merchantOrderId: string, amount: number, orderName?: string, title?: string } }} params
+ * @returns {Promise<{ paymentId: string, txId?: string }>}
  *   결제창이 반환하는 결과. 이 값만으로 성공을 확정하지 말고 반드시
  *   payment.verifyPayment({ orderId, paymentId })로 백엔드 검증을 거칠 것.
  */
 export async function requestPayment({ order }) {
-  await loadPortOneSdk();
-  throw new Error(
-    "NOT_IMPLEMENTED: PortOne storeId/channelKey 및 결제 요청 파라미터 확정 후 연결 예정입니다.",
-  );
-  // 연결 시 예상 형태 (PortOne v2 SDK 문서 기준으로 확정 필요):
-  // return window.PortOne.requestPayment({
-  //   storeId: PORTONE_STORE_ID,
-  //   channelKey: PORTONE_CHANNEL_KEY,
-  //   paymentId: order.merchantOrderId,
-  //   orderName: order.orderName,
-  //   totalAmount: order.amount, // 백엔드가 내려준 금액 그대로 사용
-  //   currency: "KRW",
-  //   payMethod: "CARD",
-  // });
+  const PortOne = await loadPortOneSdk();
+
+  const response = await PortOne.requestPayment({
+    storeId: PORTONE_STORE_ID,
+    channelKey: PORTONE_CHANNEL_KEY_NORMAL,
+    paymentId: order.merchantOrderId,
+    orderName: order.orderName ?? order.title ?? "시티팜 결제",
+    totalAmount: order.amount, // 백엔드가 내려준 금액 그대로 사용
+    currency: "CURRENCY_KRW",
+    payMethod: "CARD",
+  });
+
+  // v2 SDK는 결제창에서 실패/취소가 나도 reject하지 않고 code가 채워진 결과로 resolve한다.
+  if (response?.code) {
+    throw new Error(response.message || "결제창에서 결제가 완료되지 않았어요.");
+  }
+
+  return response;
 }
 
 /**
- * TODO(backend/PortOne 설정 확정 후 연결):
  * 구독 자동결제용 빌링키 발급 창을 호출한다.
- * intent는 billingKey.createBillingKeyIssuanceIntent()의 응답(issueId 포함)이어야 한다.
+ * intent는 billingKey.createBillingKeyIssuanceIntent()의 응답(issueId, customerId 포함)이어야 한다.
  *
- * @param {{ intent: { issueId: string } }} params
+ * @param {{ intent: { issueId: string, customerId: string } }} params
  * @returns {Promise<{ billingKey: string }>}
  */
 export async function requestIssueBillingKey({ intent }) {
-  await loadPortOneSdk();
-  throw new Error(
-    "NOT_IMPLEMENTED: PortOne storeId/channelKey 및 빌링키 발급 파라미터 확정 후 연결 예정입니다.",
-  );
-  // 연결 시 예상 형태:
-  // return window.PortOne.requestIssueBillingKey({
-  //   storeId: PORTONE_STORE_ID,
-  //   channelKey: PORTONE_CHANNEL_KEY,
-  //   issueId: intent.issueId,
-  //   issueName: "시티팜 구독 자동결제 카드 등록",
-  // });
+  const PortOne = await loadPortOneSdk();
+
+  const response = await PortOne.requestIssueBillingKey({
+    storeId: PORTONE_STORE_ID,
+    channelKey: PORTONE_CHANNEL_KEY_BILLING,
+    issueId: intent.issueId,
+    issueName: "시티팜 구독 자동결제 카드 등록",
+    customer: { customerId: intent.customerId },
+    billingKeyMethod: "CARD",
+  });
+
+  if (response?.code) {
+    throw new Error(response.message || "카드 등록이 완료되지 않았어요.");
+  }
+
   // 발급된 billingKey 문자열은 여기서 로그로 남기거나 우리 서버 외의 곳에 저장하지 않는다.
+  return response;
 }

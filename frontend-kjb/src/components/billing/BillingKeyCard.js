@@ -20,7 +20,7 @@ export function BillingKeyCard({ billingKey, onRegistered }) {
     try {
       const intent = await createBillingKeyIssuanceIntent();
       const result = await requestIssueBillingKey({ intent });
-      const confirmed = await confirmBillingKeyIssuance(intent.issueId ?? intent.issuedId ?? intent.id);
+      const confirmed = await confirmBillingKeyIssuance({ issueId: intent.issueId, billingKey: result.billingKey });
       showToast("결제 수단이 등록되었어요.");
       onRegistered?.(confirmed, result);
     } catch (err) {

@@ -1,7 +1,6 @@
 import { apiRequest } from "./client";
 
-// 아래 4개 엔드포인트는 사용자 문서(요구사항 12절)에 명시된 예상 경로다.
-// 백엔드에 아직 SubscriptionController가 없으므로 연결 전까지는 404가 발생할 수 있다.
+// SubscriptionController 실제 경로 기준.
 
 export function getMySubscription() {
   return apiRequest("/api/subscriptions/me");
@@ -20,7 +19,8 @@ export function cancelSubscription(subscriptionId) {
   return apiRequest(`/api/subscriptions/${subscriptionId}/cancel`, { method: "POST" });
 }
 
-export function getSubscriptionPasses(subscriptionId) {
+// 구독 하나당 활성 수강권은 항상 1건이라 백엔드가 배열이 아닌 단건 객체로 응답한다.
+export function getSubscriptionPass(subscriptionId) {
   return apiRequest(`/api/subscriptions/${subscriptionId}/passes`);
 }
 
