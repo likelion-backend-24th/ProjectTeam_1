@@ -66,13 +66,16 @@ public class PortonePaymentClient {
         }
     }
 
-    private static final int BILLING_KEY_LOOKUP_MAX_ATTEMPTS = 3;
-    private static final long BILLING_KEY_LOOKUP_RETRY_DELAY_MS = 500;
+    private static final int BILLING_KEY_LOOKUP_MAX_ATTEMPTS = 5;
+    private static final long BILLING_KEY_LOOKUP_INITIAL_DELAY_MS = 500;
+    // 재시도할 때마다 대기 시간을 늘려서(500ms, 1000ms, 1500ms, 2000ms) PortOne이 반영할
+    // 시간을 더 넉넉히 준다 - 고정 간격이 너무 촉박하다는 리뷰 피드백 반영.
+    private static final long BILLING_KEY_LOOKUP_BACKOFF_STEP_MS = 500;
 
     /**
      * [PortOne V2 API 빌링키 단건 조회]
      * 프론트에서 SDK 발급 응답을 받은 직후 바로 조회하면, PortOne 쪽에 빌링키가 아직
-     * 반영되기 전이라 404(BILLING_KEY_NOT_FOUND)가 날 수 있다. 그 경우에만 짧게 재시도한다.
+     * 반영되기 전이라 404(BILLING_KEY_NOT_FOUND)가 날 수 있다. 그 경우에만 재시도한다.
      */
     public PortoneBillingKeyResponseDto getBillingKeyDetails(String billingKey) {
         for (int attempt = 1; attempt <= BILLING_KEY_LOOKUP_MAX_ATTEMPTS; attempt++) {
@@ -86,10 +89,12 @@ public class PortonePaymentClient {
                     log.error("[PortOne API 빌링키 조회 실패 - 재시도 소진] billingKey: {}", billingKey, e);
                     throw new CustomException(CustomError.PORTONE_API_ERROR);
                 }
-                log.warn("[PortOne API 빌링키 조회 재시도 {}/{}] billingKey: {} - 아직 반영되지 않음",
-                        attempt, BILLING_KEY_LOOKUP_MAX_ATTEMPTS, billingKey);
+                long delay = BILLING_KEY_LOOKUP_INITIAL_DELAY_MS
+                        + (attempt - 1) * BILLING_KEY_LOOKUP_BACKOFF_STEP_MS;
+                log.warn("[PortOne API 빌링키 조회 재시도 {}/{}] billingKey: {} - 아직 반영되지 않음, {}ms 대기",
+                        attempt, BILLING_KEY_LOOKUP_MAX_ATTEMPTS, billingKey, delay);
                 try {
-                    Thread.sleep(BILLING_KEY_LOOKUP_RETRY_DELAY_MS);
+                    Thread.sleep(delay);
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                     throw new CustomException(CustomError.PORTONE_API_ERROR);
