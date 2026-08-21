@@ -9,7 +9,7 @@ import { CurrentSubscriptionCard } from "@/components/subscription/CurrentSubscr
 import { CancelSubscriptionButton } from "@/components/subscription/CancelSubscriptionButton";
 import { PassUsageSection } from "@/components/subscription/PassUsageSection";
 import { ChevronRightIcon } from "@/components/icons";
-import { getMySubscription, getSubscriptionPasses } from "@/lib/api/subscription";
+import { getMySubscription, getSubscriptionPass } from "@/lib/api/subscription";
 import { ApiError } from "@/lib/api/client";
 import { useAuthStore } from "@/store/authStore";
 
@@ -31,8 +31,8 @@ export default function SubscriptionPage() {
       setSubscription(sub);
       if (sub?.id) {
         try {
-          const passes = await getSubscriptionPasses(sub.id);
-          setCurrentPass(passes?.[0] ?? null);
+          const pass = await getSubscriptionPass(sub.id);
+          setCurrentPass(pass ?? null);
         } catch {
           setCurrentPass(null);
         }
