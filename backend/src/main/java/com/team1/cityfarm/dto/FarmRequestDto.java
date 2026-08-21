@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-import lombok.Builder;
 
 @Schema(description = "밭 등록 및 수정 요청 DTO")
 public record FarmRequestDto(
@@ -37,4 +36,5 @@ public record FarmRequestDto(
 
     @Schema(description = "밭 설명", example = "계곡 옆에 햇볕이 잘 듭니다.")
     String description
+
 ) {}

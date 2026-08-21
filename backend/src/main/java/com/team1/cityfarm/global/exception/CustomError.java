@@ -77,6 +77,7 @@ public enum CustomError {
 
     // 밭 임대 예외
     FARM_IMAGE_LIMIT(HttpStatus.BAD_REQUEST, "사진은 최대 5장까지 올릴 수 있습니다."),
+    FARM_NOT_FOUND(HttpStatus.NOT_FOUND,"존재하지 않는 밭입니다."),
 
     // 빌링 예외
     BILLING_KEY_VERIFY_FAILED(HttpStatus.BAD_REQUEST, "빌링키 검증에 실패했습니다."),

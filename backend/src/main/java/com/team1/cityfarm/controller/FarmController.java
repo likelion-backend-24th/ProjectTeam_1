@@ -52,4 +52,11 @@ public class FarmController {
     ){
         return ApiResponse.success("밭 목록 조회 성공", farmService.getFarms(pageable));
     }
+
+    // 밭 상세 조회 (F-162)
+    @Operation(summary = "밭 상세 조회",description = "밭 ID로 상세 조회하며, 비회원도 조회 가능")
+    @GetMapping("/{farmId}")
+    public ApiResponse<FarmResponseDto> getFarm(@PathVariable Long farmId){
+        return ApiResponse.success("밭 상세 조회 성공", farmService.getFarm(farmId));
+    }
 }
