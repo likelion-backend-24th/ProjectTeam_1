@@ -207,6 +207,7 @@ function ProfileView() {
       <div className="flex flex-col gap-2">
         <ProfileLinkRow href="/subscription" icon={<TicketIcon size={20} />} label="내 구독" />
         <ProfileLinkRow href="/profile/payments" icon={<ReceiptIcon size={20} />} label="결제 내역" />
+        <ProfileLinkRow href="/profile/settlements" icon={<ReceiptIcon size={20} />} label="정산 내역" />
       </div>
 
       <button
