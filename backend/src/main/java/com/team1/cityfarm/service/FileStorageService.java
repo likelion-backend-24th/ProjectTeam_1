@@ -19,6 +19,7 @@ public class FileStorageService {
         try {
             Files.createDirectories(uploadDir);
 
+            // 파일명 중복 장지를 위한 UUID로 변환
             String originalName = file.getOriginalFilename();
             String extension = originalName != null && originalName.contains(".")
                     ? originalName.substring(originalName.lastIndexOf("."))
