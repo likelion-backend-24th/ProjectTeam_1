@@ -78,6 +78,12 @@ public enum CustomError {
     // 밭 임대 예외
     FARM_IMAGE_LIMIT(HttpStatus.BAD_REQUEST, "사진은 최대 5장까지 올릴 수 있습니다."),
     FARM_NOT_FOUND(HttpStatus.NOT_FOUND,"존재하지 않는 밭입니다."),
+    FARM_ALREADY_RENTED(HttpStatus.BAD_REQUEST, "이미 임대 중인 밭입니다."),
+    FARM_NOT_OWNER(HttpStatus.FORBIDDEN, "밭 등록자 본인만 수정할 수 있습니다."),
+
+    RENTAL_NOT_FOUND(HttpStatus.NOT_FOUND, "신청 내역을 찾을 수 없습니다."),
+    RENTAL_NOT_OWNER(HttpStatus.FORBIDDEN, "본인이 신청한 임대만 취소할 수 있습니다."),
+    RENTAL_ALREADY_CANCELLED(HttpStatus.BAD_REQUEST, "이미 취소된 신청입니다."),
 
     // 빌링 예외
     BILLING_KEY_VERIFY_FAILED(HttpStatus.BAD_REQUEST, "빌링키 검증에 실패했습니다."),
