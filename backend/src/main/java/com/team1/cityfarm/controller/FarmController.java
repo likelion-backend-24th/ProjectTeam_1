@@ -2,6 +2,7 @@ package com.team1.cityfarm.controller;
 
 import com.team1.cityfarm.dto.FarmRequestDto;
 import com.team1.cityfarm.dto.FarmResponseDto;
+import com.team1.cityfarm.dto.FarmUpdateRequestDto;
 import com.team1.cityfarm.global.response.ApiResponse;
 import com.team1.cityfarm.global.security.user.CustomUserDetails;
 import com.team1.cityfarm.service.FarmService;
@@ -15,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -58,5 +60,18 @@ public class FarmController {
     @GetMapping("/{farmId}")
     public ApiResponse<FarmResponseDto> getFarm(@PathVariable Long farmId){
         return ApiResponse.success("밭 상세 조회 성공", farmService.getFarm(farmId));
+    }
+
+    // 밭 정보 수정 (F-165)
+    @Operation(summary = "밭 정보 수정", security = @SecurityRequirement(name = "BearerAuth"))
+    @PutMapping(value = "/{farmId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<FarmResponseDto> updateFarm(
+            @PathVariable Long farmId,
+            @RequestPart("request") @Valid FarmUpdateRequestDto requestDto,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+            ){
+        Long userId = userDetails.getUserId();
+        return ApiResponse.success("밭 정보 수정 성공", farmService.updateFarm(farmId, requestDto, images, userId));
     }
 }
