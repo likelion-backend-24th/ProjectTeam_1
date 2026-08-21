@@ -44,6 +44,7 @@ public class SubscriptionService {
     private final PaymentRepository paymentRepository;
     private final PortonePaymentClient portonePaymentClient;
     private final ClassEnrollmentService classEnrollmentService;
+    private final SettlementService settlementService;
 
     /**
      * 1. 내 활성 구독 정보 조회
@@ -416,6 +417,11 @@ public class SubscriptionService {
                 .usedAt(LocalDateTime.now())
                 .build();
         subscriptionPassUsageRepository.save(usage);
+
+        // 수강권으로 들은 클래스도 일반결제와 동일하게 호스트 정산 대상에 포함한다(정책 확정 사항).
+        // 결제(Order/Payment)가 없는 경로라 클래스 가격을 정산 기준 금액으로 사용한다.
+        OneDayClass oneDayClass = enrollment.getOneDayClass();
+        settlementService.createPendingSettlementForPass(oneDayClass.getHost(), classId, oneDayClass.getPrice());
 
         log.info("[구독 수강권 사용] userId: {}, subscriptionId: {}, passId: {}, classId: {}, 잔여: {}",
                 userId, subscription.getId(), pass.getId(), classId, pass.getRemainingCount());
