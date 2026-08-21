@@ -17,6 +17,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -61,6 +63,8 @@ public class FarmService {
 
         // 사진 업로드 로직
         String thumbnailUrl = null;
+            // 사진 리스트 로직
+        List<String> imageUrls = new ArrayList<>();
         if (images != null && !images.isEmpty()){
             for (int i = 0; i < images.size(); i++){
                 String imagesUrl = fileStorageService.store(images.get(i));
@@ -71,6 +75,8 @@ public class FarmService {
                         .build();
                 farmImageRepository.save(farmImage);
 
+                imageUrls.add(imagesUrl);
+
                 // 첫 번째 사진을 대표 사진으로 설정
                 if(i == 0){
                     thumbnailUrl = imagesUrl;
@@ -78,7 +84,7 @@ public class FarmService {
             }
         }
 
-        return FarmResponseDto.from(savedFarm, thumbnailUrl);
+        return FarmResponseDto.from(savedFarm, thumbnailUrl, List.of());
     }
 
     // 밭 등록 (F-161)
@@ -90,7 +96,24 @@ public class FarmService {
             String thumbnailUrl = farmImageRepository.findFirstByFarm_IdOrderByIdAsc(farm.getId())
                     .map(FarmImage::getImageUrl)
                     .orElse(null);
-            return FarmResponseDto.from(farm, thumbnailUrl);
+            return FarmResponseDto.from(farm, thumbnailUrl, null);
         });
+    }
+
+    // 밭 상세 조회 (F-162)
+    @Transactional(readOnly = true)
+    public FarmResponseDto getFarm(Long farmId){
+        Farm farm = farmRepository.findById(farmId)
+                .orElseThrow(() -> new CustomException(CustomError.FARM_NOT_FOUND));
+
+        List<FarmImage> farmImages = farmImageRepository.findByFarm_IdOrderByIdAsc(farmId);
+        List<String> imageUrls = farmImages.stream()
+                .map(FarmImage::getImageUrl)
+                .toList();
+        String thumbnailUrl = imageUrls.isEmpty() ? null : imageUrls.get(0);
+
+        return FarmResponseDto.from(farm, thumbnailUrl, imageUrls);
+
+
     }
 }
