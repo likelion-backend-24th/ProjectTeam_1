@@ -9,7 +9,7 @@ import { formatRelativeTime } from "@/utils/format";
 import { useToastStore } from "@/store/toastStore";
 
 const STATUS_OPTIONS = ["ACTIVE", "INACTIVE", "WITHDRAWN"];
-const ROLE_OPTIONS = ["USER", "ADMIN"];
+const ROLE_OPTIONS = ["USER", "ADMIN", "HOST"];
 const PAGE_SIZE = 10;
 
 const STATUS_LABEL = {
@@ -117,7 +117,7 @@ function AdminView() {
                 >
                   {ROLE_OPTIONS.map((r) => (
                     <option key={r} value={r}>
-                      {r === "ADMIN" ? "관리자" : "일반회원"}
+                      {r === "ADMIN" ? "관리자" : r === "HOST" ? "호스트" : "일반회원"}
                     </option>
                   ))}
                 </select>
