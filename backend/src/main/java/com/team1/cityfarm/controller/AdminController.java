@@ -1,8 +1,10 @@
 package com.team1.cityfarm.controller;
 
+import com.team1.cityfarm.dto.SettlementResponseDto;
 import com.team1.cityfarm.dto.UserRequestDto;
 import com.team1.cityfarm.dto.UserResponseDto;
 import com.team1.cityfarm.service.AdminService;
+import com.team1.cityfarm.service.SettlementService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -12,6 +14,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Tag(name = "관리자 API", description = "관리자 전용 API")
 @SecurityRequirement(name = "BearerAuth")
 @RestController
@@ -19,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AdminController {
     private final AdminService adminService;
+    private final SettlementService settlementService;
 
     //전체 유저 조회
     @Operation(summary = "전체 유저 목록 조회",
@@ -49,5 +54,13 @@ public class AdminController {
     ) {
         adminService.processSettlementPayout(settlementId);
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "관리자 전체 정산 내역 조회",
+            description = "시스템에 등록된 모든 호스트의 정산 내역 리스트를 조회합니다.")
+    @GetMapping("/settlements")
+    public ResponseEntity<List<SettlementResponseDto>> getAllSettlements() {
+        List<SettlementResponseDto> response = settlementService.getAdminSettlements();
+        return ResponseEntity.ok(response);
     }
 }

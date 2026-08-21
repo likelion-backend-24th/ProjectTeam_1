@@ -32,4 +32,8 @@ public class SettlementResponseDto {
         this.settledAt = settlement.getSettledAt();
         this.createdAt = settlement.getCreatedAt();
     }
+
+    public static SettlementResponseDto from(Settlement settlement) {
+        return new SettlementResponseDto(settlement);
+    }
 }

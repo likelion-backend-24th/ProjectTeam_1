@@ -22,4 +22,7 @@ public interface SettlementRepository
     Optional<Settlement> findByOrderId(Long orderId);
 
     boolean existsByOrderId(Long orderId);
+
+    // 관리자용: 전체 정산 내역 조회 (최신순)
+    List<Settlement> findAllByOrderByIdDesc();
 }
