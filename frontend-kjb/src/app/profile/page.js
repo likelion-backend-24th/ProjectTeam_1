@@ -82,7 +82,7 @@ function ProfileView() {
     }
   }
 
-  // 1단계: 현재 비밀번호 확인 핸들러 (타입 지정 제거)
+  // 1단계: 현재 비밀번호 확인 핸들러
   async function handleVerifyCurrentPassword(e) {
     e.preventDefault();
     if (!currentPasswordInput) {
@@ -102,7 +102,7 @@ function ProfileView() {
     }
   }
 
-  // 2단계: 새 비밀번호 변경 핸들러 (타입 지정 제거)
+  // 2단계: 새 비밀번호 변경 핸들러
   async function handleChangeNewPassword(e) {
     e.preventDefault();
     if (!newPasswordInput) {
@@ -191,23 +191,50 @@ function ProfileView() {
 
       <ReadonlyField label="이메일" value={profile?.email} />
 
-      {/* 비밀번호 변경 버튼 */}
+      {/* 비밀번호 변경 버튼 (포인트 스타일 적용) */}
       <button
         type="button"
         onClick={() => setIsPasswordModalOpen(true)}
-        className="flex w-full items-center justify-between rounded-xl bg-surface px-4 py-3.5 text-left"
+        className="flex w-full items-center justify-between rounded-xl bg-surface px-4 py-3.5 text-left border border-primary/20 hover:border-primary/50 transition-colors"
       >
-        <span className="flex items-center gap-2.5 text-[15px] font-semibold text-ink">
-          <LockIcon size={20} />
+        <span className="flex items-center gap-2.5 text-[15px] font-semibold text-primary">
+          <LockIcon size={20} className="text-primary" />
           비밀번호 변경
         </span>
-        <ChevronRightIcon size={18} className="text-ink-muted" />
+        <ChevronRightIcon size={18} className="text-primary/70" />
       </button>
 
+      {/* 메뉴 그룹 영역 */}
       <div className="flex flex-col gap-2">
         <ProfileLinkRow href="/subscription" icon={<TicketIcon size={20} />} label="내 구독" />
-        <ProfileLinkRow href="/profile/payments" icon={<ReceiptIcon size={20} />} label="결제 내역" />
-        <ProfileLinkRow href="/host/settlements" icon={<ReceiptIcon size={20} />} label="정산 내역" />
+
+        {/* 결제 내역 + 정산 내역 통합 카드 */}
+        <div className="flex flex-col rounded-xl bg-surface">
+          <LinkComponent
+            href="/profile/payments"
+            className="flex items-center justify-between px-4 py-3.5 transition-colors hover:bg-surface-strong/50 rounded-t-xl"
+          >
+            <span className="flex items-center gap-2.5 text-[15px] font-semibold text-ink">
+              <ReceiptIcon size={20} />
+              결제 내역
+            </span>
+            <ChevronRightIcon size={18} className="text-ink-muted" />
+          </LinkComponent>
+
+          {/* 중앙 구분선 */}
+          <div className="mx-4 h-[1px] bg-border-subtle/50" />
+
+          <LinkComponent
+            href="/host/settlements"
+            className="flex items-center justify-between px-4 py-3.5 transition-colors hover:bg-surface-strong/50 rounded-b-xl"
+          >
+            <span className="flex items-center gap-2.5 text-[15px] font-semibold text-ink">
+              <ReceiptIcon size={20} />
+              정산 내역
+            </span>
+            <ChevronRightIcon size={18} className="text-ink-muted" />
+          </LinkComponent>
+        </div>
       </div>
 
       <button
