@@ -50,7 +50,7 @@ public class ProfileController {
     }
 
     @Operation(summary = "현재 비밀번호 확인",
-            description = "비밀번호 변경 전, 입력한 현재 비밀번호가 맞는지 검증합니다.")
+            description = "비밀번호 변경 전, 입력한 현재 비밀번호가 올바른지 검증합니다.")
     @PostMapping("/check-password")
     public ApiResponse<Boolean> checkPassword(
             @AuthenticationPrincipal CustomUserDetails customUserDetails,
