@@ -10,6 +10,10 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -37,5 +41,15 @@ public class FarmController {
             ) {
                 Long userId = userDetails.getUserId();
                 return ApiResponse.success("밭 등록 성공", farmService.createFarm(requestDto, images, userId));
+    }
+
+    // 밭 목록 조회 (F-161)
+    @Operation(summary = "밭 목록 조회",
+            description = "등록된 밭 목록을 조회합니다. 비회원도 조회 가능")
+    @GetMapping
+    public ApiResponse<Page<FarmResponseDto>> getFarms(
+            @PageableDefault(size = 10, sort = "createdAt",direction = Sort.Direction.DESC) Pageable pageable
+    ){
+        return ApiResponse.success("밭 목록 조회 성공", farmService.getFarms(pageable));
     }
 }
