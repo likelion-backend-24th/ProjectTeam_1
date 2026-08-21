@@ -53,6 +53,21 @@ public class ClassEnrollmentController {
         return ApiResponse.success("수강권으로 신청 완료", subscriptionService.enrollClassWithPass(userId, classId));
     }
 
+//    구독 수강권 개인취소 (수강권 복구 포함)
+    @Operation(summary = "구독 수강권 신청 개인 취소",
+    description = "본인 구독 수강권으로 신청한 클래스를 취소, 사용 수강권을 복구한다.",
+    security = @SecurityRequirement(name = "BearerAuth"))
+    @PostMapping("/api/enrollments/{enrollmentId}/cancel")
+    public ApiResponse<Void> cancelMyEnrollment(@PathVariable Long enrollmentId,
+                                                @AuthenticationPrincipal CustomUserDetails customUserDetails){
+        Long userId = customUserDetails.getUserId();
+
+        classEnrollmentService.cancelEnrollmentByPass(enrollmentId, userId);
+        subscriptionService.restorePassByEnrollmentId(enrollmentId);
+
+        return ApiResponse.success("신청 취소 완료");
+    }
+
 //    호스트
     @Operation(summary = "내 클래스 신청자 목록 조회",
             description = "호스트(본인)이 개설한 클래스의 신청자 목록 조회."
