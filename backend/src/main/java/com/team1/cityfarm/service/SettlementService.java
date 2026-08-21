@@ -80,6 +80,17 @@ public class SettlementService {
     }
 
     /**
+     * [관리자용] 정산 내역 조회
+     */
+    public List<SettlementResponseDto> getAdminSettlements() {
+        List<Settlement> settlements = settlementRepository.findAllByOrderByIdDesc();
+
+        return settlements.stream()
+                .map(SettlementResponseDto::from) // 엔티티 -> DTO 변환 메서드 (프로젝트 스타일 맞춤)
+                .toList();
+    }
+
+    /**
      * [관리자용] 정산 지급 완료 처리
      */
     @Transactional
