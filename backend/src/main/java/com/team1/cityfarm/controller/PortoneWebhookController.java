@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/webhooks/portone")
+@RequestMapping("/api/payments/webhooks/portone")
 @RequiredArgsConstructor
 public class PortoneWebhookController {
 

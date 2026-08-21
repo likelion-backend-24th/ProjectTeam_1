@@ -58,7 +58,7 @@ portone:
   store-id: ${PORTONE_STORE_ID}               # 우리팀 상점 아이디
   api-secret: ${PORTONE_API_SECRET}           # API Secret
   webhook-secret: ${PORTONE_WEBHOOK_SECRET}   # 웹훅 시크릿
-  webhook-notice-url: ${PORTONE_WEBHOOK_NOTICE_URL} # 콘솔에 웹훅 URL을 등록할 수 없어(스토어 공용) 결제/예약 요청 시 noticeUrls로 직접 전달하는 우리 서버 웹훅 주소. 예: https://우리도메인/api/webhooks/portone
+  webhook-notice-url: ${PORTONE_WEBHOOK_NOTICE_URL} # 콘솔에 웹훅 URL을 등록할 수 없어(스토어 공용) 결제/예약 요청 시 noticeUrls로 직접 전달하는 우리 서버 웹훅 주소. 예: https://우리도메인/api/payments/webhooks/portone
   api:
     base-url: https://api.portone.io
   channel-key:
