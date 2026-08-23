@@ -1,9 +1,6 @@
 import { apiRequest } from "./client";
 
-// 요구사항 12절에 명시된 예상 경로. OrderController가 아직 없어 연결 전까지 404가 날 수 있다.
-
-// payload 예: { orderType: "GENERAL", classId } 형태를 상정하나,
-// OneDayClass/ClassEnrollment 연동은 별도 작업으로 미룬 상태라 classId는 아직 사용하지 않는다.
+// payload 예: { orderType: "GENERAL", classId }.
 // 주문 생성 결과(주문번호, 결제 금액 등)는 전부 백엔드 응답을 그대로 신뢰한다.
 export function createOrder(payload) {
   return apiRequest("/api/orders", { method: "POST", body: payload });

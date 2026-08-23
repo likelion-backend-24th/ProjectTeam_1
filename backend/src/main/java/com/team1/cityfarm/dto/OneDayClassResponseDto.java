@@ -20,11 +20,12 @@ public class OneDayClassResponseDto {
     private LocalDateTime date;
     private String location;
     private int capacity;
+    private long enrolledCount;
     private int price;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public static OneDayClassResponseDto from(OneDayClass entity){
+    public static OneDayClassResponseDto from(OneDayClass entity, long enrolledCount){
         return OneDayClassResponseDto.builder()
                 .id(entity.getId())
                 .hostId(entity.getHost().getId())
@@ -34,6 +35,7 @@ public class OneDayClassResponseDto {
                 .date(entity.getDate())
                 .location(entity.getLocation())
                 .capacity(entity.getCapacity())
+                .enrolledCount(enrolledCount)
                 .price(entity.getPrice())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
