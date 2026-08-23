@@ -10,6 +10,7 @@ import { verifyPayment } from "@/lib/api/payment";
 import { requestPayment } from "@/lib/portone/client";
 import { ApiError } from "@/lib/api/client";
 import { useToastStore } from "@/store/toastStore";
+import { useAuthStore } from "@/store/authStore";
 import { formatCurrency, formatDateTime } from "@/utils/format";
 
 // 결제 확인 화면. 여기 표시되는 금액과 주문 정보는 전부 백엔드가 이미 생성해둔
@@ -20,6 +21,7 @@ function CheckoutView() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
   const showToast = useToastStore((s) => s.showToast);
+  const profile = useAuthStore((s) => s.profile);
 
   const [order, setOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,7 +61,7 @@ function CheckoutView() {
   async function handlePay() {
     setIsPaying(true);
     try {
-      const result = await requestPayment({ order });
+      const result = await requestPayment({ order, profile });
       // PortOne 결제창 결과만으로는 성공을 확정하지 않고, 반드시 백엔드 검증을 거친다.
       // PaymentVerifyRequestDto는 merchantOrderId 필드를 요구한다(order.id가 아님) — 주문의 PK가 아니라
       // 백엔드가 생성한 주문번호 문자열로 조회하기 때문.
