@@ -35,3 +35,8 @@ export function updatePassword(payload) {
     body: payload,
   });
 }
+
+// 좋아요한 게시글 목록 조회
+export function getLikedBoards({ page = 0, size = 10 } = {}) {
+  return apiRequest("/api/profile/likes", { method: "POST", query: { page, size } });
+}

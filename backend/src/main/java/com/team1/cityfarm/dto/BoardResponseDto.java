@@ -4,6 +4,9 @@ import com.team1.cityfarm.entity.Board;
 import com.team1.cityfarm.entity.Category;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.util.Collections;
+import java.util.List;
+
 @Schema(description = "게시글 응답 DTO")
 public record BoardResponseDto(
 
@@ -15,6 +18,9 @@ public record BoardResponseDto(
 
         @Schema(description = "게시글 본문 내용", example = "씨앗부터 키우기 시작했는데 팁 공유해주세요.")
         String content,
+
+        @Schema(description = "작성자 유저 ID", example = "1")
+        Long writerId,
 
         @Schema(description = "작성자 닉네임", example = "파머123")
         String writer,
@@ -32,19 +38,28 @@ public record BoardResponseDto(
         String createdAt,
 
         @Schema(description = "수정 일시", example = "2026-08-05T15:30:00")
-        String updatedAt
+        String updatedAt,
+
+        @Schema(description = "첨부 이미지 URL 목록", example = "[\"/uploads/boards/xxxx.jpg\"]")
+        List<String> imageUrls
 ) {
     public static BoardResponseDto from(Board board) {
+        return from(board, Collections.emptyList());
+    }
+
+    public static BoardResponseDto from(Board board, List<String> imageUrls) {
         return new BoardResponseDto(
                 board.getId(),
                 board.getTitle(),
                 board.getContent(),
+                board.getUser().getId(),
                 board.getUser().getNickname(),
                 board.getCategory(),
                 board.getViewCount(),
                 board.getLikeCount(),
                 board.getCreatedAt().toString(),
-                board.getUpdatedAt().toString()
+                board.getUpdatedAt().toString(),
+                imageUrls
         );
     }
 }

@@ -145,3 +145,24 @@ export function LockIcon({ size = 22, className }) {
     </svg>
   );
 }
+
+export function FeedIcon({ size = 22, className }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <path d="M4 4v16" />
+      <path d="M4 4a8 8 0 0 1 8 8" />
+      <path d="M4 4a16 16 0 0 1 16 16" />
+      <circle cx="5.5" cy="18.5" r="1.5" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function ImageIcon({ size = 22, className }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <rect x="3" y="3" width="18" height="18" rx="2.5" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <path d="m21 15-5-5-9 9" />
+    </svg>
+  );
+}

@@ -11,7 +11,8 @@ import { BackIcon, HeartIcon } from "@/components/icons";
 import { deleteBoard, getBoard, likeBoard, unlikeBoard } from "@/lib/api/board";
 import { createBoardComment, deleteBoardComment, getBoardComments } from "@/lib/api/comments";
 import { createReply, deleteReply, getReplies } from "@/lib/api/reply";
-import { ApiError } from "@/lib/api/client";
+import { followUser, getFollowingList, unfollowUser } from "@/lib/api/follow";
+import { ApiError, API_BASE_URL } from "@/lib/api/client";
 import { CATEGORY_LABEL, formatRelativeTime } from "@/utils/format";
 import { useAuthStore } from "@/store/authStore";
 import { useToastStore } from "@/store/toastStore";
@@ -36,6 +37,8 @@ export default function BoardDetailPage() {
   const [showComments, setShowComments] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [followState, setFollowState] = useState({ following: false, followId: null });
+  const [isFollowLoading, setIsFollowLoading] = useState(false);
 
   const load = useCallback(
     async (signal) => {
@@ -163,8 +166,49 @@ export default function BoardDetailPage() {
     }
   }
 
-  const isOwner = !!profile && !!post && profile.nickName === post.writer;
+  const isOwner = !!profile && !!post && profile.nickname === post.writer;
   const canManagePost = isOwner || isAdmin;
+
+  useEffect(() => {
+    if (!isAuthenticated || !post?.writerId || isOwner) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFollowState({ following: false, followId: null });
+      return;
+    }
+    let cancelled = false;
+    getFollowingList()
+      .then((list) => {
+        if (cancelled) return;
+        const match = list.find((f) => f.userId === post.writerId);
+        setFollowState(match ? { following: true, followId: match.followId } : { following: false, followId: null });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, post?.writerId, isOwner]);
+
+  async function handleFollowToggle() {
+    if (!isAuthenticated) return requireLogin();
+    if (!post?.writerId) return;
+
+    setIsFollowLoading(true);
+    try {
+      if (followState.following) {
+        await unfollowUser(followState.followId);
+        setFollowState({ following: false, followId: null });
+      } else {
+        await followUser(post.writerId);
+        const list = await getFollowingList();
+        const match = list.find((f) => f.userId === post.writerId);
+        setFollowState(match ? { following: true, followId: match.followId } : { following: true, followId: null });
+      }
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.message : "요청에 실패했어요.", "error");
+    } finally {
+      setIsFollowLoading(false);
+    }
+  }
 
   return (
     <AppShell
@@ -209,13 +253,39 @@ export default function BoardDetailPage() {
               <div className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-surface-strong text-sm font-bold text-ink-soft">
                 {post.writer.slice(0, 1)}
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="text-sm font-bold">{post.writer}</p>
                 <p className="text-xs text-ink-muted">{formatRelativeTime(post.createdAt)}</p>
               </div>
+              {!isOwner && post.writerId && (
+                <button
+                  type="button"
+                  onClick={handleFollowToggle}
+                  disabled={isFollowLoading}
+                  className={`shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-semibold disabled:opacity-50 ${
+                    followState.following ? "bg-surface text-ink-soft" : "bg-primary text-white"
+                  }`}
+                >
+                  {followState.following ? "팔로잉" : "팔로우"}
+                </button>
+              )}
             </div>
 
             <p className="text-[15px] leading-relaxed break-words whitespace-pre-wrap">{post.content}</p>
+
+            {post.imageUrls?.length > 0 && (
+              <div className="flex flex-col gap-2.5">
+                {post.imageUrls.map((url) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    key={url}
+                    src={url.startsWith("http") ? url : `${API_BASE_URL}${url}`}
+                    alt=""
+                    className="w-full rounded-xl object-cover"
+                  />
+                ))}
+              </div>
+            )}
 
             <div className="flex items-center gap-4 border-t border-border pt-2">
               <button
@@ -258,7 +328,7 @@ export default function BoardDetailPage() {
                             <span className="text-[13px] font-bold">{c.nickname}</span>
                             <span className="text-xs text-ink-muted">{formatRelativeTime(c.createdAt)}</span>
                           </div>
-                          {profile?.nickName === c.nickname && (
+                          {profile?.nickname === c.nickname && (
                             <button type="button" className="text-xs text-ink-muted" onClick={() => handleDeleteComment(c.id)}>
                               삭제
                             </button>
@@ -328,7 +398,7 @@ export default function BoardDetailPage() {
                 <ReplyItem
                   key={r.id}
                   reply={r}
-                  currentNickname={profile?.nickName}
+                  currentNickname={profile?.nickname}
                   isAuthenticated={isAuthenticated}
                   onDeleteReply={handleDeleteReply}
                   onRequireLogin={requireLogin}
