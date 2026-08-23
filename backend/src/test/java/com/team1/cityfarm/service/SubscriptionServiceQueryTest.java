@@ -68,7 +68,9 @@ class SubscriptionServiceQueryTest {
         when(subscriptionRepository.findByUserIdAndStatus(1L, SubscriptionStatus.ACTIVE)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.getMyActiveSubscription(1L))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(CustomException.class)
+                .satisfies(e -> assertThat(((CustomException) e).getCustomError())
+                        .isEqualTo(CustomError.SUBSCRIPTION_NOT_FOUND));
     }
 
     @Test
@@ -91,7 +93,9 @@ class SubscriptionServiceQueryTest {
         when(subscriptionPassRepository.findBySubscriptionIdAndStatus(1L, PassStatus.ACTIVE)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.getSubscriptionPass(1L, 1L))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(CustomException.class)
+                .satisfies(e -> assertThat(((CustomException) e).getCustomError())
+                        .isEqualTo(CustomError.SUBSCRIPTION_PASS_NOT_FOUND));
     }
 
     @Test
@@ -103,7 +107,9 @@ class SubscriptionServiceQueryTest {
         when(subscriptionPassRepository.findBySubscriptionIdAndStatus(1L, PassStatus.ACTIVE)).thenReturn(Optional.of(pass));
 
         assertThatThrownBy(() -> service.getSubscriptionPass(99L, 1L)) // 다른 유저 id로 조회
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(CustomException.class)
+                .satisfies(e -> assertThat(((CustomException) e).getCustomError())
+                        .isEqualTo(CustomError.AUTH_UNAUTHORIZED));
     }
 
     @Test

@@ -61,7 +61,9 @@ function CheckoutView() {
     try {
       const result = await requestPayment({ order });
       // PortOne 결제창 결과만으로는 성공을 확정하지 않고, 반드시 백엔드 검증을 거친다.
-      await verifyPayment({ orderId: order.id, paymentId: result.paymentId });
+      // PaymentVerifyRequestDto는 merchantOrderId 필드를 요구한다(order.id가 아님) — 주문의 PK가 아니라
+      // 백엔드가 생성한 주문번호 문자열로 조회하기 때문.
+      await verifyPayment({ merchantOrderId: order.merchantOrderId, paymentId: result.paymentId });
       router.replace(`/payment/${order.id}`);
     } catch (err) {
       showToast(
