@@ -2,7 +2,8 @@ import { apiRequest } from "./client";
 
 // PortOne 결제창에서 반환된 결과는 그 자체로 성공을 의미하지 않는다.
 // 반드시 이 verify 호출을 통해 백엔드가 PortOne API로 최종 검증한 결과를 신뢰한다.
-// payload 예: { orderId, paymentId }
+// payload 예: { merchantOrderId, paymentId } — order.id(PK)가 아니라 order.merchantOrderId를 보낼 것.
+// (PaymentVerifyRequestDto가 merchantOrderId로 주문을 조회함)
 export function verifyPayment(payload) {
   return apiRequest("/api/payments/verify", { method: "POST", body: payload });
 }
