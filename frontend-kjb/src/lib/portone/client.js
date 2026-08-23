@@ -20,6 +20,13 @@ export const PORTONE_CHANNEL_KEY_NORMAL =
 export const PORTONE_CHANNEL_KEY_BILLING =
   process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY_BILLING || "channel-key-c0736ef7-925d-4de6-8f52-4cc89c502688";
 
+// PortOne 이니시스 V2 채널이 결제/빌링키 발급 요청 모두에서 customer.phoneNumber를 필수로
+// 요구한다(email, 구독은 fullName도 필수). 우리 시스템은 회원가입 때 전화번호를 아예 받지 않으므로
+// 고정 placeholder를 사용한다 — SDK가 형식이 갖춰진 값을 요구할 뿐이라 실제 소유자 인증에는
+// 쓰이지 않는 것으로 확인됨(2026-08-24 테스트). 실제 전화번호 수집 기능이 추가되면 이 상수 대신
+// 로그인한 사용자의 값으로 교체할 것.
+const PLACEHOLDER_PHONE_NUMBER = "01000000000";
+
 let sdkLoadPromise = null;
 
 // PortOne v2 브라우저 SDK를 CDN에서 지연 로드한다 (기존 프로젝트가 Pretendard 폰트를
@@ -50,12 +57,12 @@ export function loadPortOneSdk() {
  * order는 반드시 서버 응답(getOrder/createOrder 결과)에서 온 값을 그대로 사용해야 하며,
  * 프론트에서 amount 등을 재계산하거나 덮어쓰지 않는다.
  *
- * @param {{ order: { merchantOrderId: string, amount: number, orderName?: string, title?: string } }} params
+ * @param {{ order: { merchantOrderId: string, amount: number, orderName?: string, title?: string }, profile?: { name?: string, email?: string } }} params
  * @returns {Promise<{ paymentId: string, txId?: string }>}
  *   결제창이 반환하는 결과. 이 값만으로 성공을 확정하지 말고 반드시
- *   payment.verifyPayment({ orderId, paymentId })로 백엔드 검증을 거칠 것.
+ *   payment.verifyPayment({ merchantOrderId, paymentId })로 백엔드 검증을 거칠 것.
  */
-export async function requestPayment({ order }) {
+export async function requestPayment({ order, profile }) {
   const PortOne = await loadPortOneSdk();
 
   const response = await PortOne.requestPayment({
@@ -66,6 +73,11 @@ export async function requestPayment({ order }) {
     totalAmount: order.amount, // 백엔드가 내려준 금액 그대로 사용
     currency: "CURRENCY_KRW",
     payMethod: "CARD",
+    customer: {
+      email: profile?.email,
+      fullName: profile?.name,
+      phoneNumber: PLACEHOLDER_PHONE_NUMBER,
+    },
   });
 
   // v2 SDK는 결제창에서 실패/취소가 나도 reject하지 않고 code가 채워진 결과로 resolve한다.
@@ -80,10 +92,10 @@ export async function requestPayment({ order }) {
  * 구독 자동결제용 빌링키 발급 창을 호출한다.
  * intent는 billingKey.createBillingKeyIssuanceIntent()의 응답(issueId, customerId 포함)이어야 한다.
  *
- * @param {{ intent: { issueId: string, customerId: string } }} params
+ * @param {{ intent: { issueId: string, customerId: string }, profile?: { name?: string, email?: string } }} params
  * @returns {Promise<{ billingKey: string }>}
  */
-export async function requestIssueBillingKey({ intent }) {
+export async function requestIssueBillingKey({ intent, profile }) {
   const PortOne = await loadPortOneSdk();
 
   const response = await PortOne.requestIssueBillingKey({
@@ -91,7 +103,12 @@ export async function requestIssueBillingKey({ intent }) {
     channelKey: PORTONE_CHANNEL_KEY_BILLING,
     issueId: intent.issueId,
     issueName: "시티팜 구독 자동결제 카드 등록",
-    customer: { customerId: intent.customerId },
+    customer: {
+      customerId: intent.customerId,
+      email: profile?.email,
+      fullName: profile?.name,
+      phoneNumber: PLACEHOLDER_PHONE_NUMBER,
+    },
     billingKeyMethod: "CARD",
   });
 
