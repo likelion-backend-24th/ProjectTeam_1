@@ -163,7 +163,7 @@ export default function BoardDetailPage() {
     }
   }
 
-  const isOwner = !!profile && !!post && profile.nickName === post.writer;
+  const isOwner = !!profile && !!post && profile.nickname === post.writer;
   const canManagePost = isOwner || isAdmin;
 
   return (
@@ -258,7 +258,7 @@ export default function BoardDetailPage() {
                             <span className="text-[13px] font-bold">{c.nickname}</span>
                             <span className="text-xs text-ink-muted">{formatRelativeTime(c.createdAt)}</span>
                           </div>
-                          {profile?.nickName === c.nickname && (
+                          {profile?.nickname === c.nickname && (
                             <button type="button" className="text-xs text-ink-muted" onClick={() => handleDeleteComment(c.id)}>
                               삭제
                             </button>
@@ -328,7 +328,7 @@ export default function BoardDetailPage() {
                 <ReplyItem
                   key={r.id}
                   reply={r}
-                  currentNickname={profile?.nickName}
+                  currentNickname={profile?.nickname}
                   isAuthenticated={isAuthenticated}
                   onDeleteReply={handleDeleteReply}
                   onRequireLogin={requireLogin}

@@ -20,8 +20,8 @@ public interface ClassEnrollmentRepository extends JpaRepository<ClassEnrollment
     // orderId 기반 수강신청 조회 (결제 성공 후 PENDING -> CONFIRMED 변경 시 사용)
     Optional<ClassEnrollment> findByOrderId(Long orderId);
 
-    // 중복 신청 방지 검증용 (PENDING 또는 CONFIRMED 상태인 신청이 존재하는지 확인)
-    boolean existsByOneDayClassIdAndUserIdAndStatusIn(
+    // 중복 신청/결제 이탈로 남은 PENDING 신청 판별용 (PENDING 또는 CONFIRMED 상태인 신청 조회)
+    List<ClassEnrollment> findByOneDayClassIdAndUserIdAndStatusIn(
             Long classId,
             Long userId,
             List<EnrollmentStatus> statuses
