@@ -10,6 +10,13 @@ import { ApiError } from "@/lib/api/client";
 import { formatCurrency, formatDateTime } from "@/utils/format";
 import { useAuthStore } from "@/store/authStore";
 
+const SORT_OPTIONS = [
+  { label: "일정순", value: "date,asc" },
+  { label: "최신등록순", value: "createdAt,desc" },
+  { label: "낮은 가격순", value: "price,asc" },
+  { label: "높은 가격순", value: "price,desc" },
+];
+
 const PAGE_SIZE = 10;
 const MAX_PAGE_BUTTONS = 5;
 
@@ -27,31 +34,30 @@ function getPageNumbers(current, totalPages) {
 export default function OneDayClassListPage() {
   const router = useRouter();
   const isHost = useAuthStore((s) => s.isHost);
+  const [activeSort, setActiveSort] = useState(SORT_OPTIONS[0].value);
   const [classes, setClasses] = useState([]);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const loadClasses = useCallback(async (targetPage) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const res = await getClassList({ page: targetPage, size: PAGE_SIZE });
-      const content = res.content.map((cls) => ({
-        ...cls,
-        description: cls.description ?? "텃밭에서 직접 씨앗을 심고 물을 주며 채소가 자라는 과정을 배우는 체험형 원데이클래스입니다.",
-        enrolledCount: cls.enrolledCount ?? 1,
-      }));
-      setClasses(content);
-      setTotalPages(res.totalPages);
-      setPage(targetPage);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "클래스 목록을 불러오지 못했어요.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const loadClasses = useCallback(
+    async (targetPage) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const res = await getClassList({ page: targetPage, size: PAGE_SIZE, sort: activeSort });
+        setClasses(res.content);
+        setTotalPages(res.totalPages);
+        setPage(targetPage);
+      } catch (err) {
+        setError(err instanceof ApiError ? err.message : "클래스 목록을 불러오지 못했어요.");
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [activeSort],
+  );
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -73,6 +79,21 @@ export default function OneDayClassListPage() {
         <span aria-hidden className="absolute -right-1.5 -bottom-3.5 rotate-[-8deg] text-[72px] opacity-20">
           🌻
         </span>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        {SORT_OPTIONS.map((s) => (
+          <button
+            key={s.value}
+            type="button"
+            onClick={() => setActiveSort(s.value)}
+            className={`shrink-0 rounded-full px-3.5 py-2 text-[13px] font-semibold ${
+              activeSort === s.value ? "bg-class text-white" : "bg-surface text-ink-soft"
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
       </div>
 
       {error && <p className="rounded-lg bg-red-50 px-3.5 py-2.5 text-[13px] text-red-700">{error}</p>}
