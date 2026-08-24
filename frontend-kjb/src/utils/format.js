@@ -4,7 +4,7 @@ export const CATEGORY_LABEL = {
   FREE: "자유게시판",
 };
 
-function parseServerDate(isoString) {
+export function parseServerDate(isoString) {
   // Backend returns naive datetime strings (no timezone designator) that
   // represent UTC instants. Without a "Z"/offset suffix, JS would otherwise
   // parse them as local time, so append "Z" to interpret them as UTC.
@@ -54,3 +54,23 @@ export function formatCurrency(amount) {
   if (amount === null || amount === undefined) return "-";
   return `${Number(amount).toLocaleString("ko-KR")}원`;
 }
+
+export function formatDateWithWeekday(isoString) {
+  if (!isoString) return "-";
+  const date = parseServerDate(isoString);
+  if (Number.isNaN(date.getTime())) return isoString;
+  const weekday = date.toLocaleDateString("ko-KR", { weekday: "short" });
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}.${m}.${d} (${weekday})`;
+}
+
+export function formatTime(isoString) {
+  if (!isoString) return "-";
+  const date = parseServerDate(isoString);
+  if (Number.isNaN(date.getTime())) return isoString;
+  return date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false });
+}
+
+

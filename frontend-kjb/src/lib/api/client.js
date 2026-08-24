@@ -18,6 +18,21 @@ export function clearAccessToken() {
   localStorage.removeItem(TOKEN_KEY);
 }
 
+const REFRESH_TOKEN_KEY = "refreshToken";
+
+export function getRefreshToken() {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+export function setRefreshToken(token) {
+  localStorage.setItem(REFRESH_TOKEN_KEY, token);
+}
+
+export function clearRefreshToken() {
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+}
+
 export class ApiError extends Error {
   constructor(message, code, status) {
     super(message);
@@ -41,14 +56,14 @@ function buildQueryString(query) {
 export async function apiRequest(path, options = {}) {
   const { method = "GET", body, query, signal } = options;
 
+  const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
+
   const headers = {};
   const token = getAccessToken();
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
-  const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
   if (body !== undefined && !isFormData) {
-    // FormData sets its own multipart Content-Type (with boundary) - let the browser handle it.
     headers["Content-Type"] = "application/json";
   }
 

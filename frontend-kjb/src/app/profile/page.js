@@ -5,7 +5,7 @@ import LinkComponent from "next/link";
 import { useRouter } from "next/navigation";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { RequireAuth } from "@/components/RequireAuth";
-import { ChevronRightIcon, FeedIcon, HeartIcon, ReceiptIcon, TicketIcon, LockIcon } from "@/components/icons";
+import { ChevronRightIcon, FeedIcon, HeartIcon, ReceiptIcon, TicketIcon, LockIcon, BackIcon } from "@/components/icons";
 import { useAuthStore } from "@/store/authStore";
 import { useToastStore } from "@/store/toastStore";
 import { ApiError } from "@/lib/api/client";
@@ -101,7 +101,7 @@ function ProfileView() {
     }
   }
 
-  // 1단계: 현재 비밀번호 확인 핸들러 (타입 지정 제거)
+  // 1단계: 현재 비밀번호 확인 핸들러
   async function handleVerifyCurrentPassword(e) {
     e.preventDefault();
     if (!currentPasswordInput) {
@@ -121,7 +121,7 @@ function ProfileView() {
     }
   }
 
-  // 2단계: 새 비밀번호 변경 핸들러 (타입 지정 제거)
+  // 2단계: 새 비밀번호 변경 핸들러
   async function handleChangeNewPassword(e) {
     e.preventDefault();
     if (!newPasswordInput) {
@@ -149,9 +149,20 @@ function ProfileView() {
   }
 
   return (
-    <AppShell header={<PageHeader title="내 프로필" />}>
-      <div className="flex items-center gap-6 pt-3 pb-1">
-        <div className="flex h-[76px] w-[76px] shrink-0 items-center justify-center rounded-full bg-surface-strong text-[28px] font-bold text-ink-soft">
+    <AppShell
+      header={
+        <PageHeader
+          title="내 프로필"
+          left={
+            <button type="button" onClick={() => router.back()} className="cursor-pointer">
+              <BackIcon size={22} />
+            </button>
+          }
+        />
+      }
+    >
+      <div className="flex justify-center pt-3 pb-1">
+        <div className="flex h-[76px] w-[76px] items-center justify-center rounded-full bg-surface-strong text-[28px] font-bold text-ink-soft">
           {profile?.name?.slice(0, 1) ?? "?"}
         </div>
         <div className="flex flex-1 items-center justify-around">
@@ -220,22 +231,49 @@ function ProfileView() {
 
       <ReadonlyField label="이메일" value={profile?.email} />
 
-      {/* 비밀번호 변경 버튼 */}
+      {/* 비밀번호 변경 버튼 (포인트 스타일 적용) */}
       <button
         type="button"
         onClick={() => setIsPasswordModalOpen(true)}
-        className="flex w-full items-center justify-between rounded-xl bg-surface px-4 py-3.5 text-left"
+        className="flex w-full items-center justify-between rounded-xl bg-surface px-4 py-3.5 text-left border border-primary/20 hover:border-primary/50 transition-colors"
       >
-        <span className="flex items-center gap-2.5 text-[15px] font-semibold text-ink">
-          <LockIcon size={20} />
+        <span className="flex items-center gap-2.5 text-[15px] font-semibold text-primary">
+          <LockIcon size={20} className="text-primary" />
           비밀번호 변경
         </span>
-        <ChevronRightIcon size={18} className="text-ink-muted" />
+        <ChevronRightIcon size={18} className="text-primary/70" />
       </button>
 
+      {/* 메뉴 그룹 영역 */}
       <div className="flex flex-col gap-2">
         <ProfileLinkRow href="/subscription" icon={<TicketIcon size={20} />} label="내 구독" />
-        <ProfileLinkRow href="/profile/payments" icon={<ReceiptIcon size={20} />} label="결제 내역" />
+        {/* 결제 내역 + 정산 내역 좌우 2분할 카드 */}
+        <div className="flex w-full items-center rounded-xl bg-surface">
+          {/* 왼쪽: 결제 내역 */}
+          <LinkComponent
+            href="/profile/payments"
+            className="flex flex-1 items-center justify-between px-4 py-3.5 transition-colors hover:bg-surface-strong/50 rounded-l-xl"
+          >
+            <span className="flex items-center gap-2 text-[15px] font-semibold text-ink">
+              <ReceiptIcon size={19} />
+              결제 내역
+            </span>
+            <ChevronRightIcon size={16} className="text-ink-muted" />
+          </LinkComponent>
+          {/* 세로 구분선 */}
+          <div className="h-5 w-[1px] bg-border-subtle/60" />
+          {/* 오른쪽: 정산 내역 */}
+          <LinkComponent
+            href="/host/settlements"
+            className="flex flex-1 items-center justify-between px-4 py-3.5 transition-colors hover:bg-surface-strong/50 rounded-r-xl"
+          >
+            <span className="flex items-center gap-2 text-[15px] font-semibold text-ink">
+              <ReceiptIcon size={19} />
+              정산 내역
+            </span>
+            <ChevronRightIcon size={16} className="text-ink-muted" />
+          </LinkComponent>
+        </div>
         <ProfileLinkRow href="/profile/feed" icon={<FeedIcon size={20} />} label="피드" />
         <ProfileLinkRow href="/profile/likes" icon={<HeartIcon size={20} />} label="좋아요한 게시글" />
       </div>

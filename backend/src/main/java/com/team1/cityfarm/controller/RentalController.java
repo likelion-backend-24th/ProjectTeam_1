@@ -13,14 +13,13 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/farms")
 @RequiredArgsConstructor
 public class RentalController {
     private final RentalService rentalService;
 
     // 밭 임대 신청 (F163)
     @Operation(summary = "밭 임대 신청", security = @SecurityRequirement(name = "BearerAuth"))
-    @PostMapping("/{farmId}/rent")
+    @PostMapping("/api/farms/{farmId}/rent")
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<RentalResponseDto> applyRental(
             @PathVariable Long farmId,

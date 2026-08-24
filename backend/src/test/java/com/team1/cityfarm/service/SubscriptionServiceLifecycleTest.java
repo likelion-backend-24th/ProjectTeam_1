@@ -1,6 +1,8 @@
 package com.team1.cityfarm.service;
 
 import com.team1.cityfarm.entity.*;
+import com.team1.cityfarm.global.exception.CustomError;
+import com.team1.cityfarm.global.exception.CustomException;
 import com.team1.cityfarm.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,7 +68,9 @@ class SubscriptionServiceLifecycleTest {
         when(subscriptionRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.cancelSubscriptionAtPeriodEnd(1L, 1L))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(CustomException.class)
+                .satisfies(e -> assertThat(((CustomException) e).getCustomError())
+                        .isEqualTo(CustomError.SUBSCRIPTION_NOT_FOUND));
     }
 
     @Test
@@ -75,7 +79,9 @@ class SubscriptionServiceLifecycleTest {
         when(subscriptionRepository.findById(1L)).thenReturn(Optional.of(sub));
 
         assertThatThrownBy(() -> service.cancelSubscriptionAtPeriodEnd(1L, 1L))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(CustomException.class)
+                .satisfies(e -> assertThat(((CustomException) e).getCustomError())
+                        .isEqualTo(CustomError.AUTH_UNAUTHORIZED));
     }
 
     @Test

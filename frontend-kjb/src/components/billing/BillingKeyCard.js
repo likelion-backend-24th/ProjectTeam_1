@@ -8,18 +8,20 @@ import { createBillingKeyIssuanceIntent, confirmBillingKeyIssuance } from "@/lib
 import { requestIssueBillingKey } from "@/lib/portone/client";
 import { ApiError } from "@/lib/api/client";
 import { useToastStore } from "@/store/toastStore";
+import { useAuthStore } from "@/store/authStore";
 
 // 카드 등록/변경 흐름을 담당한다. 실제 카드번호는 이 컴포넌트도, 우리 서버도 다루지 않는다 —
 // PortOne SDK가 반환하는 issueId/billingKey 식별자만 오간다.
 export function BillingKeyCard({ billingKey, onRegistered }) {
   const showToast = useToastStore((s) => s.showToast);
+  const profile = useAuthStore((s) => s.profile);
   const [isRegistering, setIsRegistering] = useState(false);
 
   async function handleRegister() {
     setIsRegistering(true);
     try {
       const intent = await createBillingKeyIssuanceIntent();
-      const result = await requestIssueBillingKey({ intent });
+      const result = await requestIssueBillingKey({ intent, profile });
       const confirmed = await confirmBillingKeyIssuance({ issueId: intent.issueId, billingKey: result.billingKey });
       showToast("결제 수단이 등록되었어요.");
       onRegistered?.(confirmed, result);

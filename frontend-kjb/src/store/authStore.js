@@ -1,7 +1,20 @@
 import { create } from "zustand";
-import { clearAccessToken, getAccessToken, setAccessToken } from "@/lib/api/client";
-import { getMyProfile, updateProfile, checkPassword, updatePassword } from "@/lib/api/profile"; // 👈 checkPassword, updatePassword 추가
-import { login as loginApi, logout as logoutApi, withdraw as withdrawApi } from "@/lib/api/auth";
+import {
+  clearAccessToken,
+  getAccessToken,
+  setAccessToken,
+  getRefreshToken,
+  setRefreshToken,
+  clearRefreshToken,
+} from "@/lib/api/client";
+import {
+  getMyProfile,
+  updateProfile as updateProfileApi,
+  checkPassword as checkPasswordApi,
+  updatePassword as updatePasswordApi,
+  promoteToHost as promoteToHostApi,
+} from "@/lib/api/profile";
+import { login as loginApi, logout as logoutApi, withdraw as withdrawApi, reissue as reissueApi } from "@/lib/api/auth";
 import { decodeJwtPayload } from "@/lib/jwt";
 
 function isAdminToken(token) {
@@ -9,10 +22,16 @@ function isAdminToken(token) {
   return payload?.role === "ADMIN";
 }
 
+function isHostToken(token) {
+  const payload = decodeJwtPayload(token);
+  return payload?.role === "HOST";
+}
+
 export const useAuthStore = create((set, get) => ({
   isAuthenticated: false,
   profile: null,
   isAdmin: false,
+  isHost: false,
   isLoading: true,
   hasInitialized: false,
 
@@ -22,33 +41,47 @@ export const useAuthStore = create((set, get) => ({
 
     const token = getAccessToken();
     if (!token) {
-      set({ isAuthenticated: false, profile: null, isAdmin: false, isLoading: false });
+      set({ isAuthenticated: false, profile: null, isAdmin: false, isHost: false, isLoading: false });
       return;
     }
     try {
       const profile = await getMyProfile();
-      set({ profile, isAuthenticated: true, isAdmin: isAdminToken(token), isLoading: false });
+      set({ profile, isAuthenticated: true, isAdmin: isAdminToken(token), isHost: isHostToken(token), isLoading: false });
     } catch {
       clearAccessToken();
-      set({ isAuthenticated: false, profile: null, isAdmin: false, isLoading: false });
+      clearRefreshToken();
+      set({ isAuthenticated: false, profile: null, isAdmin: false, isHost: false, isLoading: false });
     }
   },
 
   login: async (payload) => {
     const res = await loginApi(payload);
     setAccessToken(res.accessToken);
+    if (res.refreshToken) setRefreshToken(res.refreshToken);
     const profile = await getMyProfile();
-    set({ profile, isAuthenticated: true, isAdmin: isAdminToken(res.accessToken) });
+    set({
+      profile,
+      isAuthenticated: true,
+      isAdmin: isAdminToken(res.accessToken),
+      isHost: isHostToken(res.accessToken),
+    });
   },
 
   socialLogin: async (accessToken) => {
     setAccessToken(accessToken);
     try {
       const profile = await getMyProfile();
-      set({ profile, isAuthenticated: true, isAdmin: isAdminToken(accessToken), isLoading: false });
+      set({
+        profile,
+        isAuthenticated: true,
+        isAdmin: isAdminToken(accessToken),
+        isHost: isHostToken(accessToken),
+        isLoading: false,
+      });
     } catch {
       clearAccessToken();
-      set({ isAuthenticated: false, profile: null, isAdmin: false, isLoading: false });
+      clearRefreshToken();
+      set({ isAuthenticated: false, profile: null, isAdmin: false, isHost: false, isLoading: false });
       throw new Error("소셜 로그인 프로필을 불러오지 못했습니다.");
     }
   },
@@ -60,30 +93,43 @@ export const useAuthStore = create((set, get) => ({
       // ignore network/server errors on logout, clear local state regardless
     }
     clearAccessToken();
-    set({ isAuthenticated: false, profile: null, isAdmin: false });
+    clearRefreshToken();
+    set({ isAuthenticated: false, profile: null, isAdmin: false, isHost: false });
   },
 
   withdraw: async () => {
     await withdrawApi();
     clearAccessToken();
-    set({ isAuthenticated: false, profile: null, isAdmin: false });
+    clearRefreshToken();
+    set({ isAuthenticated: false, profile: null, isAdmin: false, isHost: false });
   },
 
   updateProfile: async (payload) => {
-    const updatedProfile = await updateProfile(payload);
-    
+    const updatedProfile = await updateProfileApi(payload);
     set((state) => ({
       profile: updatedProfile ?? { ...state.profile, ...payload },
     }));
   },
 
-  // 현재 비밀번호 확인 액션
   checkPassword: async (payload) => {
-    return await checkPassword(payload);
+    return await checkPasswordApi(payload);
   },
 
-  // 비밀번호 변경 액션
   changePassword: async (payload) => {
-    await updatePassword(payload);
+    await updatePasswordApi(payload);
+  },
+
+  promoteToHost: async (payload) => {
+    await promoteToHostApi(payload);
+
+    const refreshToken = getRefreshToken();
+    if (refreshToken) {
+      const res = await reissueApi(refreshToken);
+      setAccessToken(res.accessToken);
+      if (res.refreshToken) setRefreshToken(res.refreshToken);
+      set({ isAdmin: isAdminToken(res.accessToken), isHost: isHostToken(res.accessToken) });
+    } else {
+      set({ isHost: true });
+    }
   },
 }));

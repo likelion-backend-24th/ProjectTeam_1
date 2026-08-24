@@ -12,4 +12,7 @@ public interface RentalRepository extends JpaRepository<Rental, Long> {
 
     // 판매자 조회
     Page<Rental> findByFarm_Id(Long farmId, Pageable pageable);
+
+    // 호스트 내가 등록한 밭들의 임대 목록
+    Page<Rental> findByFarm_User_Id(Long hostUserId, Pageable pageable);
 }

@@ -7,10 +7,12 @@ import com.team1.cityfarm.global.exception.CustomError;
 import com.team1.cityfarm.global.exception.CustomException;
 import com.team1.cityfarm.repository.ClassEnrollmentRepository;
 import com.team1.cityfarm.repository.OneDayClassRepository;
+import com.team1.cityfarm.repository.OrderRepository;
 import com.team1.cityfarm.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.Comparator;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,6 +26,19 @@ public class ClassEnrollmentService {
     private final ClassEnrollmentRepository classEnrollmentRepository;
     private final OneDayClassRepository oneDayClassRepository;
     private final UserRepository userRepository;
+    private final OrderRepository orderRepository;
+
+    // 결제창까지 가지 않고 이탈한 PENDING 신청을 "이미 신청함"으로 계속 취급하지 않도록 두는 유예 시간.
+    // 이 시간이 지난 PENDING 건은 재신청/수강권 신청 시 자동으로 CANCELLED 처리한다.
+    private static final long PENDING_ENROLLMENT_EXPIRY_MINUTES = 30;
+
+    // 정원 표시용 (PENDING 또는 CONFIRMED 상태인 신청 인원 수)
+    public long getEnrolledCount(Long classId) {
+        return classEnrollmentRepository.countByOneDayClassIdAndStatusIn(
+                classId,
+                List.of(EnrollmentStatus.PENDING, EnrollmentStatus.CONFIRMED)
+        );
+    }
 
     /**
      * [일반 결제] PENDING 상태의 ClassEnrollment 생성
@@ -79,14 +94,33 @@ public class ClassEnrollmentService {
         OneDayClass oneDayClass = oneDayClassRepository.findByIdForUpdate(classId)
                 .orElseThrow(() -> new CustomException(CustomError.ONE_DAY_CLASS_NOT_FOUND));
 
-        boolean alreadyEnrolled = classEnrollmentRepository.existsByOneDayClassIdAndUserIdAndStatusIn(
+        if (oneDayClass.getHost().getId().equals(userId)) {
+            throw new CustomException(CustomError.CLASS_HOST_CANNOT_ENROLL);
+        }
+
+        List<ClassEnrollment> activeEnrollments = classEnrollmentRepository.findByOneDayClassIdAndUserIdAndStatusIn(
                 classId,
                 userId,
                 List.of(EnrollmentStatus.PENDING, EnrollmentStatus.CONFIRMED)
         );
 
-        if (alreadyEnrolled) {
-            throw new CustomException(CustomError.ALREADY_ENROLLED_CLASS);
+        LocalDateTime expiryCutoff = LocalDateTime.now().minusMinutes(PENDING_ENROLLMENT_EXPIRY_MINUTES);
+
+        for (ClassEnrollment existing : activeEnrollments) {
+            boolean isStalePending = existing.getStatus() == EnrollmentStatus.PENDING
+                    && existing.getCreatedAt().isBefore(expiryCutoff);
+
+            if (!isStalePending) {
+                throw new CustomException(CustomError.ALREADY_ENROLLED_CLASS);
+            }
+
+            // 결제창까지 가지 않고 다른 탭으로 이탈한 것으로 판단 - 신청/주문을 정리하고 재신청을 허용한다
+            existing.setStatus(EnrollmentStatus.CANCELLED);
+            if (existing.getOrderId() != null) {
+                orderRepository.findById(existing.getOrderId())
+                        .filter(order -> order.getOrderStatus() == OrderStatus.PENDING)
+                        .ifPresent(order -> order.setOrderStatus(OrderStatus.CANCELLED));
+            }
         }
 
         long enrolledCount = classEnrollmentRepository.countByOneDayClassIdAndStatusIn(
@@ -145,6 +179,10 @@ public class ClassEnrollmentService {
     //    마이페이지 - 내 신청내역 조회
     public List<MyEnrollmentResponseDto> getMyEnrollment(Long userId) {
         return classEnrollmentRepository.findByUser_Id(userId).stream()
+                .filter(e -> e.getStatus() == EnrollmentStatus.CONFIRMED)
+                .filter(e -> e.getOneDayClass().getDate().isAfter(LocalDateTime.now()))
+                .sorted(Comparator.comparing(e -> e.getOneDayClass().getDate()))
+                .limit(3)
                 .map(MyEnrollmentResponseDto::from)
                 .collect(Collectors.toList());
     }

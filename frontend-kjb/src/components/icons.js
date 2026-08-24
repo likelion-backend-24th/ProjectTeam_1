@@ -149,10 +149,8 @@ export function LockIcon({ size = 22, className }) {
 export function FeedIcon({ size = 22, className }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
-      <path d="M4 4v16" />
-      <path d="M4 4a8 8 0 0 1 8 8" />
-      <path d="M4 4a16 16 0 0 1 16 16" />
-      <circle cx="5.5" cy="18.5" r="1.5" fill="currentColor" stroke="none" />
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M7 8h10M7 12h10M7 16h6" />
     </svg>
   );
 }
@@ -163,6 +161,77 @@ export function ImageIcon({ size = 22, className }) {
       <rect x="3" y="3" width="18" height="18" rx="2.5" />
       <circle cx="8.5" cy="8.5" r="1.5" />
       <path d="m21 15-5-5-9 9" />
+export function CalendarIcon({ size = 22, className }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M3 10h18M8 3v4M16 3v4" />
+    </svg>
+  );
+}
+
+export function BookIcon({ size = 22, className }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
+    </svg>
+  );
+}
+
+export function LocationIcon({ size = 18, className }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11Z" />
+      <circle cx="12" cy="10" r="2.5" />
+    </svg>
+  );
+}
+
+export function SproutIcon({ size = 22, className }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <path d="M12 21V10" />
+      <path d="M12 10c0-3.5-2.5-6-7-6 0 3.5 2.5 6 7 6Z" />
+      <path d="M12 14c0-3.5 2.5-6 7-6 0 3.5-2.5 6-7 6Z" />
+    </svg>
+  );
+}
+
+export function BookmarkIcon({ size = 22, className }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <path d="M6 3h12v18l-6-4-6 4Z" />
+    </svg>
+  );
+}
+
+export function MessageIcon({ size = 22, className }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+
+export function SettingsIcon({ size = 22, className }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h14M20 18h0" />
+      <circle cx="16" cy="6" r="2" />
+      <circle cx="6" cy="12" r="2" />
+      <circle cx="18" cy="18" r="2" />
+    </svg>
+  );
+}
+
+export function UsersIcon({ size = 18, className }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <circle cx="9" cy="8" r="3.5" />
+      <path d="M2.5 20c1-3.5 3.8-5.5 6.5-5.5s5.5 2 6.5 5.5" />
+      <path d="M15.5 5.2c1.4.4 2.5 1.7 2.5 3.3s-1.1 2.9-2.5 3.3" />
+      <path d="M17.5 14.7c2 .6 3.5 2.3 4 5.3" />
     </svg>
   );
 }

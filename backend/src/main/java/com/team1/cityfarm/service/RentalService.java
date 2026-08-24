@@ -9,6 +9,8 @@ import com.team1.cityfarm.repository.FarmRepository;
 import com.team1.cityfarm.repository.RentalRepository;
 import com.team1.cityfarm.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,6 +60,13 @@ public class RentalService {
         Rental rental = rentalRepository.findById(rentalId)
                 .orElseThrow(() -> new CustomException(CustomError.RENTAL_NOT_FOUND));
 
+        // 신청한 본인 또는 그 밭을 등록한 호스트만 취소 가능
+        boolean isTenant = rental.getUser().getId().equals(userId);
+        boolean isHostOwner = rental.getFarm().getUser().getId().equals(userId);
+        if (!isTenant && !isHostOwner){
+            throw new CustomException(CustomError.RENTAL_NOT_FOUND);
+        }
+
         // 중복 취소 불가
         if(rental.getRentalStatus() == RentalStatus.CANCELLED){
             throw new CustomException(CustomError.RENTAL_ALREADY_CANCELLED);
@@ -69,6 +78,19 @@ public class RentalService {
         // 밭 상태 임대 가능으로 변경
         Farm farm = rental.getFarm();
         farm.setFarmStatus(FarmStatus.AVAILABLE);
+    }
 
+    // 호스트가 내 밭을 임대한 사람들 목록 조회
+    @Transactional(readOnly = true)
+    public Page<RentalResponseDto> getHostRentals(Long hostId, Pageable pageable){
+        User host = userRepository.findById(hostId)
+                .orElseThrow(() -> new CustomException(CustomError.NOT_HOST_ROLE));
+
+        if(host.getRoleType() != RoleType.HOST){
+            throw new CustomException(CustomError.NOT_HOST_ROLE);
+        }
+
+        Page<Rental> rentals = rentalRepository.findByFarm_User_Id(hostId, pageable);
+        return rentals.map(RentalResponseDto::from);
     }
 }

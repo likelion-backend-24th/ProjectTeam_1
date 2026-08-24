@@ -27,8 +27,8 @@ public class ClassEnrollmentController {
     private final SubscriptionService subscriptionService;
 
 //    마이페이지
-    @Operation(summary = "내 신청내역 조회",
-    description = "로그인한 사용자가 신청한 클래스 목록 조회.",
+    @Operation(summary = "마이페이지 - 다가오는 클래스 조회",
+    description = "확정된 신청 중 현재 시각 이후의 클래스를 날짜/시간이 빠른 순으로 설정",
             security = @SecurityRequirement(name = "BearerAuth"))
     @GetMapping("/api/enrollments/me")
     public ApiResponse<List<MyEnrollmentResponseDto>> getMyEnrollment(@AuthenticationPrincipal CustomUserDetails customUserDetails){

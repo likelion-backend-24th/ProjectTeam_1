@@ -13,8 +13,10 @@ export function createSubscription(payload) {
   return apiRequest("/api/subscriptions", { method: "POST", body: payload });
 }
 
-// 구독 해지: 즉시 해지가 아니라 cancel_at_period_end 방식.
-// 현재 구독 기간 종료 시점에 해지되며, 그 전까지는 남은 수강권을 사용할 수 있다.
+// 구독 해지/환불 요청.
+// 결제 후 24시간 이내 + 수강권 미사용이면 백엔드가 전액 환불 후 즉시 해지 처리하고,
+// 그 외에는 cancel_at_period_end로 처리된다(현재 구독 기간 종료 시점에 해지, 그 전까지는 남은 수강권 사용 가능).
+// 응답: { resultType: "REFUNDED" | "SCHEDULED_CANCEL", subscription, refundedAmount }
 export function cancelSubscription(subscriptionId) {
   return apiRequest(`/api/subscriptions/${subscriptionId}/cancel`, { method: "POST" });
 }
