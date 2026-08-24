@@ -163,7 +163,7 @@ function ProfileView() {
     >
       <div className="flex justify-center pt-3 pb-1">
         <div className="flex h-[76px] w-[76px] items-center justify-center rounded-full bg-surface-strong text-[28px] font-bold text-ink-soft">
-          {profile?.name?.slice(0, 1) ?? "?"}
+          {profile?.nickname?.slice(0, 1) ?? "?"}
         </div>
         <div className="flex flex-1 items-center justify-around">
           <LinkComponent href="/profile/followers" className="flex flex-col items-center gap-0.5">
