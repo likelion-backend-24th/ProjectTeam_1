@@ -7,6 +7,7 @@ import { BackIcon, ChevronRightIcon } from "@/components/icons";
 import { getFarm } from "@/lib/api/farm";
 import { API_BASE_URL, ApiError } from "@/lib/api/client";
 import { formatCurrency } from "@/utils/format";
+import { useAuthStore } from "@/store/authStore";
 
 const STATUS_LABEL = {
   AVAILABLE: "임대 가능",
@@ -17,6 +18,7 @@ export default function FarmDetailPage() {
   const { farmId } = useParams();
   const id = Number(farmId);
   const router = useRouter();
+  const profile = useAuthStore((s) => s.profile);
 
   const [farm, setFarm] = useState(null);
   const [imgIndex, setImgIndex] = useState(0);
@@ -50,6 +52,7 @@ export default function FarmDetailPage() {
   }, [id, load]);
 
   const images = farm?.imageUrls?.length ? farm.imageUrls : [];
+  const isOwner = Boolean(profile?.nickname && farm?.ownerNickname && profile.nickname === farm.ownerNickname);
 
   function nextImage() {
     setImgIndex((i) => (i + 1) % images.length);
@@ -60,6 +63,10 @@ export default function FarmDetailPage() {
 
   function handleApplyClick() {
     router.push(`/farms/${id}/apply`);
+  }
+
+  function handleEditClick(){
+    router.push(`/farms/${id}/edit`);
   }
 
   return (
@@ -144,14 +151,24 @@ export default function FarmDetailPage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={handleApplyClick}
-            disabled={farm.farmStatus !== "AVAILABLE"}
-            className="mt-2 h-[50px] w-full rounded-xl bg-primary text-[15px] font-semibold text-white disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-          >
-            {farm.farmStatus === "AVAILABLE" ? "임대 신청하기" : "이미 임대중인 밭이에요"}
-          </button>
+         {isOwner ? (
+            <button
+              type="button"
+              onClick={handleEditClick}
+              className="mt-2 h-[50px] w-full rounded-xl bg-primary text-[15px] font-semibold text-white cursor-pointer"
+            >
+              수정하기
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleApplyClick}
+              disabled={farm.farmStatus !== "AVAILABLE"}
+              className="mt-2 h-[50px] w-full rounded-xl bg-primary text-[15px] font-semibold text-white disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+            >
+              {farm.farmStatus === "AVAILABLE" ? "임대 신청하기" : "이미 임대중인 밭이에요"}
+            </button>
+          )}
         </>
       )}
     </AppShell>

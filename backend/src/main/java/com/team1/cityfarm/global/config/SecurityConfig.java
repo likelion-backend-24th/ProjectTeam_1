@@ -59,6 +59,8 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/onedayclass","/api/onedayclass/*")
                         .permitAll()
+                        .requestMatchers("/uploads/**")
+                        .permitAll()
                         .requestMatchers("/api/admin/**")
                         .hasRole("ADMIN")
                         .anyRequest().authenticated()

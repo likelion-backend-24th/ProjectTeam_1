@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { RequireAuth } from "@/components/RequireAuth";
-import { ChevronRightIcon, SettingsIcon, BookIcon, SproutIcon } from "@/components/icons";
+import { ChevronRightIcon, BookIcon, SproutIcon } from "@/components/icons";
 import { useAuthStore } from "@/store/authStore";
 import { useToastStore } from "@/store/toastStore";
 import { getMyEnrollments } from "@/lib/api/enrollment";
@@ -101,7 +101,7 @@ function MyPageView() {
   }
 
   return (
-    <AppShell header={<PageHeader title="마이페이지" right={<SettingsIcon size={20} className="text-ink-muted" />} />}>
+    <AppShell header={<PageHeader title="마이페이지" />}>
       {/* 프로필 카드 */}
       <Link href="/profile" className="flex items-center gap-3 rounded-2xl bg-surface px-4 py-4">
         <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-surface-strong text-[22px] font-bold text-ink-soft">
@@ -112,13 +112,15 @@ function MyPageView() {
             <span className="text-[16px] font-bold text-ink">{profile?.nickname ?? "닉네임"}</span>
             <span
               className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                isHost ? "bg-primary/10 text-primary" : "bg-surface-strong text-ink-muted"
+                isHost ? "bg-free-soft text-free" : "bg-surface-strong text-ink-muted"
               }`}
             >
               {isHost ? "호스트 회원" : "일반 회원"}
             </span>
           </div>
-          <span className="text-[13px] text-ink-muted">도시에서 밭을 키우는 당신을 응원합니다 🌱</span>
+          <span className="text-[13px] text-ink-muted">
+            도시에서 밭을 키우는 당신을 응원합니다 🌱{isHost && <span className="ml-1 text-free">✓</span>}
+          </span>
         </div>
         <ChevronRightIcon size={18} className="text-ink-muted" />
       </Link>
@@ -126,23 +128,28 @@ function MyPageView() {
       {isHost ? (
         <Link href="/host/settlements" className="flex items-center justify-between rounded-2xl bg-surface px-4 py-3.5">
           <span className="flex items-center gap-2.5 text-[15px] font-semibold text-ink">
-            <SproutIcon size={20} />
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-free-soft text-free">
+              <SproutIcon size={18} />
+            </span>
             호스트 관리
           </span>
           <ChevronRightIcon size={18} className="text-ink-muted" />
         </Link>
       ) : (
-        <div className="flex flex-col gap-2.5 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 px-4 py-4">
-          <span className="text-[15px] font-bold text-ink">호스트로 활동해보세요!</span>
-          <p className="text-[13px] leading-relaxed text-ink-muted">
+        <div className="relative flex flex-col gap-2.5 overflow-hidden rounded-2xl bg-gradient-to-br from-free-soft via-free-soft to-emerald-100 px-4 py-4">
+          <span className="relative z-10 text-[15px] font-bold text-ink">호스트로 활동해보세요!</span>
+          <p className="relative z-10 max-w-[68%] text-[13px] leading-relaxed text-ink-soft">
             밭 매입/임대, 농장 정보 등 활동을 통해 더 많은 사용자와 연결해보세요
           </p>
           <Link
             href="/mypage/host-apply"
-            className="mt-1 flex h-[42px] w-full items-center justify-center rounded-xl bg-primary text-[14px] font-semibold text-white"
+            className="relative z-10 mt-1 flex h-[42px] w-[132px] items-center justify-center rounded-xl bg-free text-[14px] font-semibold text-white"
           >
             호스트 신청하기
           </Link>
+          <span aria-hidden className="pointer-events-none absolute -right-3 -bottom-5 text-[84px] opacity-90">
+            🌱
+          </span>
         </div>
       )}
 
@@ -163,8 +170,8 @@ function MyPageView() {
         ) : (
           currentClass && (
             <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-primary/10 to-primary/5 px-4 py-4">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-primary">
+              <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-class-soft to-orange-50 px-4 py-4">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-class">
                   <BookIcon size={18} />
                 </div>
                 <div className="flex flex-1 flex-col gap-0.5">
@@ -185,7 +192,7 @@ function MyPageView() {
                   {upcomingClasses.map((_, i) => (
                     <span
                       key={i}
-                      className={`h-1.5 w-1.5 rounded-full ${i === classIndex ? "bg-primary" : "bg-surface-strong"}`}
+                      className={`h-1.5 w-1.5 rounded-full ${i === classIndex ? "bg-class" : "bg-surface-strong"}`}
                     />
                   ))}
                 </div>
@@ -221,13 +228,13 @@ function MyPageView() {
                 <div className="flex flex-1 flex-col gap-1">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">확정</span>
+                      <span className="rounded-full bg-free-soft px-2 py-0.5 text-[11px] font-semibold text-free">확정</span>
                       <span className="text-[14px] font-bold text-ink">{r.farmTitle}</span>
                     </div>
                     <button
                       type="button"
                       onClick={() => handleCopyAddress(r.location)}
-                      className="rounded-full border border-primary px-2.5 py-1 text-[11px] font-semibold text-primary"
+                      className="rounded-full border border-free px-2.5 py-1 text-[11px] font-semibold text-free"
                     >
                       주소 복사
                     </button>
@@ -249,7 +256,7 @@ function MyPageView() {
               <button
                 type="button"
                 onClick={() => handleCancelRental(r.id)}
-                className="h-[38px] w-full rounded-xl bg-primary/10 text-[13px] font-semibold text-primary"
+                className="h-[38px] w-full rounded-xl bg-surface-strong text-[13px] font-semibold text-ink-soft"
               >
                 예약 취소
               </button>
@@ -273,7 +280,7 @@ function MyPageView() {
             </p>
             <Link
               href="/farms"
-              className="flex h-[38px] items-center justify-center rounded-xl bg-primary px-4 text-[13px] font-semibold text-white"
+              className="flex h-[38px] items-center justify-center rounded-xl bg-free px-4 text-[13px] font-semibold text-white"
             >
               땅 예약 둘러보기
             </Link>
