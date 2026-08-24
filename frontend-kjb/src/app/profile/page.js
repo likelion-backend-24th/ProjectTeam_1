@@ -5,7 +5,7 @@ import LinkComponent from "next/link";
 import { useRouter } from "next/navigation";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { RequireAuth } from "@/components/RequireAuth";
-import { ChevronRightIcon, FeedIcon, HeartIcon, ReceiptIcon, TicketIcon, LockIcon, BackIcon } from "@/components/icons";
+import { ChevronRightIcon, HeartIcon, ReceiptIcon, TicketIcon, LockIcon, BackIcon } from "@/components/icons";
 import { useAuthStore } from "@/store/authStore";
 import { useToastStore } from "@/store/toastStore";
 import { ApiError } from "@/lib/api/client";
@@ -274,7 +274,6 @@ function ProfileView() {
             <ChevronRightIcon size={16} className="text-ink-muted" />
           </LinkComponent>
         </div>
-        <ProfileLinkRow href="/profile/feed" icon={<FeedIcon size={20} />} label="피드" />
         <ProfileLinkRow href="/profile/likes" icon={<HeartIcon size={20} />} label="좋아요한 게시글" />
       </div>
 
