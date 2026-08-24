@@ -7,7 +7,7 @@ import { AppShell, PageHeader } from "@/components/AppShell";
 import { CategoryBadge } from "@/components/CategoryBadge";
 import { HeartIcon, PencilIcon, SearchIcon } from "@/components/icons";
 import { getBoards } from "@/lib/api/board";
-import { ApiError } from "@/lib/api/client";
+import { ApiError, API_BASE_URL } from "@/lib/api/client";
 import { formatRelativeTime } from "@/utils/format";
 import { useAuthStore } from "@/store/authStore";
 
@@ -186,8 +186,20 @@ export default function BoardListPage() {
                 <CategoryBadge category={post.category} />
                 <span className="text-xs text-ink-muted">조회 {post.viewCount}</span>
               </div>
-              <p className="truncate text-[15px] font-bold">{post.title}</p>
-              <p className="truncate text-[13px] text-ink-soft">{post.content}</p>
+              <div className="flex items-center gap-3">
+                {post.imageUrls?.length > 0 && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={post.imageUrls[0].startsWith("http") ? post.imageUrls[0] : `${API_BASE_URL}${post.imageUrls[0]}`}
+                    alt=""
+                    className="h-14 w-14 shrink-0 rounded-lg object-cover"
+                  />
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[15px] font-bold">{post.title}</p>
+                  <p className="truncate text-[13px] text-ink-soft">{post.content}</p>
+                </div>
+              </div>
               <div className="flex items-center gap-3.5 text-xs text-ink-muted">
                 <span className="flex items-center gap-2">
                   <span className="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-surface-strong text-[11px] font-bold text-ink-soft">

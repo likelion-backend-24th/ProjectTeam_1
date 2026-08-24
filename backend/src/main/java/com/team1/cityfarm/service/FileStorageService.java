@@ -13,10 +13,15 @@ import java.util.UUID;
 @Service
 public class FileStorageService {
 
-    private final Path uploadDir = Paths.get("uploads/farms");
+    private static final Path BASE_DIR = Paths.get("uploads");
 
     public String store(MultipartFile file){
+        return store(file, "farms");
+    }
+
+    public String store(MultipartFile file, String subDir){
         try {
+            Path uploadDir = BASE_DIR.resolve(subDir);
             Files.createDirectories(uploadDir);
 
             // 파일명 중복 장지를 위한 UUID로 변환
@@ -28,7 +33,7 @@ public class FileStorageService {
 
             file.transferTo(uploadDir.resolve(savedName));
 
-            return "/uploads/farms/" + savedName;
+            return "/uploads/" + subDir + "/" + savedName;
         } catch (IOException e) {
             throw new UncheckedIOException("이미지 저장에 실패했습니다.", e);
         }
