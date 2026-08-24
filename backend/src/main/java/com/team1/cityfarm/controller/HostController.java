@@ -26,7 +26,7 @@ public class HostController {
     private final SettlementService settlementService;
 
     /**
-     * [호스트] 내 정산 내역 목록 조회
+     * [호스트] 내 정산내역 목록 조회
      */
     @Operation(summary = "내 정산내역 조회",
             description = "로그인한 호스트의 정산 내역 리스트를 최신순으로 조회합니다.")
