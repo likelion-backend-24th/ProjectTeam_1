@@ -15,11 +15,14 @@ FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
 
 # 보안: root가 아닌 일반 사용자로 실행
-RUN useradd -r -u 1001 appuser
+# uploads 폴더(FileStorageService가 쓰기 대상으로 쓰는 상대경로)를 appuser 소유로 미리 만들어둠
+RUN useradd -r -u 1001 appuser \
+    && mkdir -p /app/uploads \
+    && chown -R appuser:appuser /app
 USER appuser
 
 # 빌드 스테이지에서 생성된 jar만 복사
-COPY --from=builder /app/build/libs/*.jar app.jar
+COPY --chown=appuser:appuser --from=builder /app/build/libs/*.jar app.jar
 
 # 문서화 목적 포트 명시
 EXPOSE 8080
