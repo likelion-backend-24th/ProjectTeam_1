@@ -42,6 +42,8 @@ public class SettlementService {
         OneDayClass oneDayClass = oneDayClassRepository.findById(classId)
                 .orElseThrow(() -> new CustomException(CustomError.ONE_DAY_CLASS_NOT_FOUND));
 
+        String className = oneDayClass.getTitle();
+
         User host = oneDayClass.getHost();
 
         // 3. 정산 금액 계산 (주문 결제 금액 * 50 / 100)
@@ -55,6 +57,7 @@ public class SettlementService {
         Settlement settlement = Settlement.builder()
                 .order(order)
                 .host(host)
+                .className(className)
                 .settlementType(SettlementType.ONE_DAY_CLASS)
                 .paymentAmount(order.getAmount())
                 .settlementRate(CLASS_SETTLEMENT_RATE)
@@ -77,6 +80,11 @@ public class SettlementService {
         // 정산 금액 계산 (클래스 가격 * 50 / 100)
         BigDecimal paymentAmount = BigDecimal.valueOf(classPrice);
 
+        OneDayClass oneDayClass = oneDayClassRepository.findById(classId)
+                .orElseThrow(() -> new CustomException(CustomError.ONE_DAY_CLASS_NOT_FOUND));
+
+        String className = oneDayClass.getTitle();
+
         BigDecimal settlementAmount = paymentAmount
                 .multiply(CLASS_SETTLEMENT_RATE)
                 .divide(new BigDecimal("100"), 0, RoundingMode.FLOOR); // 원 단위 이하 절사
@@ -85,6 +93,7 @@ public class SettlementService {
         Settlement settlement = Settlement.builder()
                 .order(null)
                 .host(host)
+                .className(className)
                 .settlementType(SettlementType.ONE_DAY_CLASS) // 프로젝트 정책에 맞는 타입 사용
                 .paymentAmount(classPrice)
                 .settlementRate(CLASS_SETTLEMENT_RATE)
