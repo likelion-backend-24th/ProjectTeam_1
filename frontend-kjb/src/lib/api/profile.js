@@ -39,6 +39,8 @@ export function updatePassword(payload) {
 // 좋아요한 게시글 목록 조회
 export function getLikedBoards({ page = 0, size = 10 } = {}) {
   return apiRequest("/api/profile/likes", { method: "POST", query: { page, size } });
+}
+
 // 호스트 승격
 export function promoteToHost(payload) {
   return apiRequest("/api/profile/host-promotion", { method: "POST", body: payload });
