@@ -18,6 +18,21 @@ export function clearAccessToken() {
   localStorage.removeItem(TOKEN_KEY);
 }
 
+const REFRESH_TOKEN_KEY = "refreshToken";
+
+export function getRefreshToken() {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+export function setRefreshToken(token) {
+  localStorage.setItem(REFRESH_TOKEN_KEY, token);
+}
+
+export function clearRefreshToken() {
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+}
+
 export class ApiError extends Error {
   constructor(message, code, status) {
     super(message);
