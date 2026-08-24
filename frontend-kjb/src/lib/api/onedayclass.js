@@ -29,3 +29,8 @@ export function updateClassDescription(classId, description) {
 export function cancelOneDayClass(classId) {
   return apiRequest(`/api/onedayclass/${classId}/cancel`, { method: "POST" });
 }
+
+// 호스트 본인 클래스의 신청자 목록 조회.
+export function getClassApplicants(classId) {
+  return apiRequest(`/api/onedayclass/${classId}/applicants`);
+}

@@ -9,6 +9,7 @@ import {
   enrollClassWithPass,
   updateClassDescription,
   cancelOneDayClass,
+  getClassApplicants,
 } from "@/lib/api/onedayclass";
 import { createOrder, getOrder } from "@/lib/api/order";
 import { getMyEnrollments, cancelEnrollmentByPass } from "@/lib/api/enrollment";
@@ -17,6 +18,9 @@ import { ApiError } from "@/lib/api/client";
 import { useAuthStore } from "@/store/authStore";
 import { useToastStore } from "@/store/toastStore";
 import { formatCurrency, formatDateTime } from "@/utils/format";
+
+const APPLICANT_STATUS_LABEL = { PENDING: "결제대기", CONFIRMED: "확정", CANCELLED: "취소" };
+const APPLICANT_PAYMENT_TYPE_LABEL = { GENERAL: "일반결제", SUBSCRIPTION: "구독수강권" };
 
 export default function OneDayClassDetailPage() {
   const params = useParams();
@@ -275,6 +279,29 @@ function HostClassActions({ classId, description, onDescriptionUpdated, onCancel
   const [isSaving, setIsSaving] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
 
+  const [showApplicants, setShowApplicants] = useState(false);
+  const [applicants, setApplicants] = useState(null);
+  const [isLoadingApplicants, setIsLoadingApplicants] = useState(false);
+
+  async function handleToggleApplicants() {
+    if (showApplicants) {
+      setShowApplicants(false);
+      return;
+    }
+    setShowApplicants(true);
+    if (applicants !== null) return;
+    setIsLoadingApplicants(true);
+    try {
+      const list = await getClassApplicants(classId);
+      setApplicants(list ?? []);
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.message : "신청자 목록을 불러오지 못했어요.", "error");
+      setApplicants([]);
+    } finally {
+      setIsLoadingApplicants(false);
+    }
+  }
+
   async function handleSaveDescription() {
     if (!draft.trim()) return;
     setIsSaving(true);
@@ -355,6 +382,45 @@ function HostClassActions({ classId, description, onDescriptionUpdated, onCancel
       >
         {isCancelling ? "취소 처리 중..." : "클래스 취소"}
       </button>
+
+      <button
+        type="button"
+        onClick={handleToggleApplicants}
+        className="h-[42px] w-full rounded-xl bg-surface text-[13px] font-semibold text-ink-soft"
+      >
+        {showApplicants ? "신청자 목록 숨기기" : "신청자 목록 보기"}
+      </button>
+
+      {showApplicants && (
+        <div className="flex flex-col gap-2 rounded-xl border border-border bg-white p-3.5">
+          {isLoadingApplicants && <p className="py-2 text-center text-[13px] text-ink-muted">불러오는 중...</p>}
+          {!isLoadingApplicants && applicants?.length === 0 && (
+            <p className="py-2 text-center text-[13px] text-ink-muted">아직 신청자가 없어요.</p>
+          )}
+          {!isLoadingApplicants &&
+            applicants?.map((a) => (
+              <div key={a.enrollmentId} className="flex items-center justify-between gap-2 text-[13px]">
+                <div className="flex flex-col">
+                  <span className="font-semibold text-ink">{a.userNickname}</span>
+                  <span className="text-[11px] text-ink-muted">
+                    {APPLICANT_PAYMENT_TYPE_LABEL[a.paymentType] ?? a.paymentType} · {formatDateTime(a.createdAt)}
+                  </span>
+                </div>
+                <span
+                  className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                    a.status === "CONFIRMED"
+                      ? "bg-class-soft text-orange-700"
+                      : a.status === "CANCELLED"
+                        ? "bg-surface text-ink-muted"
+                        : "bg-surface-strong text-ink-soft"
+                  }`}
+                >
+                  {APPLICANT_STATUS_LABEL[a.status] ?? a.status}
+                </span>
+              </div>
+            ))}
+        </div>
+      )}
     </div>
   );
 }
