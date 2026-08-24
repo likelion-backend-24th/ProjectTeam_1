@@ -100,7 +100,7 @@ function ClassWriteView() {
         />
       }
     >
-      <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-5">
+      <form onSubmit={handleSubmit} className="flex min-w-0 flex-1 flex-col gap-5">
         {error && <p className="rounded-lg bg-red-50 px-3.5 py-2.5 text-[13px] text-red-700">{error}</p>}
 
         <input
@@ -108,39 +108,39 @@ function ClassWriteView() {
           placeholder="클래스 제목"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="border-b border-border bg-transparent py-3 text-[17px] font-bold outline-none placeholder:font-medium placeholder:text-ink-muted"
+          className="w-full border-b border-border bg-transparent py-3 text-[17px] font-bold outline-none placeholder:font-medium placeholder:text-ink-muted"
         />
 
         <textarea
           placeholder="클래스 소개를 작성해주세요."
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="min-h-[160px] resize-none rounded-xl border border-border bg-white p-3.5 text-[15px] leading-relaxed outline-none placeholder:text-ink-muted"
+          className="min-h-[160px] w-full resize-none rounded-xl border border-border bg-white p-3.5 text-[15px] leading-relaxed outline-none placeholder:text-ink-muted"
         />
 
-        <div className="flex flex-col gap-2">
+        <div className="flex min-w-0 flex-col gap-2">
           <span className="text-sm font-semibold">일정</span>
           <input
             type="datetime-local"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="rounded-xl border border-border bg-white px-3.5 py-3 text-[15px] outline-none"
+            className="w-full min-w-0 rounded-xl border border-border bg-white px-3.5 py-3 text-[15px] outline-none"
           />
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex min-w-0 flex-col gap-2">
           <span className="text-sm font-semibold">장소</span>
           <input
             type="text"
             placeholder="예: Seoul Farm 1"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            className="rounded-xl border border-border bg-white px-3.5 py-3 text-[15px] outline-none placeholder:text-ink-muted"
+            className="w-full rounded-xl border border-border bg-white px-3.5 py-3 text-[15px] outline-none placeholder:text-ink-muted"
           />
         </div>
 
         <div className="flex gap-3">
-          <div className="flex flex-1 flex-col gap-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
             <span className="text-sm font-semibold">정원</span>
             <input
               type="number"
@@ -148,10 +148,10 @@ function ClassWriteView() {
               placeholder="명"
               value={capacity}
               onChange={(e) => setCapacity(e.target.value)}
-              className="rounded-xl border border-border bg-white px-3.5 py-3 text-[15px] outline-none placeholder:text-ink-muted"
+              className="w-full min-w-0 rounded-xl border border-border bg-white px-3.5 py-3 text-[15px] outline-none placeholder:text-ink-muted"
             />
           </div>
-          <div className="flex flex-1 flex-col gap-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
             <span className="text-sm font-semibold">가격</span>
             <input
               type="number"
@@ -159,7 +159,7 @@ function ClassWriteView() {
               placeholder="원"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              className="rounded-xl border border-border bg-white px-3.5 py-3 text-[15px] outline-none placeholder:text-ink-muted"
+              className="w-full min-w-0 rounded-xl border border-border bg-white px-3.5 py-3 text-[15px] outline-none placeholder:text-ink-muted"
             />
           </div>
         </div>
