@@ -9,6 +9,7 @@ import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @Slf4j
 @RestControllerAdvice
@@ -18,6 +19,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<ApiResponse<?>> handleCustomException(CustomException e) {
         CustomError customError = e.getCustomError();
+
+        return ResponseEntity
+                .status(customError.getHttpStatus())
+                .body(ApiResponse.error(customError.name(), customError.getMessage()));
+    }
+
+    // 업로드 용량 제한(spring.servlet.multipart.max-file-size 등) 초과 시 처리
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<?>> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e) {
+        CustomError customError = CustomError.FILE_TOO_LARGE;
 
         return ResponseEntity
                 .status(customError.getHttpStatus())
