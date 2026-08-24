@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AppShell, PageHeader } from "@/components/AppShell";
-import { LocationIcon, UsersIcon } from "@/components/icons";
+import { LocationIcon, PencilIcon, UsersIcon } from "@/components/icons";
 import { getClassList } from "@/lib/api/onedayclass";
 import { ApiError } from "@/lib/api/client";
 import { formatCurrency, formatDateTime } from "@/utils/format";
+import { useAuthStore } from "@/store/authStore";
 
 const PAGE_SIZE = 10;
 const MAX_PAGE_BUTTONS = 5;
@@ -23,6 +25,8 @@ function getPageNumbers(current, totalPages) {
 }
 
 export default function OneDayClassListPage() {
+  const router = useRouter();
+  const isHost = useAuthStore((s) => s.isHost);
   const [classes, setClasses] = useState([]);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -149,6 +153,17 @@ export default function OneDayClassListPage() {
             ›
           </button>
         </div>
+      )}
+
+      {isHost && (
+        <button
+          type="button"
+          onClick={() => router.push("/class/write")}
+          aria-label="클래스 등록"
+          className="absolute right-5 bottom-[calc(60px_+_20px)] flex h-[52px] w-[52px] items-center justify-center rounded-full bg-class text-white shadow-[0_6px_16px_rgba(0,0,0,0.2)]"
+        >
+          <PencilIcon size={22} />
+        </button>
       )}
     </AppShell>
   );
