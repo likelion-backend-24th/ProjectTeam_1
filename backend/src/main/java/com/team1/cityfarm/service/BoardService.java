@@ -35,7 +35,7 @@ public class BoardService {
     private final BoardImageRepository boardImageRepository;
     private final FileStorageService fileStorageService;
 
-    // 게시글 목록 조회
+    // 게시글 목록 조회하기
     @Transactional(readOnly = true)
     public Page<BoardResponseDto> getBoards(String type, String keyword, Category category, Pageable pageable) {
         boolean hasKeyword = keyword != null && !keyword.isBlank();
