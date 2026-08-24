@@ -17,9 +17,14 @@ import {
 import { login as loginApi, logout as logoutApi, withdraw as withdrawApi, reissue as reissueApi } from "@/lib/api/auth";
 import { decodeJwtPayload } from "@/lib/jwt";
 
-function getRoleFromToken(token) {
+function isAdminToken(token) {
   const payload = decodeJwtPayload(token);
-  return payload?.role ?? null;
+  return payload?.role === "ADMIN";
+}
+
+function isHostToken(token) {
+  const payload = decodeJwtPayload(token);
+  return payload?.role === "HOST";
 }
 
 export const useAuthStore = create((set, get) => ({
@@ -41,8 +46,7 @@ export const useAuthStore = create((set, get) => ({
     }
     try {
       const profile = await getMyProfile();
-      const role = getRoleFromToken(token);
-      set({ profile, isAuthenticated: true, isAdmin: role === "ADMIN", isHost: role === "HOST", isLoading: false });
+      set({ profile, isAuthenticated: true, isAdmin: isAdminToken(token), isHost: isHostToken(token), isLoading: false });
     } catch {
       clearAccessToken();
       clearRefreshToken();
@@ -55,16 +59,25 @@ export const useAuthStore = create((set, get) => ({
     setAccessToken(res.accessToken);
     if (res.refreshToken) setRefreshToken(res.refreshToken);
     const profile = await getMyProfile();
-    const role = getRoleFromToken(res.accessToken);
-    set({ profile, isAuthenticated: true, isAdmin: role === "ADMIN", isHost: role === "HOST" });
+    set({
+      profile,
+      isAuthenticated: true,
+      isAdmin: isAdminToken(res.accessToken),
+      isHost: isHostToken(res.accessToken),
+    });
   },
 
   socialLogin: async (accessToken) => {
     setAccessToken(accessToken);
     try {
       const profile = await getMyProfile();
-      const role = getRoleFromToken(accessToken);
-      set({ profile, isAuthenticated: true, isAdmin: role === "ADMIN", isHost: role === "HOST", isLoading: false });
+      set({
+        profile,
+        isAuthenticated: true,
+        isAdmin: isAdminToken(accessToken),
+        isHost: isHostToken(accessToken),
+        isLoading: false,
+      });
     } catch {
       clearAccessToken();
       clearRefreshToken();
@@ -106,7 +119,6 @@ export const useAuthStore = create((set, get) => ({
     await updatePasswordApi(payload);
   },
 
-  // 호스트 승격 신청 후, 리프레시 토큰으로 새 accessToken을 받아와서 role을 즉시 갱신
   promoteToHost: async (payload) => {
     await promoteToHostApi(payload);
 
@@ -115,10 +127,8 @@ export const useAuthStore = create((set, get) => ({
       const res = await reissueApi(refreshToken);
       setAccessToken(res.accessToken);
       if (res.refreshToken) setRefreshToken(res.refreshToken);
-      const role = getRoleFromToken(res.accessToken);
-      set({ isAdmin: role === "ADMIN", isHost: role === "HOST" });
+      set({ isAdmin: isAdminToken(res.accessToken), isHost: isHostToken(res.accessToken) });
     } else {
-      // 리프레시 토큰이 없는 경우(소셜 로그인 등) 즉시 반영이 안 될 수 있어요
       set({ isHost: true });
     }
   },

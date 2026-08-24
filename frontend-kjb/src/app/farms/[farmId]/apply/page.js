@@ -94,7 +94,7 @@ function FarmApplyView() {
               <p className="truncate text-[15px] font-bold">{farm.title}</p>
               <p className="text-[13px] text-ink-muted">{farm.location}</p>
               <p className="text-[13px] text-ink-muted">{farm.area}㎡</p>
-              <p className="text-[14px] font-bold text-ink">월 {formatCurrency(farm.monthlyRent)}원</p>
+              <p className="text-[14px] font-bold text-ink">월 {formatCurrency(farm.monthlyRent)}</p>
             </div>
           </div>
 

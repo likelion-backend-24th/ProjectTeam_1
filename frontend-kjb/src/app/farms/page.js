@@ -66,7 +66,6 @@ export default function FarmListPage() {
 
   function handleSearchSubmit(e) {
     e.preventDefault();
-    // TODO: 백엔드 GET /api/farms에 검색(keyword) 파라미터가 아직 없어서 지금은 UI만 있고 동작 안 함
   }
 
   function handleRegisterClick() {
@@ -141,7 +140,7 @@ export default function FarmListPage() {
                 </div>
                 <p className="truncate text-[13px] text-ink-muted">{farm.location}</p>
                 <p className="text-[13px] text-ink-muted">{farm.area}m²</p>
-                <p className="text-[14px] font-bold text-ink">월 {formatCurrency(farm.monthlyRent)}원</p>
+                <p className="text-[14px] font-bold text-ink">월 {formatCurrency(farm.monthlyRent)}</p>
               </div>
             </Link>
           </li>

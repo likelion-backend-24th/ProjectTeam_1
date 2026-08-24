@@ -44,13 +44,13 @@ public class OneDayClassService {
                 .build();
 
         OneDayClass saved = oneDayClassRepository.save(oneDayClass);
-        return OneDayClassResponseDto.from(saved);
+        return OneDayClassResponseDto.from(saved, 0);
     }
 
     //    목록조회
     public Page<OneDayClassSummaryDto> getClassList(Pageable pageable) {
         return oneDayClassRepository.findAll(pageable)
-                .map(OneDayClassSummaryDto::from);
+                .map(cls -> OneDayClassSummaryDto.from(cls, classEnrollmentService.getEnrolledCount(cls.getId())));
     }
 
     //    상세조회
@@ -58,7 +58,7 @@ public class OneDayClassService {
         OneDayClass oneDayClass = oneDayClassRepository.findById(classId)
                 .orElseThrow(() -> new CustomException(CustomError.ONE_DAY_CLASS_NOT_FOUND));
 
-        return OneDayClassResponseDto.from(oneDayClass);
+        return OneDayClassResponseDto.from(oneDayClass, classEnrollmentService.getEnrolledCount(classId));
     }
 
     //    수업 설명 수정
@@ -73,7 +73,7 @@ public class OneDayClassService {
 
         oneDayClass.setDescription(requestDto.getDescription());
 
-        return OneDayClassResponseDto.from(oneDayClass);
+        return OneDayClassResponseDto.from(oneDayClass, classEnrollmentService.getEnrolledCount(classId));
     }
 
     //    클래스 취소

@@ -9,7 +9,24 @@ import { useAuthStore } from "@/store/authStore";
 import { useToastStore } from "@/store/toastStore";
 import { ApiError } from "@/lib/api/client";
 
-const BRN_PATTERN = /^\d{3}-\d{2}-\d{5}$/;
+function formatBrn(raw) {
+  const digits = raw.replace(/\D/g, "").slice(0, 10);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 5) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}`;
+}
+
+function Field({ label, required, children }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-sm font-semibold text-ink">
+        {label}
+        {required && <span className="ml-0.5 text-free">*</span>}
+      </span>
+      {children}
+    </div>
+  );
+}
 
 function HostApplyView() {
   const router = useRouter();
@@ -19,24 +36,24 @@ function HostApplyView() {
   const [businessName, setBusinessName] = useState("");
   const [businessRegistrationNumber, setBusinessRegistrationNumber] = useState("");
   const [businessAddress, setBusinessAddress] = useState("");
+  const [lookupStatus, setLookupStatus] = useState("idle"); // idle | success | fail
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (!businessName.trim() || !businessRegistrationNumber.trim() || !businessAddress.trim()) {
-      showToast("모든 항목을 입력해주세요.", "error");
-      return;
-    }
-    if (!BRN_PATTERN.test(businessRegistrationNumber.trim())) {
-      showToast("사업자등록번호 형식이 올바르지 않아요. (예: 000-00-00000)", "error");
-      return;
-    }
+  function handleLookup() {
+    const digitCount = businessRegistrationNumber.replace(/\D/g, "").length;
+    setLookupStatus(digitCount === 10 ? "success" : "fail");
+  }
 
+  const canSubmit =
+    lookupStatus === "success" && businessName.trim() && businessAddress.trim() && !isSubmitting;
+
+  async function handleSubmit() {
+    if (!canSubmit) return;
     setIsSubmitting(true);
     try {
       await promoteToHost({
         businessName: businessName.trim(),
-        businessRegistrationNumber: businessRegistrationNumber.trim(),
+        businessRegistrationNumber,
         businessAddress: businessAddress.trim(),
       });
       showToast("호스트로 전환됐어요!");
@@ -61,10 +78,8 @@ function HostApplyView() {
         />
       }
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-        <p className="rounded-xl bg-surface px-4 py-3.5 text-[13px] text-ink-muted">
-          사업자 정보를 입력하면 별도 심사 없이 바로 호스트로 전환돼요.
-        </p>
+      <div className="flex flex-col gap-6">
+        <p className="text-[15px] font-bold text-ink">사업자 정보</p>
 
         <Field label="사업자명" required>
           <input
@@ -77,13 +92,31 @@ function HostApplyView() {
         </Field>
 
         <Field label="사업자등록번호" required>
-          <input
-            type="text"
-            value={businessRegistrationNumber}
-            onChange={(e) => setBusinessRegistrationNumber(e.target.value)}
-            placeholder="000-00-00000"
-            className="w-full rounded-xl bg-surface px-4 py-3.5 text-[15px] outline-none"
-          />
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={businessRegistrationNumber}
+              onChange={(e) => {
+                setBusinessRegistrationNumber(formatBrn(e.target.value));
+                setLookupStatus("idle");
+              }}
+              placeholder="000-00-00000"
+              maxLength={12}
+              className="flex-1 rounded-xl bg-surface px-4 py-3.5 text-[15px] outline-none"
+            />
+            <button
+              type="button"
+              onClick={handleLookup}
+              disabled={businessRegistrationNumber.replace(/\D/g, "").length === 0}
+              className="shrink-0 cursor-pointer rounded-xl bg-free px-4 text-[14px] font-semibold whitespace-nowrap text-white disabled:opacity-40"
+            >
+              사업자 조회
+            </button>
+          </div>
+          {lookupStatus === "fail" && (
+            <p className="text-xs text-danger">사업자등록번호 10자리를 입력해주세요.</p>
+          )}
+          {lookupStatus === "success" && <p className="text-xs font-medium text-free">✓ 확인됐어요.</p>}
         </Field>
 
         <Field label="사업장 주소" required>
@@ -97,26 +130,15 @@ function HostApplyView() {
         </Field>
 
         <button
-          type="submit"
-          disabled={isSubmitting}
-          className="mt-2 h-[50px] w-full rounded-xl bg-primary text-[15px] font-semibold text-white disabled:opacity-50"
+          type="button"
+          onClick={handleSubmit}
+          disabled={!canSubmit}
+          className="mt-1 h-[52px] w-full cursor-pointer rounded-xl bg-free text-[15px] font-bold text-white disabled:opacity-40"
         >
-          {isSubmitting ? "전환 중..." : "호스트 신청하기"}
+          {isSubmitting ? "전환 중..." : "호스트로 변경하기"}
         </button>
-      </form>
+      </div>
     </AppShell>
-  );
-}
-
-function Field({ label, required, children }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <span className="text-sm font-semibold text-ink">
-        {label}
-        {required && <span className="ml-0.5 text-primary">*</span>}
-      </span>
-      {children}
-    </div>
   );
 }
 

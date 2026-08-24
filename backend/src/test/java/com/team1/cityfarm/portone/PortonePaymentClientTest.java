@@ -35,7 +35,7 @@ class PortonePaymentClientTest {
         // 생성자는 내부에서 RestClient를 직접 만들어버려서 밖에서 주입할 방법이 없다.
         // 프로덕션 코드는 안 건드리고, 생성 후 리플렉션으로 restClient 필드만
         // MockRestServiceServer에 바인딩된 것으로 교체한다.
-        client = new PortonePaymentClient("test-secret", "https://api.portone.io", "https://test.example.com/api/webhooks/portone", new ObjectMapper());
+        client = new PortonePaymentClient("test-secret", "https://api.portone.io", "https://test.example.com/api/webhooks/portone", "store_test", new ObjectMapper());
 
         RestClient.Builder builder = RestClient.builder().baseUrl("https://api.portone.io");
         mockServer = MockRestServiceServer.bindTo(builder).build();
@@ -57,12 +57,17 @@ class PortonePaymentClientTest {
 
     @Test
     void payWithBillingKey_바디_형식과_PAID_아니면_예외() {
+        // 실제 PortOne 응답은 {"payment":{"pgTxId","paidAt"}}뿐이라 status가 없다 -
+        // 승인 후 단건 조회(GET)로 status를 다시 확인하는데, 그 조회 결과가 PAID가 아니면 실패.
         mockServer.expect(requestTo("https://api.portone.io/payments/pay_2/billing-key"))
                 .andExpect(method(HttpMethod.POST))
                 .andExpect(jsonPath("$.billingKey").value("bk_1"))
                 .andExpect(jsonPath("$.amount.total").value(30000))
                 .andExpect(jsonPath("$.customer.id").value("42"))
                 .andExpect(jsonPath("$.noticeUrls[0]").value("https://test.example.com/api/webhooks/portone"))
+                .andRespond(withSuccess("{\"payment\":{\"pgTxId\":\"pg_1\",\"paidAt\":\"2026-01-01T00:00:00Z\"}}", MediaType.APPLICATION_JSON));
+        mockServer.expect(requestTo("https://api.portone.io/payments/pay_2?storeId=store_test"))
+                .andExpect(method(HttpMethod.GET))
                 .andRespond(withSuccess("{\"id\":\"pay_2\",\"status\":\"FAILED\"}", MediaType.APPLICATION_JSON));
 
         assertThatThrownBy(() ->
@@ -78,6 +83,9 @@ class PortonePaymentClientTest {
     void payWithBillingKey_PAID면_정상_반환() {
         mockServer.expect(requestTo("https://api.portone.io/payments/pay_3/billing-key"))
                 .andExpect(method(HttpMethod.POST))
+                .andRespond(withSuccess("{\"payment\":{\"pgTxId\":\"pg_2\",\"paidAt\":\"2026-01-01T00:00:00Z\"}}", MediaType.APPLICATION_JSON));
+        mockServer.expect(requestTo("https://api.portone.io/payments/pay_3?storeId=store_test"))
+                .andExpect(method(HttpMethod.GET))
                 .andRespond(withSuccess("{\"id\":\"pay_3\",\"status\":\"PAID\"}", MediaType.APPLICATION_JSON));
 
         PortonePaymentResponseDto response = client.payWithBillingKey("bk_1", "pay_3", "BASIC 정기구독", 30000, 42L);
@@ -106,7 +114,7 @@ class PortonePaymentClientTest {
     @Test
     void cancelSchedule는_body가_아니라_requestBody_쿼리파라미터로_전송된다() {
         mockServer.expect(requestTo(
-                        "https://api.portone.io/payment-schedules?requestBody=%7B%22scheduleIds%22%3A%5B%22sch_1%22%5D%7D"))
+                        "https://api.portone.io/payment-schedules?requestBody=%7B%22storeId%22%3A%22store_test%22%2C%22scheduleIds%22%3A%5B%22sch_1%22%5D%7D"))
                 .andExpect(method(HttpMethod.DELETE))
                 .andExpect(content().string("")) // 진짜 HTTP 바디는 비어있어야 함(예전엔 여기 JSON이 실렸었음)
                 .andRespond(withSuccess());
@@ -119,7 +127,7 @@ class PortonePaymentClientTest {
     @Test
     void cancelScheduleByBillingKey도_requestBody_쿼리파라미터로_전송된다() {
         mockServer.expect(requestTo(
-                        "https://api.portone.io/payment-schedules?requestBody=%7B%22billingKey%22%3A%22bk_1%22%7D"))
+                        "https://api.portone.io/payment-schedules?requestBody=%7B%22storeId%22%3A%22store_test%22%2C%22billingKey%22%3A%22bk_1%22%7D"))
                 .andExpect(method(HttpMethod.DELETE))
                 .andExpect(content().string(""))
                 .andRespond(withSuccess());
@@ -131,7 +139,7 @@ class PortonePaymentClientTest {
 
     @Test
     void deleteBillingKey는_reason이_body가_아니라_쿼리파라미터로_전송된다() {
-        mockServer.expect(requestTo("https://api.portone.io/billing-keys/bk_1?reason=%EC%B9%B4%EB%93%9C%20%EC%82%AD%EC%A0%9C"))
+        mockServer.expect(requestTo("https://api.portone.io/billing-keys/bk_1?reason=%EC%B9%B4%EB%93%9C%20%EC%82%AD%EC%A0%9C&storeId=store_test"))
                 .andExpect(method(HttpMethod.DELETE))
                 .andExpect(content().string(""))
                 .andRespond(withSuccess());

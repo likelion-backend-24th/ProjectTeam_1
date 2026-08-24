@@ -2,6 +2,8 @@ package com.team1.cityfarm.service;
 
 import com.team1.cityfarm.dto.MyEnrollmentResponseDto;
 import com.team1.cityfarm.dto.PassResponseDto;
+import com.team1.cityfarm.dto.SubscriptionCancelResponseDto;
+import com.team1.cityfarm.dto.SubscriptionCancelResultType;
 import com.team1.cityfarm.dto.SubscriptionCreateRequestDto;
 import com.team1.cityfarm.dto.SubscriptionPassDto;
 import com.team1.cityfarm.dto.SubscriptionPassUsageResponseDto;
@@ -34,6 +36,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class SubscriptionService {
 
+    // 결제 승인 시각 기준 이 시간 이내 + 수강권 미사용이면 전액 환불 대상 (매 갱신 회차마다 적용)
+    private static final int REFUND_ELIGIBLE_HOURS = 24;
+
     private final SubscriptionRepository subscriptionRepository;
     private final UserRepository userRepository;
     private final SubscriptionPassRepository subscriptionPassRepository;
@@ -52,7 +57,7 @@ public class SubscriptionService {
     @Transactional(readOnly = true)
     public SubscriptionResponseDto getMyActiveSubscription(Long userId) {
         Subscription subscription = subscriptionRepository.findByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE)
-                .orElseThrow(() -> new IllegalArgumentException("활성화된 구독이 없습니다."));
+                .orElseThrow(() -> new CustomException(CustomError.SUBSCRIPTION_NOT_FOUND));
 
         return SubscriptionResponseDto.from(subscription);
     }
@@ -63,11 +68,11 @@ public class SubscriptionService {
     @Transactional
     public SubscriptionResponseDto createSubscription(Long userId, SubscriptionCreateRequestDto request) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
 
         // 이미 활성화된 구독이 있는지 검증
         if (subscriptionRepository.existsByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE)) {
-            throw new IllegalStateException("이미 활성화된 정기 구독이 존재합니다.");
+            throw new CustomException(CustomError.DUPLICATE_SUBSCRIPTION);
         }
 
         // 프론트가 보낸 billingKeyId로 우리 DB의 BillingKey row를 직접 조회해 실제 PortOne 키 값을 꺼내 쓴다
@@ -292,7 +297,89 @@ public class SubscriptionService {
     }
 
     /**
-     * 3. 정기 구독 해지 예약 (다음 결제일에 갱신 방지)
+     * 3. 정기 구독 해지/환불 요청 (사용자가 누르는 "구독 해지" 버튼의 실제 진입점)
+     * 정책: 결제 승인 시각 기준 24시간 이내이고, 이번 회차 수강권을 한 번도 쓰지 않았다면
+     * 전액 환불 + 즉시 해지. 그 외에는 기존과 동일하게 다음 결제일에 해지 예약되고,
+     * 남은 수강권은 해지일까지 그대로 유지된다. 이 판정은 매 갱신 회차마다 동일하게 적용된다
+     * (최초 가입 때만이 아니라, 매달 새로 발급되는 회차 결제/수강권 기준으로 24시간이 다시 열림).
+     */
+    @Transactional
+    public SubscriptionCancelResponseDto requestCancellation(Long userId, Long subscriptionId) {
+        // 환불 자격 판정(미사용 여부) 도중 다른 트랜잭션이 이 구독/수강권을 건드리지 못하도록 락
+        Subscription subscription = subscriptionRepository.findByIdForUpdate(subscriptionId)
+                .orElseThrow(() -> new CustomException(CustomError.SUBSCRIPTION_NOT_FOUND));
+
+        if (!subscription.getUser().getId().equals(userId)) {
+            throw new CustomException(CustomError.AUTH_UNAUTHORIZED);
+        }
+
+        if (subscription.getStatus() == SubscriptionStatus.ACTIVE && !subscription.isCancelAtPeriodEnd()) {
+            SubscriptionPass pass = subscriptionPassRepository
+                    .findBySubscriptionIdAndStatusForUpdate(subscription.getId(), PassStatus.ACTIVE)
+                    .orElse(null);
+
+            if (pass != null && isRefundEligible(subscription, pass)) {
+                int refundedAmount = refundCurrentPeriod(subscription, pass);
+                return SubscriptionCancelResponseDto.of(SubscriptionCancelResultType.REFUNDED, subscription, refundedAmount);
+            }
+        }
+
+        // 환불 대상이 아니면 기존 "해지 예약" 흐름 그대로 적용
+        cancelSubscriptionAtPeriodEnd(userId, subscriptionId);
+        return SubscriptionCancelResponseDto.of(SubscriptionCancelResultType.SCHEDULED_CANCEL, subscription, null);
+    }
+
+    /**
+     * 이번 회차 결제 승인 후 24시간 이내이고, 이번 회차에 발급된 수강권을 한 번도 쓰지 않았는지 확인.
+     */
+    private boolean isRefundEligible(Subscription subscription, SubscriptionPass pass) {
+        if (subscriptionPassUsageRepository.existsBySubscriptionPassId(pass.getId())) {
+            return false;
+        }
+
+        Payment payment = orderRepository.findTopBySubscriptionIdOrderByCreatedAtDesc(subscription.getId())
+                .flatMap(order -> paymentRepository.findByOrderId(order.getId()))
+                .orElse(null);
+
+        if (payment == null || payment.getStatus() != PaymentStatus.PAID || payment.getApprovedAt() == null) {
+            return false;
+        }
+
+        return payment.getApprovedAt().plusHours(REFUND_ELIGIBLE_HOURS).isAfter(LocalDateTime.now());
+    }
+
+    /**
+     * 이번 회차 결제를 PortOne에서 전액 취소하고, 구독을 즉시 종료 처리한다.
+     * isRefundEligible로 자격 확인이 끝난 뒤에만 호출되어야 한다.
+     */
+    private int refundCurrentPeriod(Subscription subscription, SubscriptionPass pass) {
+        Order currentOrder = orderRepository.findTopBySubscriptionIdOrderByCreatedAtDesc(subscription.getId())
+                .orElseThrow(() -> new CustomException(CustomError.PAYMENT_NOT_FOUND));
+        Payment payment = paymentRepository.findByOrderId(currentOrder.getId())
+                .orElseThrow(() -> new CustomException(CustomError.PAYMENT_NOT_FOUND));
+
+        String reason = "구독 24시간 이내 미사용 환불";
+        portonePaymentClient.cancelPayment(payment.getPortonePaymentId(), reason);
+
+        LocalDateTime now = LocalDateTime.now();
+        payment.cancel(reason, now);
+        currentOrder.setOrderStatus(OrderStatus.CANCELLED);
+
+        // 다음 회차 예약결제도 더는 필요 없으므로 함께 취소
+        cancelScheduledNextPayment(subscription.getId());
+
+        subscription.setStatus(SubscriptionStatus.CANCELLED);
+        subscription.setCancelledAt(now);
+        pass.setStatus(PassStatus.EXPIRED);
+
+        log.info("[구독 24시간 환불 완료] subscriptionId: {}, orderId: {}, amount: {}",
+                subscription.getId(), currentOrder.getId(), payment.getAmount());
+
+        return payment.getAmount();
+    }
+
+    /**
+     * 정기 구독 해지 예약 (다음 결제일에 갱신 방지)
      * 다음 회차 결제는 가입/직전 갱신 시점에 이미 PortOne에 예약되어 있으므로,
      * DB 플래그만 세우는 것으로는 다음 결제를 막을 수 없다. 예약된 PortOne 스케줄을
      * 함께 취소해야 실제로 "다음 결제일에 갱신 방지"가 된다.
@@ -300,17 +387,24 @@ public class SubscriptionService {
     @Transactional
     public void cancelSubscriptionAtPeriodEnd(Long userId, Long subscriptionId) {
         Subscription subscription = subscriptionRepository.findById(subscriptionId)
-                .orElseThrow(() -> new IllegalArgumentException("구독 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(CustomError.SUBSCRIPTION_NOT_FOUND));
 
         // 본인 구독권인지 검증
         if (!subscription.getUser().getId().equals(userId)) {
-            throw new IllegalArgumentException("권한이 없습니다.");
+            throw new CustomException(CustomError.AUTH_UNAUTHORIZED);
         }
 
         if (subscription.isCancelAtPeriodEnd()) {
             return; // 이미 해지 예약된 구독 (멱등 처리)
         }
 
+        cancelScheduledNextPayment(subscriptionId);
+
+        // 다음 주기에 해지되도록 상태 변경
+        subscription.setCancelAtPeriodEnd(true);
+    }
+
+    private void cancelScheduledNextPayment(Long subscriptionId) {
         subscriptionScheduleRepository.findBySubscriptionIdAndStatus(subscriptionId, ScheduleStatus.SCHEDULED)
                 .ifPresent(schedule -> {
                     if (schedule.getPortoneScheduleId() != null) {
@@ -318,9 +412,6 @@ public class SubscriptionService {
                     }
                     schedule.setStatus(ScheduleStatus.CANCELLED);
                 });
-
-        // 다음 주기에 해지되도록 상태 변경
-        subscription.setCancelAtPeriodEnd(true);
     }
 
     /**
@@ -379,11 +470,11 @@ public class SubscriptionService {
     @Transactional(readOnly = true)
     public PassResponseDto getSubscriptionPass(Long userId, Long subscriptionId) {
         SubscriptionPass pass = subscriptionPassRepository.findBySubscriptionIdAndStatus(subscriptionId, PassStatus.ACTIVE)
-                .orElseThrow(() -> new IllegalArgumentException("해당 구독의 수강권 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(CustomError.SUBSCRIPTION_PASS_NOT_FOUND));
 
         // 본인의 수강권인지 검증
         if (!pass.getSubscription().getUser().getId().equals(userId)) {
-            throw new IllegalArgumentException("수강권 조회 권한이 없습니다.");
+            throw new CustomException(CustomError.AUTH_UNAUTHORIZED);
         }
 
         return PassResponseDto.from(pass);
