@@ -25,6 +25,14 @@ public class ClassEnrollmentService {
     private final OneDayClassRepository oneDayClassRepository;
     private final UserRepository userRepository;
 
+    // 정원 표시용 (PENDING 또는 CONFIRMED 상태인 신청 인원 수)
+    public long getEnrolledCount(Long classId) {
+        return classEnrollmentRepository.countByOneDayClassIdAndStatusIn(
+                classId,
+                List.of(EnrollmentStatus.PENDING, EnrollmentStatus.CONFIRMED)
+        );
+    }
+
     /**
      * [일반 결제] PENDING 상태의 ClassEnrollment 생성
      */
