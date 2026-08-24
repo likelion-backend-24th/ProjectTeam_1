@@ -16,7 +16,7 @@ public class SettlementResponseDto {
     private final String className;
     private final SettlementType settlementType;
     private final int paymentAmount;       // 유저가 결제한 금액
-    private final BigDecimal settlementRate; // 정산 비율 (예: 50%)
+    private final BigDecimal settlementRate; // 정산 비율  (예: 50%)
     private final int settlementAmount;    // 호스트에게 정산될 금액
     private final SettlementStatus status; // 정산 상태 (PENDING, COMPLETED, CANCELLED)
     private final LocalDateTime settledAt; // 정산 완료 시각
