@@ -52,7 +52,7 @@ public class SubscriptionService {
     @Transactional(readOnly = true)
     public SubscriptionResponseDto getMyActiveSubscription(Long userId) {
         Subscription subscription = subscriptionRepository.findByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE)
-                .orElseThrow(() -> new IllegalArgumentException("활성화된 구독이 없습니다."));
+                .orElseThrow(() -> new CustomException(CustomError.SUBSCRIPTION_NOT_FOUND));
 
         return SubscriptionResponseDto.from(subscription);
     }
@@ -63,11 +63,11 @@ public class SubscriptionService {
     @Transactional
     public SubscriptionResponseDto createSubscription(Long userId, SubscriptionCreateRequestDto request) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
 
         // 이미 활성화된 구독이 있는지 검증
         if (subscriptionRepository.existsByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE)) {
-            throw new IllegalStateException("이미 활성화된 정기 구독이 존재합니다.");
+            throw new CustomException(CustomError.DUPLICATE_SUBSCRIPTION);
         }
 
         // 프론트가 보낸 billingKeyId로 우리 DB의 BillingKey row를 직접 조회해 실제 PortOne 키 값을 꺼내 쓴다
@@ -300,11 +300,11 @@ public class SubscriptionService {
     @Transactional
     public void cancelSubscriptionAtPeriodEnd(Long userId, Long subscriptionId) {
         Subscription subscription = subscriptionRepository.findById(subscriptionId)
-                .orElseThrow(() -> new IllegalArgumentException("구독 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(CustomError.SUBSCRIPTION_NOT_FOUND));
 
         // 본인 구독권인지 검증
         if (!subscription.getUser().getId().equals(userId)) {
-            throw new IllegalArgumentException("권한이 없습니다.");
+            throw new CustomException(CustomError.AUTH_UNAUTHORIZED);
         }
 
         if (subscription.isCancelAtPeriodEnd()) {
@@ -379,11 +379,11 @@ public class SubscriptionService {
     @Transactional(readOnly = true)
     public PassResponseDto getSubscriptionPass(Long userId, Long subscriptionId) {
         SubscriptionPass pass = subscriptionPassRepository.findBySubscriptionIdAndStatus(subscriptionId, PassStatus.ACTIVE)
-                .orElseThrow(() -> new IllegalArgumentException("해당 구독의 수강권 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(CustomError.SUBSCRIPTION_PASS_NOT_FOUND));
 
         // 본인의 수강권인지 검증
         if (!pass.getSubscription().getUser().getId().equals(userId)) {
-            throw new IllegalArgumentException("수강권 조회 권한이 없습니다.");
+            throw new CustomException(CustomError.AUTH_UNAUTHORIZED);
         }
 
         return PassResponseDto.from(pass);

@@ -23,12 +23,14 @@ public class PortonePaymentClient {
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
     private final String webhookNoticeUrl;
+    private final String storeId;
 
     // 생성자에서 공통 헤더(Authorization, Content-Type)를 미리 세팅하여 중복 제거
     public PortonePaymentClient(
             @Value("${portone.api-secret}") String apiSecret,
             @Value("${portone.api.base-url:https://api.portone.io}") String baseUrl,
             @Value("${portone.webhook-notice-url}") String webhookNoticeUrl,
+            @Value("${portone.store-id}") String storeId,
             ObjectMapper objectMapper
     ) {
         this.restClient = RestClient.builder()
@@ -38,6 +40,7 @@ public class PortonePaymentClient {
                 .build();
         this.objectMapper = objectMapper;
         this.webhookNoticeUrl = webhookNoticeUrl;
+        this.storeId = storeId;
     }
 
     // DELETE 요청 중 일부(/payment-schedules)는 실제 바디 대신 requestBody라는 이름의
@@ -56,7 +59,10 @@ public class PortonePaymentClient {
     public PortonePaymentResponseDto getPaymentDetails(String paymentId) {
         try {
             return restClient.get()
-                    .uri("/payments/{paymentId}", paymentId)
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/payments/{paymentId}")
+                            .queryParam("storeId", storeId)
+                            .build(paymentId))
                     // defaultHeader로 인해 header("Authorization", ...) 생략 가능
                     .retrieve()
                     .body(PortonePaymentResponseDto.class);
@@ -81,7 +87,10 @@ public class PortonePaymentClient {
         for (int attempt = 1; attempt <= BILLING_KEY_LOOKUP_MAX_ATTEMPTS; attempt++) {
             try {
                 return restClient.get()
-                        .uri("/billing-keys/{billingKey}", billingKey)
+                        .uri(uriBuilder -> uriBuilder
+                                .path("/billing-keys/{billingKey}")
+                                .queryParam("storeId", storeId)
+                                .build(billingKey))
                         .retrieve()
                         .body(PortoneBillingKeyResponseDto.class);
             } catch (HttpClientErrorException.NotFound e) {
@@ -114,7 +123,7 @@ public class PortonePaymentClient {
         try {
             restClient.post()
                     .uri("/payments/{paymentId}/cancel", paymentId)
-                    .body(Map.of("reason", reason))
+                    .body(Map.of("storeId", storeId, "reason", reason))
                     .retrieve()
                     .toBodilessEntity();
 
@@ -127,11 +136,15 @@ public class PortonePaymentClient {
 
     /**
      * [PortOne V2 API 빌링키 결제 요청 (구독 최초 결제/정기 결제 공용)]
-     * HTTP 2xx 여부만으로 성공을 판단하지 않고, 응답 바디의 결제 상태(status)까지 PAID인지 확인한다.
+     * 이 엔드포인트의 성공 응답(200)은 {"payment":{"pgTxId","paidAt"}}뿐이라 status/amount/
+     * payMethod 등 상세 정보가 없다(portone-v2-openapi.json 기준). HTTP 2xx 자체가 승인
+     * 성공을 의미하므로(실패 시 에러 응답이 옴), 승인 후 단건 조회 API로 상세 정보를 다시
+     * 받아온다 — 위변조 방지를 위해 웹훅 내용을 안 믿고 재조회하는 다른 흐름과 동일한 관례.
      */
     public PortonePaymentResponseDto payWithBillingKey(String billingKey, String paymentId, String orderName, int amount, Long userId) {
         try {
             Map<String, Object> requestBody = Map.of(
+                    "storeId", storeId,
                     "billingKey", billingKey,
                     "orderName", orderName,
                     "amount", Map.of("total", amount),
@@ -142,11 +155,13 @@ public class PortonePaymentClient {
                     "noticeUrls", List.of(webhookNoticeUrl)
             );
 
-            PortonePaymentResponseDto response = restClient.post()
+            restClient.post()
                     .uri("/payments/{paymentId}/billing-key", paymentId)
                     .body(requestBody)
                     .retrieve()
-                    .body(PortonePaymentResponseDto.class);
+                    .toBodilessEntity();
+
+            PortonePaymentResponseDto response = getPaymentDetails(paymentId);
 
             if (response == null || !"PAID".equalsIgnoreCase(response.getStatus())) {
                 log.error("[PortOne API] 빌링키 결제 승인 실패 - paymentId: {}, status: {}",
@@ -174,6 +189,7 @@ public class PortonePaymentClient {
         try {
             Map<String, Object> requestBody = Map.of(
                     "payment", Map.of(
+                            "storeId", storeId,
                             "billingKey", billingKey,
                             "orderName", orderName,
                             "customer", Map.of("id", String.valueOf(userId)),
@@ -206,7 +222,12 @@ public class PortonePaymentClient {
      */
     public void cancelSchedule(String portoneScheduleId) {
         try {
-            String requestBody = toJson(Map.of("scheduleIds", java.util.List.of(portoneScheduleId)));
+            // LinkedHashMap: Map.of()는 키 순서를 보장하지 않아 JSON 직렬화 결과가 매번 달라진다
+            // (요청 자체는 문제없지만 회귀 테스트에서 정확한 문자열을 비교하므로 순서 고정 필요).
+            Map<String, Object> body = new java.util.LinkedHashMap<>();
+            body.put("storeId", storeId);
+            body.put("scheduleIds", java.util.List.of(portoneScheduleId));
+            String requestBody = toJson(body);
             restClient.method(org.springframework.http.HttpMethod.DELETE)
                     .uri(uriBuilder -> uriBuilder
                             .path("/payment-schedules")
@@ -228,7 +249,10 @@ public class PortonePaymentClient {
      */
     public void cancelScheduleByBillingKey(String billingKey) {
         try {
-            String requestBody = toJson(Map.of("billingKey", billingKey));
+            Map<String, Object> body = new java.util.LinkedHashMap<>();
+            body.put("storeId", storeId);
+            body.put("billingKey", billingKey);
+            String requestBody = toJson(body);
             restClient.method(org.springframework.http.HttpMethod.DELETE)
                     .uri(uriBuilder -> uriBuilder
                             .path("/payment-schedules")
@@ -257,7 +281,8 @@ public class PortonePaymentClient {
                     .uri(uriBuilder -> uriBuilder
                             .path("/billing-keys/{billingKey}")
                             .queryParam("reason", "{reason}")
-                            .build(billingKey, reason))
+                            .queryParam("storeId", "{storeId}")
+                            .build(billingKey, reason, storeId))
                     .retrieve()
                     .toBodilessEntity();
 
