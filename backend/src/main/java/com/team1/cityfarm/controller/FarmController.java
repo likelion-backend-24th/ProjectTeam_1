@@ -25,7 +25,7 @@ import java.util.List;
 
 @Tag(name = "밭 임대 API", description = "밭 등록, 조회, 임대 신청 API 및 HOST만 권한 부여")
 @RestController
-@RequestMapping("/api/farm")
+@RequestMapping("/api/farms")
 @RequiredArgsConstructor
 public class FarmController {
     private final FarmService farmService;

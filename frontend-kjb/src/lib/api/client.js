@@ -41,19 +41,21 @@ function buildQueryString(query) {
 export async function apiRequest(path, options = {}) {
   const { method = "GET", body, query, signal } = options;
 
+  const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
+
   const headers = {};
   const token = getAccessToken();
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
-  if (body !== undefined) {
+  if (body !== undefined && !isFormData) {
     headers["Content-Type"] = "application/json";
   }
 
   const res = await fetch(`${API_BASE_URL}${path}${buildQueryString(query)}`, {
     method,
     headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: body === undefined ? undefined : isFormData ? body : JSON.stringify(body),
     signal,
   });
 
