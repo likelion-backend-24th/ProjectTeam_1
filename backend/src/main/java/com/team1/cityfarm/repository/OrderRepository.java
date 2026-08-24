@@ -21,4 +21,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByUserIdOrderByCreatedAtDesc(Long userId);
 
     Optional<Order> findByIdAndUserId(Long orderId, Long userId);
+
+    // 구독의 "현재 회차" 결제건 조회용 (가입/갱신 시마다 새 Order가 쌓이므로 가장 최근 것을 사용)
+    Optional<Order> findTopBySubscriptionIdOrderByCreatedAtDesc(Long subscriptionId);
 }
