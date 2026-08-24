@@ -23,3 +23,16 @@ export function createFarm(
   (images ?? []).forEach((file) => formData.append("images", file));
   return apiRequest("/api/farms", { method: "POST", body: formData });
 }
+
+export function updateFarm(farmId, { title, area, monthlyRent, rentalMonths, description }, images){
+  const formData = new FormData();
+  formData.append(
+    "request",
+    new Blob(
+      [JSON.stringify({ title, area, monthlyRent, rentalMonths, description })],
+      { type: "application/json" },
+    ),
+  );
+  (images ?? []).forEach((file) => formData.append("images", file));
+  return apiRequest(`/api/farms/${farmId}`, { method: "PUT", body: formData });
+}
