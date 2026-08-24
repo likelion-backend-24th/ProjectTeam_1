@@ -9,10 +9,16 @@ function isAdminToken(token) {
   return payload?.role === "ADMIN";
 }
 
+function isHostToken(token) {
+  const payload = decodeJwtPayload(token);
+  return payload?.role === "HOST";
+}
+
 export const useAuthStore = create((set, get) => ({
   isAuthenticated: false,
   profile: null,
   isAdmin: false,
+  isHost: false,
   isLoading: true,
   hasInitialized: false,
 
@@ -22,15 +28,15 @@ export const useAuthStore = create((set, get) => ({
 
     const token = getAccessToken();
     if (!token) {
-      set({ isAuthenticated: false, profile: null, isAdmin: false, isLoading: false });
+      set({ isAuthenticated: false, profile: null, isAdmin: false, isHost: false, isLoading: false });
       return;
     }
     try {
       const profile = await getMyProfile();
-      set({ profile, isAuthenticated: true, isAdmin: isAdminToken(token), isLoading: false });
+      set({ profile, isAuthenticated: true, isAdmin: isAdminToken(token), isHost: isHostToken(token), isLoading: false });
     } catch {
       clearAccessToken();
-      set({ isAuthenticated: false, profile: null, isAdmin: false, isLoading: false });
+      set({ isAuthenticated: false, profile: null, isAdmin: false, isHost: false, isLoading: false });
     }
   },
 
@@ -38,17 +44,17 @@ export const useAuthStore = create((set, get) => ({
     const res = await loginApi(payload);
     setAccessToken(res.accessToken);
     const profile = await getMyProfile();
-    set({ profile, isAuthenticated: true, isAdmin: isAdminToken(res.accessToken) });
+    set({ profile, isAuthenticated: true, isAdmin: isAdminToken(res.accessToken), isHost: isHostToken(res.accessToken) });
   },
 
   socialLogin: async (accessToken) => {
     setAccessToken(accessToken);
     try {
       const profile = await getMyProfile();
-      set({ profile, isAuthenticated: true, isAdmin: isAdminToken(accessToken), isLoading: false });
+      set({ profile, isAuthenticated: true, isAdmin: isAdminToken(accessToken), isHost: isHostToken(accessToken), isLoading: false });
     } catch {
       clearAccessToken();
-      set({ isAuthenticated: false, profile: null, isAdmin: false, isLoading: false });
+      set({ isAuthenticated: false, profile: null, isAdmin: false, isHost: false, isLoading: false });
       throw new Error("소셜 로그인 프로필을 불러오지 못했습니다.");
     }
   },
@@ -60,13 +66,13 @@ export const useAuthStore = create((set, get) => ({
       // ignore network/server errors on logout, clear local state regardless
     }
     clearAccessToken();
-    set({ isAuthenticated: false, profile: null, isAdmin: false });
+    set({ isAuthenticated: false, profile: null, isAdmin: false, isHost: false });
   },
 
   withdraw: async () => {
     await withdrawApi();
     clearAccessToken();
-    set({ isAuthenticated: false, profile: null, isAdmin: false });
+    set({ isAuthenticated: false, profile: null, isAdmin: false, isHost: false });
   },
 
   updateProfile: async (payload) => {
