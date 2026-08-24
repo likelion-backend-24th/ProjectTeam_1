@@ -3,11 +3,13 @@ package com.team1.cityfarm.service;
 import com.team1.cityfarm.dto.BoardRequestDto;
 import com.team1.cityfarm.dto.BoardResponseDto;
 import com.team1.cityfarm.entity.Board;
+import com.team1.cityfarm.entity.BoardImage;
 import com.team1.cityfarm.entity.Category;
 import com.team1.cityfarm.entity.RoleType;
 import com.team1.cityfarm.entity.User;
 import com.team1.cityfarm.global.exception.CustomError;
 import com.team1.cityfarm.global.exception.CustomException;
+import com.team1.cityfarm.repository.BoardImageRepository;
 import com.team1.cityfarm.repository.BoardRepository;
 import com.team1.cityfarm.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,15 +17,25 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class BoardService {
 
+    private static final int BOARD_IMAGE_MAX_COUNT = 5;
+
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
+    private final BoardImageRepository boardImageRepository;
+    private final FileStorageService fileStorageService;
 
-    // 게시글 목록 조회
+    // 게시글 목록 조회하기
     @Transactional(readOnly = true)
     public Page<BoardResponseDto> getBoards(String type, String keyword, Category category, Pageable pageable) {
         boolean hasKeyword = keyword != null && !keyword.isBlank();
@@ -52,7 +64,19 @@ public class BoardService {
             };
         }
 
-        return boards.map(BoardResponseDto::from);
+        List<Long> boardIds = boards.map(Board::getId).getContent();
+        Map<Long, List<String>> imageUrlsByBoardId = boardIds.isEmpty()
+                ? Map.of()
+                : boardImageRepository.findByBoard_IdInOrderByIdAsc(boardIds).stream()
+                        .collect(Collectors.groupingBy(
+                                image -> image.getBoard().getId(),
+                                Collectors.mapping(BoardImage::getImageUrl, Collectors.toList())
+                        ));
+
+        return boards.map(board -> BoardResponseDto.from(
+                board,
+                imageUrlsByBoardId.getOrDefault(board.getId(), List.of())
+        ));
     }
 
     //게시글 상세 조회 (조회수 증가)
@@ -61,12 +85,17 @@ public class BoardService {
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new CustomException(CustomError.BOARD_NOT_FOUND));
         board.increaseViewCount();
-        return BoardResponseDto.from(board);
+
+        List<String> imageUrls = boardImageRepository.findByBoard_IdOrderByIdAsc(boardId).stream()
+                .map(BoardImage::getImageUrl)
+                .toList();
+
+        return BoardResponseDto.from(board, imageUrls);
     }
 
     //게시글 등록
     @Transactional
-    public BoardResponseDto createBoard(BoardRequestDto request, Long userId) {
+    public BoardResponseDto createBoard(BoardRequestDto request, List<MultipartFile> images, Long userId) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
@@ -76,18 +105,26 @@ public class BoardService {
             throw new CustomException(CustomError.AUTH_FORBIDDEN);
         }
 
+        if (images != null && images.size() > BOARD_IMAGE_MAX_COUNT) {
+            throw new CustomException(CustomError.BOARD_IMAGE_LIMIT);
+        }
+
         Board board = Board.builder()
                 .title(request.title())
                 .content(request.content())
                 .category(request.category())
                 .user(user)
                 .build();
-        return BoardResponseDto.from(boardRepository.save(board));
+        Board savedBoard = boardRepository.save(board);
+
+        List<String> imageUrls = storeBoardImages(savedBoard, images);
+
+        return BoardResponseDto.from(savedBoard, imageUrls);
     }
 
     // 게시글 수정
     @Transactional
-    public BoardResponseDto updateBoard(Long boardId, BoardRequestDto request, Long userId) {
+    public BoardResponseDto updateBoard(Long boardId, BoardRequestDto request, List<MultipartFile> images, Long userId) {
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new CustomException(CustomError.BOARD_NOT_FOUND));
 
@@ -105,8 +142,25 @@ public class BoardService {
             throw new CustomException(CustomError.AUTH_FORBIDDEN);
         }
 
+        if (images != null && images.size() > BOARD_IMAGE_MAX_COUNT) {
+            throw new CustomException(CustomError.BOARD_IMAGE_LIMIT);
+        }
+
         board.update(request.title(), request.content(), request.category());
-        return BoardResponseDto.from(boardRepository.save(board));
+        Board savedBoard = boardRepository.save(board);
+
+        // 새 이미지가 들어온 경우에만 기존 이미지를 전체 교체 (안 보내면 기존 이미지 유지)
+        List<String> imageUrls;
+        if (images != null && !images.isEmpty()) {
+            boardImageRepository.deleteAll(boardImageRepository.findByBoard_IdOrderByIdAsc(boardId));
+            imageUrls = storeBoardImages(savedBoard, images);
+        } else {
+            imageUrls = boardImageRepository.findByBoard_IdOrderByIdAsc(boardId).stream()
+                    .map(BoardImage::getImageUrl)
+                    .toList();
+        }
+
+        return BoardResponseDto.from(savedBoard, imageUrls);
     }
 
     //게시글 삭제
@@ -124,10 +178,26 @@ public class BoardService {
             throw new CustomException(CustomError.BOARD_NOT_OWNER);
         }
 
+        boardImageRepository.deleteAll(boardImageRepository.findByBoard_IdOrderByIdAsc(boardId));
         boardRepository.delete(board);
     }
 
+    private List<String> storeBoardImages(Board board, List<MultipartFile> images) {
+        if (images == null || images.isEmpty()) {
+            return List.of();
+        }
 
+        List<String> imageUrls = new ArrayList<>();
+        for (MultipartFile image : images) {
+            String imageUrl = fileStorageService.store(image, "boards");
+            boardImageRepository.save(BoardImage.builder()
+                    .board(board)
+                    .imageUrl(imageUrl)
+                    .build());
+            imageUrls.add(imageUrl);
+        }
+        return imageUrls;
+    }
 
 
 }

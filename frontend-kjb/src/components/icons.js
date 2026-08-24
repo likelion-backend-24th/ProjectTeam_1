@@ -155,6 +155,16 @@ export function FeedIcon({ size = 22, className }) {
   );
 }
 
+export function ImageIcon({ size = 22, className }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <rect x="3" y="3" width="18" height="18" rx="2.5" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <path d="m21 15-5-5-9 9" />
+    </svg>
+  );
+}
+
 export function CalendarIcon({ size = 22, className }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>

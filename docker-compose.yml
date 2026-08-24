@@ -34,6 +34,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/cityfarm?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - uploads_data:/app/uploads
 
   # 3) 프론트엔드 컨테이너
   frontend:
@@ -47,3 +49,4 @@ services:
 
 volumes:
   mysql_data:
+  uploads_data:

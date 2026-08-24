@@ -32,7 +32,7 @@ public class FeedController {
     @GetMapping
     public ApiResponse<Page<BoardResponseDto>> getFeed(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+            @PageableDefault(size =  10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return ApiResponse.success(
                 "피드 목록 조회에 성공했습니다.",

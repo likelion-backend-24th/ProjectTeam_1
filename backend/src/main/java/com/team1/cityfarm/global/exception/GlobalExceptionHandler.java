@@ -25,6 +25,16 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(customError.name(), customError.getMessage()));
     }
 
+    // 업로드 용량 제한(spring.servlet.multipart.max-file-size 등) 초과 시 처리
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<?>> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e) {
+        CustomError customError = CustomError.FILE_TOO_LARGE;
+
+        return ResponseEntity
+                .status(customError.getHttpStatus())
+                .body(ApiResponse.error(customError.name(), customError.getMessage()));
+    }
+
     // @Valid 검증 실패(400) 처리
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<?>> handleValidationException(MethodArgumentNotValidException e) {

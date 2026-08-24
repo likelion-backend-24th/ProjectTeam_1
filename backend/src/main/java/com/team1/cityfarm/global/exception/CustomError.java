@@ -37,6 +37,8 @@ public enum CustomError {
     REPLY_NOT_OWNER(HttpStatus.FORBIDDEN, "답글 수정/삭제 권한이 없습니다."),
 
     BOARD_TYPE_ERROR(HttpStatus.BAD_REQUEST,"잘못된 검색 타입입니다."),
+    BOARD_IMAGE_LIMIT(HttpStatus.BAD_REQUEST, "사진은 최대 5장까지 올릴 수 있습니다."),
+    FILE_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "파일 용량이 너무 큽니다. 사진 1장당 10MB 이하로 올려주세요."),
     USER_STATUS_ERROR(HttpStatus.BAD_REQUEST,"STATUS에서 정의하지 않은 활동상태입니다."),
 
     // 팔로우 예외
