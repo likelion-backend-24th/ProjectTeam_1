@@ -1,6 +1,7 @@
 package com.team1.cityfarm.controller;
 
 import com.team1.cityfarm.dto.PassResponseDto;
+import com.team1.cityfarm.dto.SubscriptionCancelResponseDto;
 import com.team1.cityfarm.dto.SubscriptionCreateRequestDto;
 import com.team1.cityfarm.dto.SubscriptionPassUsageResponseDto;
 import com.team1.cityfarm.dto.SubscriptionResponseDto;
@@ -42,14 +43,16 @@ public class SubscriptionController {
     }
 
     /**
-     * 3. 정기 구독 해지 예약 (다음 주기 갱신 안 함)
+     * 3. 정기 구독 해지/환불 요청
+     * 결제 후 24시간 이내 + 수강권 미사용이면 전액 환불 후 즉시 해지되고,
+     * 그 외에는 다음 주기 갱신을 막는 해지 예약으로 처리된다.
      */
     @PostMapping("/{subscriptionId}/cancel")
-    public ResponseEntity<Void> cancelAtPeriodEnd(
+    public ResponseEntity<SubscriptionCancelResponseDto> cancelAtPeriodEnd(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long subscriptionId) {
-        subscriptionService.cancelSubscriptionAtPeriodEnd(userDetails.getUserId(), subscriptionId);
-        return ResponseEntity.ok().build();
+        SubscriptionCancelResponseDto response = subscriptionService.requestCancellation(userDetails.getUserId(), subscriptionId);
+        return ResponseEntity.ok(response);
     }
 
     /**

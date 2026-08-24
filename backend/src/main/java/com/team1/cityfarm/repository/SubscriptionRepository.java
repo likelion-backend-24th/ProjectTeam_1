@@ -2,7 +2,11 @@ package com.team1.cityfarm.repository;
 
 import com.team1.cityfarm.entity.Subscription;
 import com.team1.cityfarm.entity.SubscriptionStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -12,6 +16,11 @@ public interface SubscriptionRepository
         extends JpaRepository<Subscription, Long> {
 
     Optional<Subscription> findByUserId(Long userId);
+
+    // 해지/환불 처리용 락 - 동시 요청(예: 수강권 사용과 환불 요청이 겹치는 경우) 직렬화
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select s from Subscription s where s.id = :id")
+    Optional<Subscription> findByIdForUpdate(@Param("id") Long id);
 
     Optional<Subscription> findByUserIdAndStatus(
             Long userId,
