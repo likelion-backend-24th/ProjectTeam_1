@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import LinkComponent from "next/link";
 import { useRouter } from "next/navigation";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { RequireAuth } from "@/components/RequireAuth";
-import { ChevronRightIcon, ReceiptIcon, TicketIcon, LockIcon } from "@/components/icons";
+import { ChevronRightIcon, FeedIcon, HeartIcon, ReceiptIcon, TicketIcon, LockIcon, BackIcon } from "@/components/icons";
 import { useAuthStore } from "@/store/authStore";
 import { useToastStore } from "@/store/toastStore";
 import { ApiError } from "@/lib/api/client";
+import { getFollowerList, getFollowingList } from "@/lib/api/follow";
 
 function ProfileView() {
   const profile = useAuthStore((s) => s.profile);
@@ -33,6 +34,24 @@ function ProfileView() {
   const [currentPasswordInput, setCurrentPasswordInput] = useState("");
   const [newPasswordInput, setNewPasswordInput] = useState("");
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
+
+  // 팔로워/팔로잉 카운트
+  const [followerCount, setFollowerCount] = useState(null);
+  const [followingCount, setFollowingCount] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([getFollowerList(), getFollowingList()])
+      .then(([followers, following]) => {
+        if (cancelled) return;
+        setFollowerCount(followers.length);
+        setFollowingCount(following.length);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleLogout() {
     await logout();
@@ -130,10 +149,31 @@ function ProfileView() {
   }
 
   return (
-    <AppShell header={<PageHeader title="내 프로필" />}>
+    <AppShell
+      header={
+        <PageHeader
+          title="내 프로필"
+          left={
+            <button type="button" onClick={() => router.back()} className="cursor-pointer">
+              <BackIcon size={22} />
+            </button>
+          }
+        />
+      }
+    >
       <div className="flex justify-center pt-3 pb-1">
         <div className="flex h-[76px] w-[76px] items-center justify-center rounded-full bg-surface-strong text-[28px] font-bold text-ink-soft">
           {profile?.name?.slice(0, 1) ?? "?"}
+        </div>
+        <div className="flex flex-1 items-center justify-around">
+          <LinkComponent href="/profile/followers" className="flex flex-col items-center gap-0.5">
+            <span className="text-base font-bold">{followerCount ?? "-"}</span>
+            <span className="text-xs text-ink-muted">팔로워</span>
+          </LinkComponent>
+          <LinkComponent href="/profile/following" className="flex flex-col items-center gap-0.5">
+            <span className="text-base font-bold">{followingCount ?? "-"}</span>
+            <span className="text-xs text-ink-muted">팔로잉</span>
+          </LinkComponent>
         </div>
       </div>
 
@@ -207,7 +247,6 @@ function ProfileView() {
       {/* 메뉴 그룹 영역 */}
       <div className="flex flex-col gap-2">
         <ProfileLinkRow href="/subscription" icon={<TicketIcon size={20} />} label="내 구독" />
-
         {/* 결제 내역 + 정산 내역 좌우 2분할 카드 */}
         <div className="flex w-full items-center rounded-xl bg-surface">
           {/* 왼쪽: 결제 내역 */}
@@ -221,10 +260,8 @@ function ProfileView() {
             </span>
             <ChevronRightIcon size={16} className="text-ink-muted" />
           </LinkComponent>
-
           {/* 세로 구분선 */}
           <div className="h-5 w-[1px] bg-border-subtle/60" />
-
           {/* 오른쪽: 정산 내역 */}
           <LinkComponent
             href="/host/settlements"
@@ -237,6 +274,8 @@ function ProfileView() {
             <ChevronRightIcon size={16} className="text-ink-muted" />
           </LinkComponent>
         </div>
+        <ProfileLinkRow href="/profile/feed" icon={<FeedIcon size={20} />} label="피드" />
+        <ProfileLinkRow href="/profile/likes" icon={<HeartIcon size={20} />} label="좋아요한 게시글" />
       </div>
 
       <button

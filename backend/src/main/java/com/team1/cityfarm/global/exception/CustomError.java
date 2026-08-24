@@ -37,6 +37,7 @@ public enum CustomError {
     REPLY_NOT_OWNER(HttpStatus.FORBIDDEN, "답글 수정/삭제 권한이 없습니다."),
 
     BOARD_TYPE_ERROR(HttpStatus.BAD_REQUEST,"잘못된 검색 타입입니다."),
+    BOARD_IMAGE_LIMIT(HttpStatus.BAD_REQUEST, "사진은 최대 5장까지 올릴 수 있습니다."),
     USER_STATUS_ERROR(HttpStatus.BAD_REQUEST,"STATUS에서 정의하지 않은 활동상태입니다."),
 
     // 팔로우 예외
@@ -69,6 +70,7 @@ public enum CustomError {
 
     // 원데이클래스 예외
     CLASS_CAPACITY_EXCEEDED(HttpStatus.BAD_REQUEST, "클래스 정원이 초과되었습니다"),
+    CLASS_HOST_CANNOT_ENROLL(HttpStatus.BAD_REQUEST, "본인이 개설한 클래스는 신청할 수 없습니다"),
     ENROLLMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "수강 신청 내역을 찾을 수 없습니다"),
     ENROLLMENT_NOT_OWNER(HttpStatus.FORBIDDEN, "본인의 신청 내역만 접근할 수 있습니다"),
     NOT_HOST_ROLE(HttpStatus.FORBIDDEN, "호스트 권한이 필요합니다"),

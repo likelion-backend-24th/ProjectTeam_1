@@ -18,6 +18,7 @@ export default function OneDayClassDetailPage() {
   const showToast = useToastStore((s) => s.showToast);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const authLoading = useAuthStore((s) => s.isLoading);
+  const profile = useAuthStore((s) => s.profile);
 
   const [cls, setCls] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -75,6 +76,8 @@ export default function OneDayClassDetailPage() {
       setIsEnrollingWithPass(false);
     }
   }
+
+  const isOwnClass = !!profile && cls?.hostId != null && profile.id === cls.hostId;
 
   return (
     <AppShell
@@ -136,13 +139,19 @@ export default function OneDayClassDetailPage() {
             </button>
           )}
 
-          {!authLoading && isAuthenticated && passEnrollSuccess && (
+          {!authLoading && isAuthenticated && isOwnClass && (
+            <p className="rounded-lg bg-surface px-3.5 py-3 text-center text-[13px] font-semibold text-ink-muted">
+              본인이 개설한 클래스는 신청할 수 없어요.
+            </p>
+          )}
+
+          {!authLoading && isAuthenticated && !isOwnClass && passEnrollSuccess && (
             <p className="rounded-lg bg-surface px-3.5 py-3 text-center text-[13px] font-semibold text-ink">
               신청이 완료됐어요. 마이페이지에서 신청 내역을 확인하세요.
             </p>
           )}
 
-          {!authLoading && isAuthenticated && !passEnrollSuccess && (
+          {!authLoading && isAuthenticated && !isOwnClass && !passEnrollSuccess && (
             <div className="flex flex-col gap-2">
               <button
                 type="button"

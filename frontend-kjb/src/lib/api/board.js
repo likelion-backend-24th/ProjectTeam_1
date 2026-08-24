@@ -8,12 +8,22 @@ export function getBoard(boardId, signal) {
   return apiRequest(`/api/board/${boardId}`, { signal });
 }
 
-export function createBoard(payload) {
-  return apiRequest("/api/board", { method: "POST", body: payload });
+function toBoardFormData({ title, content, category }, images) {
+  const formData = new FormData();
+  formData.append(
+    "request",
+    new Blob([JSON.stringify({ title, content, category })], { type: "application/json" }),
+  );
+  (images ?? []).forEach((image) => formData.append("images", image));
+  return formData;
 }
 
-export function updateBoard(boardId, payload) {
-  return apiRequest(`/api/board/${boardId}`, { method: "PUT", body: payload });
+export function createBoard(payload, images) {
+  return apiRequest("/api/board", { method: "POST", body: toBoardFormData(payload, images) });
+}
+
+export function updateBoard(boardId, payload, images) {
+  return apiRequest(`/api/board/${boardId}`, { method: "PUT", body: toBoardFormData(payload, images) });
 }
 
 export function deleteBoard(boardId) {

@@ -15,3 +15,7 @@ export function logout() {
 export function withdraw() {
   return apiRequest("/api/auth/withdraw", { method: "DELETE" });
 }
+
+export function reissue(refreshToken) {
+  return apiRequest("/api/auth/reissue", { method: "POST", body: { refreshToken } });
+}
