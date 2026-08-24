@@ -7,8 +7,10 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { ChevronRightIcon, SettingsIcon, BookIcon, SproutIcon } from "@/components/icons";
 import { useAuthStore } from "@/store/authStore";
 import { useToastStore } from "@/store/toastStore";
-import { getMyEnrollments } from "@/lib/api/enrollment";
+import { getMyEnrollments, cancelEnrollmentByPass } from "@/lib/api/enrollment";
+import { getOrder } from "@/lib/api/order";
 import { getHostRentals, cancelRental } from "@/lib/api/rental";
+import { CancelPaymentButton } from "@/components/payment/CancelPaymentButton";
 import { ApiError } from "@/lib/api/client";
 import { formatDateWithWeekday, formatTime } from "@/utils/format";
 
@@ -20,6 +22,8 @@ function MyPageView() {
   const [upcomingClasses, setUpcomingClasses] = useState([]);
   const [isLoadingClasses, setIsLoadingClasses] = useState(true);
   const [classIndex, setClassIndex] = useState(0);
+  const [currentPayment, setCurrentPayment] = useState(null);
+  const [isCancellingEnrollment, setIsCancellingEnrollment] = useState(false);
 
   const [hostRentals, setHostRentals] = useState([]);
   const [isLoadingRentals, setIsLoadingRentals] = useState(isHost);
@@ -31,6 +35,7 @@ function MyPageView() {
         const enrollments = await getMyEnrollments();
         const mapped = (enrollments ?? []).map((e) => ({
           id: e.enrollmentId,
+          orderId: e.orderId,
           title: e.classTitle,
           location: e.classLocation,
           date: formatDateWithWeekday(e.classDate),
@@ -76,8 +81,47 @@ function MyPageView() {
   const hasMultipleClasses = upcomingClasses.length >= 2;
   const currentClass = upcomingClasses[classIndex];
 
+  useEffect(() => {
+    if (!currentClass?.orderId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCurrentPayment(null);
+      return;
+    }
+    let cancelled = false;
+    getOrder(currentClass.orderId)
+      .then((order) => {
+        if (!cancelled) setCurrentPayment(order?.payment?.id ? { id: order.payment.id } : null);
+      })
+      .catch(() => {
+        if (!cancelled) setCurrentPayment(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [currentClass?.orderId]);
+
   function handleNextClass() {
     setClassIndex((prev) => (prev + 1) % upcomingClasses.length);
+  }
+
+  function removeCurrentClassFromList() {
+    setUpcomingClasses((prev) => prev.filter((c) => c.id !== currentClass.id));
+    setClassIndex((prev) => Math.max(0, prev - 1));
+  }
+
+  async function handleCancelPassEnrollment() {
+    if (!currentClass) return;
+    if (!window.confirm("신청을 취소할까요? 사용한 수강권이 복구돼요.")) return;
+    setIsCancellingEnrollment(true);
+    try {
+      await cancelEnrollmentByPass(currentClass.id);
+      showToast("신청이 취소됐어요.");
+      removeCurrentClassFromList();
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.message : "취소에 실패했어요.", "error");
+    } finally {
+      setIsCancellingEnrollment(false);
+    }
   }
 
   async function handleCopyAddress(location) {
@@ -189,6 +233,26 @@ function MyPageView() {
                     />
                   ))}
                 </div>
+              )}
+              {currentClass.orderId ? (
+                currentPayment && (
+                  <CancelPaymentButton
+                    payment={currentPayment}
+                    onCancelled={() => {
+                      showToast("신청이 취소됐어요.");
+                      removeCurrentClassFromList();
+                    }}
+                  />
+                )
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleCancelPassEnrollment}
+                  disabled={isCancellingEnrollment}
+                  className="h-[38px] w-full rounded-xl bg-surface text-[13px] font-semibold text-red-600 disabled:opacity-50"
+                >
+                  {isCancellingEnrollment ? "취소 처리 중..." : "신청 취소"}
+                </button>
               )}
             </div>
           )

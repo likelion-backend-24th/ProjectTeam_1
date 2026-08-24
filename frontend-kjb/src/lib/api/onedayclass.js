@@ -19,3 +19,13 @@ export function enrollClassWithPass(classId) {
 export function createOneDayClass(payload) {
   return apiRequest("/api/onedayclass", { method: "POST", body: payload });
 }
+
+// 클래스 설명만 수정 가능 (제목/일정/장소/정원/가격은 수정 API 없음). 본인 클래스만 가능.
+export function updateClassDescription(classId, description) {
+  return apiRequest(`/api/onedayclass/${classId}`, { method: "PATCH", body: { description } });
+}
+
+// 클래스 취소: 신청자 전체 환불/수강권 복구까지 백엔드가 처리한다. 본인 클래스만 가능.
+export function cancelOneDayClass(classId) {
+  return apiRequest(`/api/onedayclass/${classId}/cancel`, { method: "POST" });
+}
