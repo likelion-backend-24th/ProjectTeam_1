@@ -18,4 +18,6 @@ public interface SubscriptionPassUsageRepository
     );
 
     boolean existsByEnrollmentId(Long enrollmentId);
+
+    boolean existsBySubscriptionPassId(Long subscriptionPassId);
 }
