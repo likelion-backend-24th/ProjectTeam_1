@@ -38,7 +38,7 @@ public class Settlement {
     /**
      * 정산된 클래스 이름
      */
-    @JoinColumn(name = "class_name")
+    @Column(name = "class_name")
     private String className;
 
     /**
