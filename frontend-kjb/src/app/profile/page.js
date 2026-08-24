@@ -5,8 +5,7 @@ import LinkComponent from "next/link";
 import { useRouter } from "next/navigation";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { RequireAuth } from "@/components/RequireAuth";
-import { ChevronRightIcon, ReceiptIcon, TicketIcon, LockIcon } from "@/components/icons";
-import { useAuthStore } from "@/store/authStore";
+import { ChevronRightIcon, ReceiptIcon, TicketIcon, LockIcon, BackIcon } from "@/components/icons";import { useAuthStore } from "@/store/authStore";
 import { useToastStore } from "@/store/toastStore";
 import { ApiError } from "@/lib/api/client";
 
@@ -130,7 +129,15 @@ function ProfileView() {
   }
 
   return (
-    <AppShell header={<PageHeader title="내 프로필" />}>
+    <AppShell 
+      header={
+      <PageHeader 
+      title="내 프로필"
+      left={
+        <button type="button" onClick={() => router.back()} className="cursor-pointer">
+          <BackIcon size={22} />
+        </button>
+      } />}>
       <div className="flex justify-center pt-3 pb-1">
         <div className="flex h-[76px] w-[76px] items-center justify-center rounded-full bg-surface-strong text-[28px] font-bold text-ink-soft">
           {profile?.name?.slice(0, 1) ?? "?"}

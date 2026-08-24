@@ -12,6 +12,7 @@ import com.team1.cityfarm.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.Comparator;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -178,6 +179,10 @@ public class ClassEnrollmentService {
     //    마이페이지 - 내 신청내역 조회
     public List<MyEnrollmentResponseDto> getMyEnrollment(Long userId) {
         return classEnrollmentRepository.findByUser_Id(userId).stream()
+                .filter(e -> e.getStatus() == EnrollmentStatus.CONFIRMED)
+                .filter(e -> e.getOneDayClass().getDate().isAfter(LocalDateTime.now()))
+                .sorted(Comparator.comparing(e -> e.getOneDayClass().getDate()))
+                .limit(3)
                 .map(MyEnrollmentResponseDto::from)
                 .collect(Collectors.toList());
     }

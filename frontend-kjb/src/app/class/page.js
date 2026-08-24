@@ -38,7 +38,6 @@ export default function OneDayClassListPage() {
     setError(null);
     try {
       const res = await getClassList({ page: targetPage, size: PAGE_SIZE });
-      // TODO: description/enrolledCount 배포 전 레이아웃 확인용 더미값, 배포되면 지우기
       const content = res.content.map((cls) => ({
         ...cls,
         description: cls.description ?? "텃밭에서 직접 씨앗을 심고 물을 주며 채소가 자라는 과정을 배우는 체험형 원데이클래스입니다.",

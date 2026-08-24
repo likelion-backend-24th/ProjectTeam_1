@@ -35,3 +35,8 @@ export function updatePassword(payload) {
     body: payload,
   });
 }
+
+// 호스트 승격
+export function promoteToHost(payload) {
+  return apiRequest("/api/profile/host-promotion", { method: "POST", body: payload });
+}

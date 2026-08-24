@@ -4,6 +4,8 @@ import com.team1.cityfarm.entity.ClassEnrollment;
 import com.team1.cityfarm.entity.EnrollmentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,5 +31,12 @@ public interface ClassEnrollmentRepository extends JpaRepository<ClassEnrollment
     long countByOneDayClassIdAndStatusIn(
             Long classId,
             List<EnrollmentStatus> statuses
+    );
+
+    // 마이 페이지 - 다가오는 클래스(확정된 것 준 현재 이후, 날짜 빠른 순 최대 3개)
+    List<ClassEnrollment> findTop3ByUser_IdAndStatusAndOneDayClass_DateAfterOrderByOneDayClass_DateAsc(
+        Long userId,
+        EnrollmentStatus status,
+        LocalDateTime now
     );
 }
