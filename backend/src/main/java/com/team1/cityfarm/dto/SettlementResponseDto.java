@@ -13,6 +13,7 @@ public class SettlementResponseDto {
 
     private final Long id;
     private final Long orderId;
+    private final String className;
     private final SettlementType settlementType;
     private final int paymentAmount;       // 유저가 결제한 금액
     private final BigDecimal settlementRate; // 정산 비율 (예: 50%)
@@ -24,6 +25,7 @@ public class SettlementResponseDto {
     public SettlementResponseDto(Settlement settlement) {
         this.id = settlement.getId();
         this.orderId = settlement.getOrder() != null ? settlement.getOrder().getId() : null;
+        this.className = settlement.getClassName();
         this.settlementType = settlement.getSettlementType();
         this.paymentAmount = settlement.getPaymentAmount();
         this.settlementRate = settlement.getSettlementRate();

@@ -34,6 +34,13 @@ public class Settlement {
     @JoinColumn(name = "host_id", nullable = false)
     private User host;
 
+
+    /**
+     * 정산된 클래스 이름
+     */
+    @JoinColumn(name = "class_name")
+    private String className;
+
     /**
      * 정산 대상 콘텐츠 유형
      */
@@ -81,6 +88,7 @@ public class Settlement {
     public Settlement(
             Order order,
             User host,
+            String className,
             SettlementType settlementType,
             int paymentAmount,
             BigDecimal settlementRate,
@@ -88,6 +96,7 @@ public class Settlement {
     ) {
         this.order = order;
         this.host = host;
+        this.className = className;
         this.settlementType = settlementType;
         this.paymentAmount = paymentAmount;
         this.settlementRate = settlementRate;
