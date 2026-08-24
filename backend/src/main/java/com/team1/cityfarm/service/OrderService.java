@@ -97,16 +97,22 @@ public class OrderService {
                 .findByOrderId(order.getId())
                 .orElse(null);
 
-        String classTitle = "원데이클래스 신청";
         LocalDateTime scheduledAt = null;
+        String classTitle;
 
-        ClassEnrollment enrollment = classEnrollmentRepository
-                .findByOrderId(order.getId())
-                .orElse(null);
+        if (order.getOrderType() == OrderType.SUBSCRIPTION) {
+            classTitle = order.getSubscription().getPlanType().name() + " 정기구독";
+        } else {
+            classTitle = "원데이클래스 신청";
 
-        if (enrollment != null && enrollment.getOneDayClass() != null) {
-            classTitle = enrollment.getOneDayClass().getTitle();
-            scheduledAt = enrollment.getOneDayClass().getDate();
+            ClassEnrollment enrollment = classEnrollmentRepository
+                    .findByOrderId(order.getId())
+                    .orElse(null);
+
+            if (enrollment != null && enrollment.getOneDayClass() != null) {
+                classTitle = enrollment.getOneDayClass().getTitle();
+                scheduledAt = enrollment.getOneDayClass().getDate();
+            }
         }
 
         return OrderResponseDto.from(
@@ -134,16 +140,22 @@ public class OrderService {
                     .findByOrderId(order.getId())
                     .orElse(null);
 
-            String classTitle = "원데이클래스 신청";
             LocalDateTime scheduledAt = null;
+            String classTitle;
 
-            ClassEnrollment enrollment = classEnrollmentRepository
-                    .findByOrderId(order.getId())
-                    .orElse(null);
+            if (order.getOrderType() == OrderType.SUBSCRIPTION) {
+                classTitle = order.getSubscription().getPlanType().name() + " 정기구독";
+            } else {
+                classTitle = "원데이클래스 신청";
 
-            if (enrollment != null && enrollment.getOneDayClass() != null) {
-                classTitle = enrollment.getOneDayClass().getTitle();
-                scheduledAt = enrollment.getOneDayClass().getDate();
+                ClassEnrollment enrollment = classEnrollmentRepository
+                        .findByOrderId(order.getId())
+                        .orElse(null);
+
+                if (enrollment != null && enrollment.getOneDayClass() != null) {
+                    classTitle = enrollment.getOneDayClass().getTitle();
+                    scheduledAt = enrollment.getOneDayClass().getDate();
+                }
             }
 
             return OrderResponseDto.from(
