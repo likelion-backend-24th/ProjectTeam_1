@@ -28,10 +28,6 @@ public class ClassEnrollmentService {
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
 
-    // 결제창까지 가지 않고 이탈한 PENDING 신청을 "이미 신청함"으로 계속 취급하지 않도록 두는 유예 시간.
-    // 이 시간이 지난 PENDING 건은 재신청/수강권 신청 시 자동으로 CANCELLED 처리한다.
-    private static final long PENDING_ENROLLMENT_EXPIRY_MINUTES = 30;
-
     // 정원 표시용 (PENDING 또는 CONFIRMED 상태인 신청 인원 수)
     public long getEnrolledCount(Long classId) {
         return classEnrollmentRepository.countByOneDayClassIdAndStatusIn(
@@ -104,17 +100,15 @@ public class ClassEnrollmentService {
                 List.of(EnrollmentStatus.PENDING, EnrollmentStatus.CONFIRMED)
         );
 
-        LocalDateTime expiryCutoff = LocalDateTime.now().minusMinutes(PENDING_ENROLLMENT_EXPIRY_MINUTES);
-
         for (ClassEnrollment existing : activeEnrollments) {
-            boolean isStalePending = existing.getStatus() == EnrollmentStatus.PENDING
-                    && existing.getCreatedAt().isBefore(expiryCutoff);
-
-            if (!isStalePending) {
+            if (existing.getStatus() == EnrollmentStatus.CONFIRMED) {
                 throw new CustomException(CustomError.ALREADY_ENROLLED_CLASS);
             }
 
-            // 결제창까지 가지 않고 다른 탭으로 이탈한 것으로 판단 - 신청/주문을 정리하고 재신청을 허용한다
+            // PENDING: 결제창까지 가지 않고 이탈한 이전 시도로 보고, 그 신청/주문을 정리한 뒤
+            // 이번 신청을 새로 진행한다. 유예 시간 없이 즉시 정리한다 - 결제 완료 여부는 이미
+            // order/paymentId 단위(merchantOrderId)로 PortOne과 매칭되므로, 여기서 취소해도
+            // 그 사이 실제로 결제가 성사됐다면 verifyAndCompletePayment가 주문 상태 불일치로 거부한다.
             existing.setStatus(EnrollmentStatus.CANCELLED);
             if (existing.getOrderId() != null) {
                 orderRepository.findById(existing.getOrderId())
