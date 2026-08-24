@@ -1,13 +1,16 @@
 package com.team1.cityfarm.global.exception;
 
 import com.team1.cityfarm.global.response.ApiResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -34,10 +37,20 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(CustomError.INVALID_INPUT_VALUE.name(), message));
     }
 
-    // 알 수 없는 서버 내부 에러(500) 일괄 처리
+    // 그 외 예외 처리 - 스프링이 이미 올바른 상태코드를 알고 있는 프레임워크 예외
+    // (404 NoResourceFoundException, 405 HttpRequestMethodNotSupportedException 등,
+    // Spring Framework 6부터 ErrorResponse를 구현함)는 그 상태코드를 그대로 살려서 응답하고,
+    // 그 외 진짜 예상 못한 오류만 500으로 처리한다.
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneralException(Exception e) {
-        e.printStackTrace();
+        if (e instanceof ErrorResponse errorResponse) {
+            log.warn("[프레임워크 예외] status: {}, message: {}", errorResponse.getStatusCode(), e.getMessage());
+            return ResponseEntity
+                    .status(errorResponse.getStatusCode())
+                    .body(ApiResponse.error(errorResponse.getStatusCode().toString(), e.getMessage()));
+        }
+
+        log.error("[처리되지 않은 서버 오류]", e);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다."));
