@@ -214,4 +214,11 @@ public class RentalService {
         rental.getFarm().setFarmStatus(FarmStatus.AVAILABLE);
     }
 
+    // 마이페이지 - 내가 신청해서 확정된 임대 목록
+    @Transactional(readOnly = true)
+    public Page<RentalResponseDto> getMyRentals(Long userId, Pageable pageable){
+        Page<Rental> rentals = rentalRepository.findByUser_IdAndRentalStatus(userId, RentalStatus.CONFIRMED, pageable);
+        return rentals.map(RentalResponseDto::from);
+    }
+
 }

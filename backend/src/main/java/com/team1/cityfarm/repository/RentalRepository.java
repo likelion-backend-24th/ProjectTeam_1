@@ -27,4 +27,10 @@ public interface RentalRepository extends JpaRepository<Rental, Long> {
 
     // 밭의 현재 진행중인 임대 시작일 조회
     Optional<Rental> findTopByFarm_IdAndRentalStatusOrderByCreatedAtDesc(Long farmId, RentalStatus rentalStatus);
+
+    // 내가 신청해서 확정된 임대 목록 (마이페이지)
+    Page<Rental> findByUser_IdAndRentalStatus(Long userId, RentalStatus rentalStatus, Pageable pageable);
+
+    // 내가 신청했지만 취소한 건 제외
+    Page<Rental> findByUser_IdAndRentalStatusNot(Long userId, RentalStatus rentalStatus, Pageable pageable);
 }
