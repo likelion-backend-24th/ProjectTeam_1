@@ -9,4 +9,5 @@ import java.util.List;
 public interface ReplyCommentRepository extends JpaRepository<ReplyComment,Long> {
 
     List<ReplyComment> findByReplyIdOrderByCreatedAtAsc(Long boardId);
+    List<ReplyComment> findByReply_Board_Id(Long boardId);
 }

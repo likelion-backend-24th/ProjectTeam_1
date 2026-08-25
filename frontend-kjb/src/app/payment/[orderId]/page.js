@@ -8,8 +8,9 @@ import { BackIcon } from "@/components/icons";
 import { StatusPill } from "@/components/payment/StatusPill";
 import { CancelPaymentButton } from "@/components/payment/CancelPaymentButton";
 import { ORDER_STATUS_LABEL, PAYMENT_STATUS_LABEL } from "@/lib/constants/status";
-import { getOrder } from "@/lib/api/order";
+import { getOrder, cancelPendingOrder } from "@/lib/api/order";
 import { ApiError } from "@/lib/api/client";
+import { useToastStore } from "@/store/toastStore";
 import { formatCurrency, formatDateTime } from "@/utils/format";
 
 // 결제 직후 랜딩 화면이자, 결제 내역에서 항목을 눌렀을 때의 상세 화면.
@@ -17,9 +18,11 @@ import { formatCurrency, formatDateTime } from "@/utils/format";
 // 프론트에서 결제 성공 여부를 별도로 판단하지 않는다.
 function OrderDetailView() {
   const { orderId } = useParams();
+  const showToast = useToastStore((s) => s.showToast);
   const [order, setOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isCancellingOrder, setIsCancellingOrder] = useState(false);
 
   const load = useCallback(
     async (signal) => {
@@ -52,6 +55,21 @@ function OrderDetailView() {
 
   const payment = order.payment;
   const canShowCancel = order.orderType === "GENERAL" && order.orderStatus === "PAID" && payment;
+  const canShowPendingCancel = order.orderType === "GENERAL" && order.orderStatus === "PENDING";
+
+  async function handleCancelPendingOrder() {
+    if (!window.confirm("결제를 진행하지 않은 이 신청을 취소할까요?")) return;
+    setIsCancellingOrder(true);
+    try {
+      await cancelPendingOrder(orderId);
+      showToast("신청이 취소됐어요.");
+      load();
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.message : "취소에 실패했어요. 다시 시도해주세요.", "error");
+    } finally {
+      setIsCancellingOrder(false);
+    }
+  }
 
   return (
     <>
@@ -84,6 +102,16 @@ function OrderDetailView() {
       </div>
 
       {canShowCancel && <CancelPaymentButton payment={payment} onCancelled={() => load()} />}
+      {canShowPendingCancel && (
+        <button
+          type="button"
+          onClick={handleCancelPendingOrder}
+          disabled={isCancellingOrder}
+          className="h-[42px] w-full rounded-xl bg-surface text-[13px] font-semibold text-red-600 disabled:opacity-50"
+        >
+          {isCancellingOrder ? "취소 처리 중..." : "신청 취소"}
+        </button>
+      )}
     </>
   );
 }
