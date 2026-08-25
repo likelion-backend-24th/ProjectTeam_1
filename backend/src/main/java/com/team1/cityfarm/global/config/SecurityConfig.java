@@ -6,6 +6,7 @@ import com.team1.cityfarm.global.security.handler.CustomAuthenticationEntryPoint
 import com.team1.cityfarm.global.security.oauth2.CustomOAuth2UserService;
 import com.team1.cityfarm.global.security.jwt.JwtProvider;
 import com.team1.cityfarm.global.security.handler.OAuth2SuccessHandler;
+import com.team1.cityfarm.global.security.user.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,6 +25,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 public class SecurityConfig {
 
     private final JwtProvider jwtProvider;
+    private final CustomUserDetailsService customUserDetailsService;
     private final CorsConfigurationSource corsConfigurationSource;
 
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
@@ -35,7 +37,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         JwtAuthenticationFilter jwtAuthenticationFilter =
-                new JwtAuthenticationFilter(jwtProvider);
+                new JwtAuthenticationFilter(jwtProvider, customUserDetailsService);
 
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
