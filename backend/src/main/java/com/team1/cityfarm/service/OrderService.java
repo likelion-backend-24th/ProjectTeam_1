@@ -245,7 +245,11 @@ public class OrderService {
         }
 
         order.setOrderStatus(OrderStatus.CANCELLED);
-        classEnrollmentService.cancelEnrollment(orderId);
+        if (classEnrollmentService.hasEnrollmentForOrder(orderId)) {
+            classEnrollmentService.cancelEnrollment(orderId);
+        } else {
+            rentalService.cancelRentalByOrderId(orderId);
+        }
 
         log.info("[결제 대기 주문 취소] orderId: {}, merchantOrderId: {}", orderId, order.getMerchantOrderId());
 
@@ -266,7 +270,11 @@ public class OrderService {
 
         for (Order order : staleOrders) {
             order.setOrderStatus(OrderStatus.FAILED);
-            classEnrollmentService.cancelEnrollment(order.getId());
+            if (classEnrollmentService.hasEnrollmentForOrder(order.getId())) {
+                classEnrollmentService.cancelEnrollment(order.getId());
+            } else {
+                rentalService.cancelRentalByOrderId(order.getId());
+            }
             log.info("[주문 만료 처리] 결제 대기 시간 초과로 주문을 만료 처리했습니다 - orderId: {}, merchantOrderId: {}",
                     order.getId(), order.getMerchantOrderId());
         }
