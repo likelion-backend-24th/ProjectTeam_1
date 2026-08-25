@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { RequireAuth } from "@/components/RequireAuth";
@@ -16,7 +16,11 @@ import { formatCurrency, formatDateTime } from "@/utils/format";
 // 결제 확인 화면. 여기 표시되는 금액과 주문 정보는 전부 백엔드가 이미 생성해둔
 // 주문(order)을 그대로 보여줄 뿐이며, 프론트에서 금액을 계산하거나 바꾸지 않는다.
 // PortOne 결제창 호출은 requestPayment() 한 곳으로만 분리되어 있다.
-function CheckoutView() {
+//
+// pendingRef: 결제 대기(PENDING) 중에 이 화면을 벗어나려 하면 한 번 경고하기 위한 플래그.
+// 신청 시점에 정원을 이미 점유한 상태(PENDING)라 결제를 안 하고 나가면 그 자리가 방치되므로,
+// 상위(CheckoutPage)의 뒤로가기 버튼에서도 같은 값을 읽을 수 있도록 ref로 끌어올려 공유한다.
+function CheckoutView({ pendingRef }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
@@ -27,6 +31,20 @@ function CheckoutView() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isPaying, setIsPaying] = useState(false);
+
+  useEffect(() => {
+    pendingRef.current = order?.orderStatus === "PENDING";
+  }, [order, pendingRef]);
+
+  useEffect(() => {
+    function handleBeforeUnload(e) {
+      if (!pendingRef.current) return;
+      e.preventDefault();
+      e.returnValue = "";
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [pendingRef]);
 
   const load = useCallback(
     async (signal) => {
@@ -119,6 +137,18 @@ function Row({ label, value, strong }) {
 
 export default function CheckoutPage() {
   const router = useRouter();
+  // CheckoutView 내부의 order 상태를 리렌더 없이 읽기 위한 ref (위 pendingRef 설명 참고)
+  const pendingRef = useRef(false);
+
+  function handleBack() {
+    if (
+      pendingRef.current &&
+      !window.confirm("결제를 완료하지 않고 나가면 신청이 취소될 수 있어요. 나가시겠어요?")
+    ) {
+      return;
+    }
+    router.back();
+  }
 
   return (
     <RequireAuth>
@@ -130,7 +160,7 @@ export default function CheckoutPage() {
               <button
                 type="button"
                 className="flex h-8 w-8 items-center justify-center rounded-lg"
-                onClick={() => router.back()}
+                onClick={handleBack}
                 aria-label="뒤로가기"
               >
                 <BackIcon />
@@ -140,7 +170,7 @@ export default function CheckoutPage() {
         }
       >
         <Suspense fallback={<p className="py-3 text-center text-sm text-ink-muted">불러오는 중...</p>}>
-          <CheckoutView />
+          <CheckoutView pendingRef={pendingRef} />
         </Suspense>
       </AppShell>
     </RequireAuth>
