@@ -25,7 +25,9 @@ import com.team1.cityfarm.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -50,6 +52,7 @@ public class SubscriptionService {
     private final PortonePaymentClient portonePaymentClient;
     private final ClassEnrollmentService classEnrollmentService;
     private final SettlementService settlementService;
+    private final PlatformTransactionManager transactionManager;
 
     /**
      * 1. 내 활성 구독 정보 조회
@@ -64,8 +67,14 @@ public class SubscriptionService {
 
     /**
      * 2. 정기 구독 신청 (빌링키 결제 및 수강권 발급)
+     *
+     * 카드 승인(payWithBillingKey)은 외부에 실제로 돈이 오가는 되돌릴 수 없는 호출이라,
+     * 그 뒤의 DB 저장과 한 트랜잭션으로 묶으면 안 된다 — 승인 뒤에 일어나는 어떤 실패든(특히
+     * 다음 회차 예약 실패) 트랜잭션을 롤백시켜 "카드는 결제됐는데 우리 DB엔 기록이 하나도
+     * 없는" 상태를 만든다. 그래서 결제 성공 뒤 구독/수강권/주문/결제 저장까지만 별도
+     * 트랜잭션(persistActivatedSubscription)으로 커밋을 확정하고, 그다음 회차 예약은
+     * 이 트랜잭션 밖에서 별도로 시도해 실패해도 이미 확정된 결제 기록을 건드리지 않는다.
      */
-    @Transactional
     public SubscriptionResponseDto createSubscription(Long userId, SubscriptionCreateRequestDto request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
@@ -91,14 +100,34 @@ public class SubscriptionService {
         // 고유 결제 번호(paymentId) 생성
         String paymentId = "BE24-CITYFARM-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
-        // 포트원 빌링키 결제 요청 (실패 시 CustomException 발생 및 트랜잭션 롤백)
+        // 포트원 빌링키 결제 요청 (실패 시 CustomException 발생, 이 시점엔 아직 아무것도 저장 안 했으므로 롤백할 것도 없음)
         PortonePaymentResponseDto portOnePayment = portonePaymentClient.payWithBillingKey(
                 billingKey, paymentId, orderName, price, user.getId());
 
-        // 결제 성공 시 구독(Subscription) 엔티티 생성
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime oneMonthLater = now.plusMinutes(10); //10분으로 테스트만 할 예정
 
+        // 결제 승인은 이미 끝났으므로 여기서부터는 반드시 커밋되어야 한다.
+        Subscription subscription = new TransactionTemplate(transactionManager).execute(status ->
+                persistActivatedSubscription(user, request, price, paymentId, portOnePayment, now, oneMonthLater));
+
+        // 다음(2회차) 결제를 PortOne 예약결제 API로 미리 예약해둔다.
+        // 위 트랜잭션이 이미 커밋된 뒤라, 여기서 실패해도 방금 확정된 결제/구독 기록은 그대로 남는다.
+        try {
+            createNextSchedule(subscription, billingKey, billingKeyEntity.getId(), orderName, price, 2, oneMonthLater);
+        } catch (Exception e) {
+            log.error("[구독 1회차 결제 성공 - 다음 회차 예약 실패] subscriptionId: {}, userId: {}",
+                    subscription.getId(), userId, e);
+            // SubscriptionExpirationScheduler의 recoverMissingSchedules()가 주기적으로 재시도한다.
+        }
+
+        return SubscriptionResponseDto.from(subscription);
+    }
+
+    private Subscription persistActivatedSubscription(
+            User user, SubscriptionCreateRequestDto request, int price, String paymentId,
+            PortonePaymentResponseDto portOnePayment, LocalDateTime now, LocalDateTime oneMonthLater
+    ) {
         Subscription subscription = Subscription.builder()
                 .user(user)
                 .planType(request.getPlanType())
@@ -146,10 +175,7 @@ public class SubscriptionService {
                 .build();
         paymentRepository.save(payment);
 
-        // 다음(2회차) 결제를 PortOne 예약결제 API로 미리 예약해둔다.
-        createNextSchedule(subscription, billingKey, billingKeyEntity.getId(), orderName, price, 2, oneMonthLater);
-
-        return SubscriptionResponseDto.from(subscription);
+        return subscription;
     }
 
     /**
@@ -185,24 +211,51 @@ public class SubscriptionService {
      * PortOne 예약결제가 실행되어 Transaction.Paid 웹훅이 도착했을 때 호출된다.
      * paymentId로 SubscriptionSchedule을 찾아 구독 기간/수강권을 연장하고, 해지 예약이 없다면
      * 다음 회차를 다시 예약한다. 매핑되는 스케줄이 없으면(=구독 결제가 아니면) false를 반환한다.
+     *
+     * 이 회차의 결제는 PortOne이 이미 실제로 실행한 뒤 도착한 웹훅이라(createSubscription과
+     * 동일한 이유로), 회차 반영(applyRenewal)까지는 별도 트랜잭션으로 커밋을 확정하고 다음
+     * 회차 예약은 그 밖에서 시도한다 — 예약이 실패해도 이미 실행된 이번 회차의 갱신 기록이
+     * 롤백되지 않게 하기 위함.
      */
-    @Transactional
     public boolean renewSubscription(String paymentId, PortonePaymentResponseDto portOnePayment) {
+        RenewalOutcome outcome = new TransactionTemplate(transactionManager)
+                .execute(status -> applyRenewal(paymentId, portOnePayment));
+
+        if (outcome == null) {
+            return false;
+        }
+        if (!outcome.scheduleNext()) {
+            return true;
+        }
+
+        try {
+            createNextSchedule(outcome.subscription(), outcome.billingKey(), outcome.billingKeyId(),
+                    outcome.orderName(), outcome.price(), outcome.round(), outcome.newPeriodEnd());
+        } catch (Exception e) {
+            log.error("[구독 {}회차 결제 성공 - 다음 회차 예약 실패] subscriptionId: {}",
+                    outcome.round(), outcome.subscription().getId(), e);
+            // SubscriptionExpirationScheduler의 recoverMissingSchedules()가 주기적으로 재시도한다.
+        }
+
+        return true;
+    }
+
+    private RenewalOutcome applyRenewal(String paymentId, PortonePaymentResponseDto portOnePayment) {
         SubscriptionSchedule schedule = subscriptionScheduleRepository.findByPaymentId(paymentId).orElse(null);
         if (schedule == null) {
-            return false;
+            return null;
         }
 
         // 멱등성: 이미 처리된 회차라면 스킵 (동일 웹훅 재전송 등 방어)
         if (schedule.getStatus() == ScheduleStatus.PAID) {
             log.info("[구독 갱신] 이미 처리된 회차입니다. paymentId: {}", paymentId);
-            return true;
+            return RenewalOutcome.noFurtherAction();
         }
 
         Integer actualPaidAmount = portOnePayment.getAmount() != null ? portOnePayment.getAmount().getPaid() : null;
         if (actualPaidAmount == null || !actualPaidAmount.equals(schedule.getAmount())) {
             log.error("[구독 갱신 결제 위변조 위험] 결제 금액 불일치. Schedule: {}, PortOne: {}", schedule.getAmount(), actualPaidAmount);
-            return true;
+            return RenewalOutcome.noFurtherAction();
         }
 
         Subscription subscription = schedule.getSubscription();
@@ -253,25 +306,45 @@ public class SubscriptionService {
                 .build();
         subscriptionPassRepository.save(newPass);
 
+        log.info("[구독 갱신 완료] subscriptionId: {}, round: {}, paymentId: {}", subscription.getId(), schedule.getRound(), paymentId);
+
         if (subscription.isCancelAtPeriodEnd()) {
             // 해지 예약된 구독은 이번 회차를 마지막으로 종료하고 다음 회차를 예약하지 않는다.
             subscription.setStatus(SubscriptionStatus.CANCELLED);
             subscription.setCancelledAt(LocalDateTime.now());
-        } else {
-            BillingKey billingKeyEntity = billingKeyRepository.findByUserIdAndStatus(user.getId(), BillingKeyStatus.ACTIVE).orElse(null);
-
-            if (billingKeyEntity == null) {
-                log.error("[구독 갱신] 다음 회차 예약 실패 - 빌링키를 찾을 수 없음. userId: {}", user.getId());
-            } else {
-                String orderName = subscription.getPlanType().name() + " 정기구독";
-                int price = calculatePrice(subscription.getPlanType());
-                createNextSchedule(subscription, billingKeyEntity.getBillingKeyEncrypted(), billingKeyEntity.getId(),
-                        orderName, price, schedule.getRound() + 1, newPeriodEnd);
-            }
+            return RenewalOutcome.noFurtherAction();
         }
 
-        log.info("[구독 갱신 완료] subscriptionId: {}, round: {}, paymentId: {}", subscription.getId(), schedule.getRound(), paymentId);
-        return true;
+        BillingKey billingKeyEntity = billingKeyRepository.findByUserIdAndStatus(user.getId(), BillingKeyStatus.ACTIVE).orElse(null);
+        if (billingKeyEntity == null) {
+            log.error("[구독 갱신] 다음 회차 예약 실패 - 빌링키를 찾을 수 없음. userId: {}", user.getId());
+            return RenewalOutcome.noFurtherAction();
+        }
+
+        String orderName = subscription.getPlanType().name() + " 정기구독";
+        int price = calculatePrice(subscription.getPlanType());
+        return new RenewalOutcome(true, subscription, billingKeyEntity.getBillingKeyEncrypted(), billingKeyEntity.getId(),
+                orderName, price, schedule.getRound() + 1, newPeriodEnd);
+    }
+
+    /**
+     * applyRenewal()의 트랜잭션이 커밋된 뒤, 다음 회차를 예약해야 하는지와 그때 필요한 값을
+     * 트랜잭션 밖으로 들고 나오기 위한 결과 객체. scheduleNext=false면 subscription 이하
+     * 필드는 채워지지 않는다.
+     */
+    private record RenewalOutcome(
+            boolean scheduleNext,
+            Subscription subscription,
+            String billingKey,
+            Long billingKeyId,
+            String orderName,
+            int price,
+            int round,
+            LocalDateTime newPeriodEnd
+    ) {
+        static RenewalOutcome noFurtherAction() {
+            return new RenewalOutcome(false, null, null, null, null, 0, 0, null);
+        }
     }
 
     /**
@@ -581,6 +654,46 @@ public class SubscriptionService {
 
         if (!targets.isEmpty()) {
             log.info("[구독 만료 배치] {}건 CANCELLED 처리", targets.size());
+        }
+
+        return targets.size();
+    }
+
+    /**
+     * 9. [구독 예약 복구 배치] createSubscription()에서 1회차 결제는 성공했는데 그 직후
+     * PortOne 예약(다음 회차)이 실패해서 SCHEDULED 상태 SubscriptionSchedule이 하나도
+     * 없는 채로 남은 ACTIVE 구독을 찾아 재예약을 시도한다. SubscriptionExpirationScheduler에서
+     * 주기적으로 호출.
+     */
+    @Transactional
+    public int recoverMissingSchedules() {
+        List<Subscription> targets = subscriptionRepository.findActiveWithoutScheduledPayment(SubscriptionStatus.ACTIVE);
+
+        for (Subscription subscription : targets) {
+            BillingKey billingKeyEntity = billingKeyRepository
+                    .findByUserIdAndStatus(subscription.getUser().getId(), BillingKeyStatus.ACTIVE)
+                    .orElse(null);
+
+            if (billingKeyEntity == null) {
+                log.error("[구독 예약 복구 실패] 빌링키를 찾을 수 없음. subscriptionId: {}", subscription.getId());
+                continue;
+            }
+
+            String orderName = subscription.getPlanType().name() + " 정기구독";
+            int price = calculatePrice(subscription.getPlanType());
+
+            try {
+                // 최초 가입 직후에만 발생하는 상황이라 회차는 항상 2회차다 (createSubscription 참고).
+                createNextSchedule(subscription, billingKeyEntity.getBillingKeyEncrypted(), billingKeyEntity.getId(),
+                        orderName, price, 2, subscription.getCurrentPeriodEnd());
+                log.info("[구독 예약 복구 성공] subscriptionId: {}", subscription.getId());
+            } catch (Exception e) {
+                log.error("[구독 예약 복구 실패] subscriptionId: {}", subscription.getId(), e);
+            }
+        }
+
+        if (!targets.isEmpty()) {
+            log.info("[구독 예약 복구 배치] {}건 시도", targets.size());
         }
 
         return targets.size();
