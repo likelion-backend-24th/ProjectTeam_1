@@ -7,18 +7,25 @@ import com.team1.cityfarm.global.exception.CustomError;
 import com.team1.cityfarm.global.exception.CustomException;
 import com.team1.cityfarm.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class OrderService {
+
+    // 결제창을 열지 않고 이탈하거나 결제 도중 이탈해도 별도 이벤트가 오지 않으므로,
+    // 이 시간이 지나도록 PENDING인 원데이클래스 주문은 정원 점유를 풀어주기 위해 만료 처리한다.
+    private static final long PENDING_ORDER_TTL_MINUTES = 30;
 
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
@@ -165,5 +172,27 @@ public class OrderService {
                     payment
             );
         });
+    }
+
+    /**
+     * [배치] 결제 대기 상태로 TTL을 넘겨 방치된 원데이클래스 주문을 만료 처리한다.
+     * 결제를 시도하지 않았거나 결제창을 닫고 이탈한 경우 PortOne 쪽에서 별도 웹훅이 오지 않으므로,
+     * 주문을 결제 실패(FAILED)로, 연결된 신청을 취소로 전환해 정원 점유를 풀어준다.
+     */
+    @Transactional
+    public int expireStalePendingOrders() {
+        LocalDateTime cutoff = LocalDateTime.now().minusMinutes(PENDING_ORDER_TTL_MINUTES);
+        List<Order> staleOrders = orderRepository.findByOrderTypeAndOrderStatusAndCreatedAtBefore(
+                OrderType.GENERAL, OrderStatus.PENDING, cutoff
+        );
+
+        for (Order order : staleOrders) {
+            order.setOrderStatus(OrderStatus.FAILED);
+            classEnrollmentService.cancelEnrollment(order.getId());
+            log.info("[주문 만료 처리] 결제 대기 시간 초과로 주문을 만료 처리했습니다 - orderId: {}, merchantOrderId: {}",
+                    order.getId(), order.getMerchantOrderId());
+        }
+
+        return staleOrders.size();
     }
 }
