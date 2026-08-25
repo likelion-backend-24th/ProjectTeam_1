@@ -83,15 +83,9 @@ function HostFarmsView() {
       }
     >
       <div className="flex flex-col gap-2 rounded-2xl bg-gradient-to-br from-emerald-700 to-emerald-500 px-4 py-5 text-white">
-        <span className="text-[13px] font-medium text-emerald-50">내 땅</span>
+        <span className="text-[13px] font-medium text-emerald-50">올린 땅 수</span>
         <span className="text-2xl font-bold">{farms.length}개 🏡</span>
         <div className="mt-1 flex items-center justify-between">
-          <Link
-            href="/host/reservations"
-            className="text-[13px] font-semibold text-emerald-50 underline underline-offset-2"
-          >
-            이번 달 예약 {thisMonthCount}건 보기
-          </Link>
           <Link href="/host/settlements" className="text-[13px] font-semibold text-emerald-50">
             정산 내역 보기 &gt;
           </Link>
@@ -128,7 +122,7 @@ function HostFarmsView() {
 
       <ul className="flex flex-col gap-3">
         {filteredFarms.map((farm) => (
-          <li key={farm.id} className="flex flex-col gap-3 rounded-2xl border border-border bg-white p-3.5">
+           <li key={farm.id} className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-white p-3.5">
             <div className="flex gap-3">
              {farm.thumbnailUrl ? (
                 <img
@@ -151,13 +145,10 @@ function HostFarmsView() {
                 </span>
               </div>
             </div>
-            <div className="flex items-center justify-between border-t border-border pt-3">
-              <span className="text-[13px] text-ink-soft">예약 {farm.rentalCount}건</span>
-              <Link href={`/farms/${farm.id}`} className="flex items-center gap-1 text-[13px] font-semibold text-free">
-                관리하기
-                <ChevronRightIcon size={16} className="text-free" />
-              </Link>
-            </div>
+            <Link href={`/farms/${farm.id}`} className="flex shrink-0 items-center gap-1 text-[13px] font-semibold text-free">
+              관리하기
+              <ChevronRightIcon size={16} className="text-free" />
+            </Link>
           </li>
         ))}
       </ul>

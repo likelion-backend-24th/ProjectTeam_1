@@ -4,6 +4,8 @@ import com.team1.cityfarm.entity.Farm;
 import com.team1.cityfarm.entity.FarmStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.time.LocalDateTime;
+
 @Schema(description = "호스트 - 내 밭 목록(관리용) 응답 DTO")
 public record HostFarmResponseDto(
 
@@ -23,16 +25,24 @@ public record HostFarmResponseDto(
         FarmStatus farmStatus,
 
         @Schema(description = "이 밭의 확정된 임대 건수", example = "1")
-        long rentalCount
+        long rentalCount,
+
+        @Schema(description = "임대 기간(개월)", example = "6")
+        int rentalMonths,
+
+        @Schema(description = "현재 진행중인 임대 시작일 (임대중이 아니면 null)", example = "2026-01-15T10:00:00")
+        LocalDateTime rentalStartedAt
 ) {
-    public static HostFarmResponseDto from(Farm farm, String thumbnailUrl, long rentalCount) {
+    public static HostFarmResponseDto from(Farm farm, String thumbnailUrl, long rentalCount, LocalDateTime rentalStartedAt) {
         return new HostFarmResponseDto(
                 farm.getId(),
                 farm.getTitle(),
                 farm.getLocation(),
                 thumbnailUrl,
                 farm.getFarmStatus(),
-                rentalCount
+                rentalCount,
+                farm.getRentalMonths(),
+                rentalStartedAt
         );
     }
 }
