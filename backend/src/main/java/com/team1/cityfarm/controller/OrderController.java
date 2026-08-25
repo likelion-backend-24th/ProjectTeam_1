@@ -38,6 +38,16 @@ public class OrderController {
         return ResponseEntity.ok(response);
     }
 
+    //결제 미완료(PENDING) 주문 직접 취소 — 결제창을 열고 이탈한 경우 등
+    @PostMapping("/{orderId}/cancel")
+    public ResponseEntity<OrderResponseDto> cancelPendingOrder(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long orderId
+    ) {
+        OrderResponseDto response = orderService.cancelPendingOrder(userDetails.getUserId(), orderId);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/me")
     public ResponseEntity<Page<OrderResponseDto>> getMyOrders(
             @AuthenticationPrincipal CustomUserDetails userDetails,

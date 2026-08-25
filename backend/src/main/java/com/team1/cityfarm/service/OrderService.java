@@ -175,6 +175,32 @@ public class OrderService {
     }
 
     /**
+     * [사용자 직접 취소] 결제창을 열었지만 결제를 완료하지 않은(PENDING) 주문을 즉시 취소한다.
+     * 아직 PortOne 결제가 없으므로(Payment row 미생성) 취소 API 호출 없이 주문/신청 상태만 되돌리면 된다.
+     * TTL(30분) 만료 배치를 기다리지 않고도 정원 점유를 즉시 풀어주기 위한 진입점.
+     */
+    @Transactional
+    public OrderResponseDto cancelPendingOrder(Long userId, Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new CustomException(CustomError.ORDER_NOT_FOUND));
+
+        if (!order.getUser().getId().equals(userId)) {
+            throw new CustomException(CustomError.AUTH_UNAUTHORIZED);
+        }
+
+        if (order.getOrderType() != OrderType.GENERAL || order.getOrderStatus() != OrderStatus.PENDING) {
+            throw new CustomException(CustomError.INVALID_ORDER_STATUS);
+        }
+
+        order.setOrderStatus(OrderStatus.CANCELLED);
+        classEnrollmentService.cancelEnrollment(orderId);
+
+        log.info("[결제 대기 주문 취소] orderId: {}, merchantOrderId: {}", orderId, order.getMerchantOrderId());
+
+        return getOrderDetails(userId, orderId);
+    }
+
+    /**
      * [배치] 결제 대기 상태로 TTL을 넘겨 방치된 원데이클래스 주문을 만료 처리한다.
      * 결제를 시도하지 않았거나 결제창을 닫고 이탈한 경우 PortOne 쪽에서 별도 웹훅이 오지 않으므로,
      * 주문을 결제 실패(FAILED)로, 연결된 신청을 취소로 전환해 정원 점유를 풀어준다.
