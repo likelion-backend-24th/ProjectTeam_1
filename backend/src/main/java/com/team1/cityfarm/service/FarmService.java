@@ -93,7 +93,7 @@ public class FarmService {
     // 밭 등록 (F-161)
     @Transactional(readOnly = true)
     public Page<FarmResponseDto> getFarms(Pageable pageable) {
-        Page<Farm> farms = farmRepository.findAll(pageable);
+        Page<Farm> farms = farmRepository.findByFarmStatus(FarmStatus.AVAILABLE, pageable);
 
         return farms.map(farm -> {
             String thumbnailUrl = farmImageRepository.findFirstByFarm_IdOrderByIdAsc(farm.getId())
@@ -184,11 +184,12 @@ public class FarmService {
                             .map(FarmImage::getImageUrl)
                             .orElse(null);
                     long rentalCount = rentalRepository.countByFarm_IdAndRentalStatus(farm.getId(), RentalStatus.CONFIRMED);
-                    LocalDateTime rentalStartedAt = rentalRepository
+                    Rental activeRental = rentalRepository
                             .findTopByFarm_IdAndRentalStatusOrderByCreatedAtDesc(farm.getId(), RentalStatus.CONFIRMED)
-                            .map(Rental::getCreatedAt)
                             .orElse(null);
-                    return HostFarmResponseDto.from(farm, thumbnailUrl, rentalCount, rentalStartedAt);
+                    LocalDateTime rentalStartedAt = activeRental != null ? activeRental.getCreatedAt() : null;
+                    String tenantNickname = activeRental != null ? activeRental.getUser().getNickname() : null;
+                    return HostFarmResponseDto.from(farm, thumbnailUrl, rentalCount, rentalStartedAt, tenantNickname);
                 })
                 .toList();
     }

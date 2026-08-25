@@ -8,12 +8,12 @@ import { ChevronRightIcon, BookIcon, SproutIcon } from "@/components/icons";
 import { useAuthStore } from "@/store/authStore";
 import { useToastStore } from "@/store/toastStore";
 import { getMyEnrollments, cancelEnrollmentByPass } from "@/lib/api/enrollment";
-import { getOrder } from "@/lib/api/order";
-import { getHostRentals, cancelRental } from "@/lib/api/rental";
+import { getMyRentals, cancelRental } from "@/lib/api/rental";
 import { getFollowerList, getFollowingList } from "@/lib/api/follow";
 import { CancelPaymentButton } from "@/components/payment/CancelPaymentButton";
 import { ApiError } from "@/lib/api/client";
 import { formatDateWithWeekday, formatTime } from "@/utils/format";
+import { getOrder, getMyOrders } from "@/lib/api/order";
 
 function MyPageView() {
   const profile = useAuthStore((s) => s.profile);
@@ -48,7 +48,7 @@ function MyPageView() {
   const [pendingOrders, setPendingOrders] = useState([]);
 
   const [hostRentals, setHostRentals] = useState([]);
-  const [isLoadingRentals, setIsLoadingRentals] = useState(isHost);
+  const [isLoadingRentals, setIsLoadingRentals] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -96,17 +96,12 @@ function MyPageView() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!isHost) {
-      setHostRentals([]);
-      setIsLoadingRentals(false);
-      return;
-    }
+   useEffect(() => {
     let cancelled = false;
-    async function loadHostRentals() {
+    async function loadMyRentals() {
       setIsLoadingRentals(true);
       try {
-        const res = await getHostRentals({ page: 0, size: 10 });
+        const res = await getMyRentals({ page: 0, size: 10 });
         if (!cancelled) setHostRentals(res.content ?? []);
       } catch {
         if (!cancelled) setHostRentals([]);
@@ -114,11 +109,11 @@ function MyPageView() {
         if (!cancelled) setIsLoadingRentals(false);
       }
     }
-    loadHostRentals();
+    loadMyRentals();
     return () => {
       cancelled = true;
     };
-  }, [isHost]);
+  }, []);
 
   const hasMultipleClasses = upcomingClasses.length >= 2;
   const currentClass = upcomingClasses[classIndex];
@@ -343,75 +338,18 @@ function MyPageView() {
         </div>
       )}
 
-      {isHost ? (
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[16px] font-bold text-ink">예약 확정</span>
-            <span className="flex items-center gap-0.5 text-[13px] text-ink-muted">
-              전체 예약
-              <ChevronRightIcon size={14} />
-            </span>
-          </div>
-
-          {isLoadingRentals && <p className="py-3 text-center text-sm text-ink-muted">불러오는 중...</p>}
-
-          {!isLoadingRentals && hostRentals.length === 0 && (
-            <div className="flex items-center justify-center rounded-2xl bg-surface px-4 py-6 text-sm text-ink-muted">
-              아직 임대된 밭이 없어요.
-            </div>
-          )}
-
-          {hostRentals.map((r) => (
-            <div key={r.id} className="flex flex-col gap-3 rounded-2xl bg-surface p-3">
-              <div className="flex gap-3">
-                <div className="h-16 w-20 shrink-0 rounded-xl bg-gradient-to-br from-emerald-200 to-emerald-100" />
-                <div className="flex flex-1 flex-col gap-1">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <span className="rounded-full bg-free-soft px-2 py-0.5 text-[11px] font-semibold text-free">확정</span>
-                      <span className="text-[14px] font-bold text-ink">{r.farmTitle}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleCopyAddress(r.location)}
-                      className="rounded-full border border-free px-2.5 py-1 text-[11px] font-semibold text-free"
-                    >
-                      주소 복사
-                    </button>
-                  </div>
-                  <span className="text-[12px] text-ink-muted">{r.location}</span>
-                  <span className="text-[12px] text-ink-muted">임대인 {r.userNickname}</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between text-[12px]">
-                <div>
-                  <span className="text-ink-muted">임대 시작 </span>
-                  <span className="font-semibold text-ink">{formatDateWithWeekday(r.rentalStart)}</span>
-                </div>
-                <div>
-                  <span className="text-ink-muted">임대 종료 </span>
-                  <span className="font-semibold text-ink">{formatDateWithWeekday(r.rentalEnd)}</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleCancelRental(r.id)}
-                className="h-[38px] w-full rounded-xl bg-surface-strong text-[13px] font-semibold text-ink-soft"
-              >
-                예약 취소
-              </button>
-            </div>
-          ))}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <span className="text-[16px] font-bold text-ink">내 예약</span>
+          <span className="flex items-center gap-0.5 text-[13px] text-ink-muted">
+            전체 예약
+            <ChevronRightIcon size={14} />
+          </span>
         </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[16px] font-bold text-ink">내 예약</span>
-            <span className="flex items-center gap-0.5 text-[13px] text-ink-muted">
-              전체 예약
-              <ChevronRightIcon size={14} />
-            </span>
-          </div>
+
+        {isLoadingRentals && <p className="py-3 text-center text-sm text-ink-muted">불러오는 중...</p>}
+
+        {!isLoadingRentals && hostRentals.length === 0 && (
           <div className="flex flex-col items-center gap-3 rounded-2xl bg-surface px-4 py-8 text-center">
             <p className="text-sm text-ink-muted">
               예약한 내역이 없습니다.
@@ -425,8 +363,50 @@ function MyPageView() {
               땅 예약 둘러보기
             </Link>
           </div>
-        </div>
-      )}
+        )}
+
+        {hostRentals.map((r) => (
+          <div key={r.id} className="flex flex-col gap-3 rounded-2xl bg-surface p-3">
+            <div className="flex gap-3">
+              <div className="h-16 w-20 shrink-0 rounded-xl bg-gradient-to-br from-emerald-200 to-emerald-100" />
+              <div className="flex flex-1 flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="rounded-full bg-free-soft px-2 py-0.5 text-[11px] font-semibold text-free">확정</span>
+                    <span className="text-[14px] font-bold text-ink">{r.farmTitle}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyAddress(r.location)}
+                    className="rounded-full border border-free px-2.5 py-1 text-[11px] font-semibold text-free"
+                  >
+                    주소 복사
+                  </button>
+                </div>
+                <span className="text-[12px] text-ink-muted">{r.location}</span>
+                <span className="text-[12px] text-ink-muted">임대인 {r.hostNickname}</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between text-[12px]">
+              <div>
+                <span className="text-ink-muted">임대 시작 </span>
+                <span className="font-semibold text-ink">{formatDateWithWeekday(r.rentalStart)}</span>
+              </div>
+              <div>
+                <span className="text-ink-muted">임대 종료 </span>
+                <span className="font-semibold text-ink">{formatDateWithWeekday(r.rentalEnd)}</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleCancelRental(r.id)}
+              className="h-[38px] w-full rounded-xl bg-surface-strong text-[13px] font-semibold text-ink-soft"
+            >
+              예약 취소
+            </button>
+          </div>
+        ))}
+      </div>
     </AppShell>
   );
 }

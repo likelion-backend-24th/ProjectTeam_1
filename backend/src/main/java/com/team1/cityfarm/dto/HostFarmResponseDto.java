@@ -31,9 +31,12 @@ public record HostFarmResponseDto(
         int rentalMonths,
 
         @Schema(description = "현재 진행중인 임대 시작일 (임대중이 아니면 null)", example = "2026-01-15T10:00:00")
-        LocalDateTime rentalStartedAt
+        LocalDateTime rentalStartedAt,
+
+        @Schema(description = "현재 임차인 닉네임(임대중이 아니면 null)", example = "하하핫")
+        String nickName
 ) {
-    public static HostFarmResponseDto from(Farm farm, String thumbnailUrl, long rentalCount, LocalDateTime rentalStartedAt) {
+    public static HostFarmResponseDto from(Farm farm, String thumbnailUrl, long rentalCount, LocalDateTime rentalStartedAt, String nickName) {
         return new HostFarmResponseDto(
                 farm.getId(),
                 farm.getTitle(),
@@ -42,7 +45,8 @@ public record HostFarmResponseDto(
                 farm.getFarmStatus(),
                 rentalCount,
                 farm.getRentalMonths(),
-                rentalStartedAt
+                rentalStartedAt,
+                nickName
         );
     }
 }

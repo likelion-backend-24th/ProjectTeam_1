@@ -3,15 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AppShell, PageHeader } from "@/components/AppShell";
-import { HeartIcon, SearchIcon } from "@/components/icons";
 import { getFarms } from "@/lib/api/farm";
 import { API_BASE_URL, ApiError } from "@/lib/api/client";
 import { formatCurrency } from "@/utils/format";
-
-const SORT_OPTIONS = [
-  { label: "전체", value: undefined },
-  { label: "최신순", value: "createdAt,desc" },
-];
 
 const PAGE_SIZE = 10;
 const MAX_PAGE_BUTTONS = 5;
@@ -28,7 +22,6 @@ function getPageNumbers(current, totalPages) {
 }
 
 export default function FarmListPage() {
-  const [activeSort, setActiveSort] = useState(SORT_OPTIONS[0].value);
   const [keywordInput, setKeywordInput] = useState("");
   const [farms, setFarms] = useState([]);
   const [page, setPage] = useState(0);
@@ -36,61 +29,41 @@ export default function FarmListPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const loadFarms = useCallback(
-    async (targetPage) => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const res = await getFarms({ page: targetPage, size: PAGE_SIZE, sort: activeSort });
-        setFarms(res.content);
-        setTotalPages(res.totalPages);
-        setPage(targetPage);
-      } catch (err) {
-        setError(err instanceof ApiError ? err.message : "밭 목록을 불러오지 못했어요.");
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [activeSort],
-  );
+  const loadFarms = useCallback(async (targetPage) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await getFarms({ page: targetPage, size: PAGE_SIZE });
+      setFarms(res.content);
+      setTotalPages(res.totalPages);
+      setPage(targetPage);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "밭 목록을 불러오지 못했어요.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadFarms(0);
   }, [loadFarms]);
 
-  function handleSearchSubmit(e) {
-    e.preventDefault();
-  }
-
   const pageNumbers = getPageNumbers(page, totalPages);
 
   return (
     <AppShell header={<PageHeader title="땅 매입" />}>
-      <form className="flex items-center gap-2 rounded-xl bg-surface px-3.5 py-3 text-ink-muted" onSubmit={handleSearchSubmit}>
-        <SearchIcon />
-        <input
-          type="text"
-          placeholder="제목, 지역 검색..."
-          value={keywordInput}
-          onChange={(e) => setKeywordInput(e.target.value)}
-          className="flex-1 bg-transparent text-sm text-ink outline-none"
-        />
-      </form>
-
-      <div className="flex items-center gap-2">
-        {SORT_OPTIONS.map((s) => (
-          <button
-            key={s.label}
-            type="button"
-            onClick={() => setActiveSort(s.value)}
-            className={`shrink-0 rounded-full px-3.5 py-2 text-[13px] font-semibold ${
-              activeSort === s.value ? "bg-primary text-white" : "bg-surface text-ink-soft"
-            }`}
-          >
-            {s.label}
-          </button>
-        ))}
+      <div className="relative flex flex-col gap-1 overflow-hidden rounded-[18px] bg-gradient-to-br from-[#1a2e22] via-[#2f5138] to-[#3f6b48] px-5 py-[22px] text-white">
+        <span className="text-xs font-bold tracking-wide text-[#c8e6cf]">도시 귀농 프로젝트</span>
+        <p className="relative z-10 max-w-[80%] text-[19px] leading-snug font-extrabold break-words">
+          나만의 텃밭이 될 땅을 둘러보세요
+        </p>
+        <p className="relative z-10 mt-0.5 max-w-[80%] text-[13px] text-white/80">
+          마음에 드는 땅을 임대하거나 매입해보세요
+        </p>
+        <span aria-hidden className="absolute -right-1.5 -bottom-3.5 rotate-[-8deg] text-[72px] opacity-20">
+          🌻
+        </span>
       </div>
 
       {error && <p className="rounded-lg bg-red-50 px-3.5 py-2.5 text-[13px] text-red-700">{error}</p>}
@@ -121,10 +94,7 @@ export default function FarmListPage() {
                 <div className="h-20 w-20 shrink-0 rounded-xl bg-gradient-to-br from-emerald-200 to-emerald-100" />
               )}
               <div className="flex flex-1 flex-col justify-center gap-1 overflow-hidden">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="truncate text-[15px] font-bold">{farm.title}</p>
-                  <HeartIcon size={16} className="shrink-0 text-ink-muted" />
-                </div>
+                <p className="truncate text-[15px] font-bold">{farm.title}</p>
                 <p className="truncate text-[13px] text-ink-muted">{farm.location}</p>
                 <p className="text-[13px] text-ink-muted">{farm.area}m²</p>
                 <p className="text-[14px] font-bold text-ink">월 {formatCurrency(farm.monthlyRent)}</p>
@@ -159,7 +129,7 @@ export default function FarmListPage() {
               {p + 1}
             </button>
           ))}
-           <button
+          <button
             type="button"
             disabled={page >= totalPages - 1}
             onClick={() => loadFarms(page + 1)}

@@ -5,16 +5,27 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { RequireAuth } from "@/components/RequireAuth";
-import { BackIcon, ChevronRightIcon, PencilIcon } from "@/components/icons";
+import { BackIcon, ChevronRightIcon, PencilIcon, SproutIcon } from "@/components/icons";
 import { useAuthStore } from "@/store/authStore";
 import { getMyFarms, resolveFarmImageUrl } from "@/lib/api/farm";
 import { getHostReservationSummary } from "@/lib/api/host";
+import { formatDate } from "@/utils/format";
 
 const TABS = [
   { key: "ALL", label: "전체" },
-  { key: "OPERATING", label: "운영중" },
-  { key: "CLOSED", label: "종료" },
+  { key: "AVAILABLE", label: "임대가능" },
+  { key: "RENTED", label: "임대중" },
+  { key: "ENDED", label: "임대종료" },
 ];
+
+// 임대중인 밭이 계약 개월수를 다 채웠는지(자동 임대종료) 판단
+function isRentalEnded(farm) {
+  if (farm.farmStatus !== "RENTED" || !farm.rentalStartedAt) return false;
+  const start = new Date(farm.rentalStartedAt);
+  const end = new Date(start);
+  end.setMonth(end.getMonth() + (farm.rentalMonths ?? 0));
+  return new Date() >= end;
+}
 
 function HostFarmsView() {
   const router = useRouter();
@@ -69,10 +80,14 @@ function HostFarmsView() {
 
   const filteredFarms = farms.filter((farm) => {
     if (activeTab === "ALL") return true;
-    if (activeTab === "OPERATING") return farm.farmStatus === "RENTED";
-    return false; // 종료 상태 개념이 없어 항상 비어있음
+    if (activeTab === "AVAILABLE") return farm.farmStatus === "AVAILABLE";
+    if (activeTab === "RENTED") return farm.farmStatus === "RENTED" && !isRentalEnded(farm);
+    if (activeTab === "ENDED") return isRentalEnded(farm);
+    return true;
   });
 
+  const operatingCount = farms.filter((f) => f.farmStatus === "RENTED").length;
+  const inactiveCount = farms.filter((f) => f.farmStatus === "AVAILABLE").length;
   return (
     <AppShell
       header={
@@ -82,10 +97,29 @@ function HostFarmsView() {
         />
       }
     >
-      <div className="flex flex-col gap-2 rounded-2xl bg-gradient-to-br from-emerald-700 to-emerald-500 px-4 py-5 text-white">
-        <span className="text-[13px] font-medium text-emerald-50">올린 땅 수</span>
-        <span className="text-2xl font-bold">{farms.length}개 🏡</span>
-        <div className="mt-1 flex items-center justify-between">
+      <div className="flex flex-col gap-4 rounded-2xl bg-gradient-to-br from-emerald-700 to-emerald-500 px-4 py-5 text-white">
+        <div className="flex items-center gap-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15">
+            <SproutIcon size={18} />
+          </span>
+          <span className="text-[14px] font-semibold text-emerald-50">올린 땅 수</span>
+        </div>
+
+        <span className="text-3xl font-bold">{farms.length}개 🏡</span>
+
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-2">
+            <span className="w-fit rounded-full bg-white/15 px-3 py-1 text-[12px] font-semibold text-white">운영 중</span>
+            <span className="text-lg font-bold">{operatingCount}개 🌱</span>
+          </div>
+          <div className="h-10 w-px bg-white/20" />
+          <div className="flex flex-col gap-2">
+            <span className="w-fit rounded-full bg-white/10 px-3 py-1 text-[12px] font-semibold text-emerald-50">미운영</span>
+            <span className="text-lg font-bold">{inactiveCount}개 🍃</span>
+          </div>
+        </div>
+
+        <div className="flex items-center border-t border-white/20 pt-3">
           <Link href="/host/settlements" className="text-[13px] font-semibold text-emerald-50">
             정산 내역 보기 &gt;
           </Link>
@@ -122,33 +156,44 @@ function HostFarmsView() {
 
       <ul className="flex flex-col gap-3">
         {filteredFarms.map((farm) => (
-           <li key={farm.id} className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-white p-3.5">
-            <div className="flex gap-3">
-             {farm.thumbnailUrl ? (
-                <img
-                  src={resolveFarmImageUrl(farm.thumbnailUrl)}
-                  alt={farm.title}
-                  className="h-20 w-20 shrink-0 rounded-xl object-cover"
-                />
-              ) : (
-                <div className="h-20 w-20 shrink-0 rounded-xl bg-gradient-to-br from-emerald-200 to-emerald-100" />
-              )}
-              <div className="flex flex-1 flex-col justify-center gap-1 overflow-hidden">
-                <p className="truncate text-[15px] font-bold text-ink">{farm.title}</p>
-                <p className="truncate text-[13px] text-ink-muted">{farm.location}</p>
-                <span
-                  className={`w-fit rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                    farm.farmStatus === "RENTED" ? "bg-free-soft text-free" : "bg-surface text-ink-soft"
-                  }`}
-                >
-                  {farm.farmStatus === "RENTED" ? "임대중" : "임대 가능"}
+           <li key={farm.id} className="flex flex-col gap-3 rounded-2xl border border-border bg-white p-3.5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex gap-3">
+               {farm.thumbnailUrl ? (
+                  <img
+                    src={resolveFarmImageUrl(farm.thumbnailUrl)}
+                    alt={farm.title}
+                    className="h-20 w-20 shrink-0 rounded-xl object-cover"
+                  />
+                ) : (
+                  <div className="h-20 w-20 shrink-0 rounded-xl bg-gradient-to-br from-emerald-200 to-emerald-100" />
+                )}
+                <div className="flex flex-1 flex-col justify-center gap-1 overflow-hidden">
+                  <p className="truncate text-[15px] font-bold text-ink">{farm.title}</p>
+                  <p className="truncate text-[13px] text-ink-muted">{farm.location}</p>
+                  <span
+                    className={`w-fit rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                      farm.farmStatus === "RENTED" ? "bg-free-soft text-free" : "bg-surface text-ink-soft"
+                    }`}
+                  >
+                    {farm.farmStatus === "RENTED" ? "임대중" : "임대 가능"}
+                  </span>
+                </div>
+              </div>
+              <Link href={`/farms/${farm.id}`} className="flex shrink-0 items-center gap-1 text-[13px] font-semibold text-free">
+                관리하기
+                <ChevronRightIcon size={16} className="text-free" />
+              </Link>
+            </div>
+
+            {farm.farmStatus === "RENTED" && farm.tenantNickname && (
+              <div className="flex flex-col gap-0.5 border-t border-border pt-3">
+                <span className="text-[14px] font-bold text-ink">{farm.tenantNickname}</span>
+                <span className="text-[12px] text-ink-muted">
+                  일반결제 · {formatDateTime(farm.rentalStartedAt)}
                 </span>
               </div>
-            </div>
-            <Link href={`/farms/${farm.id}`} className="flex shrink-0 items-center gap-1 text-[13px] font-semibold text-free">
-              관리하기
-              <ChevronRightIcon size={16} className="text-free" />
-            </Link>
+            )}
           </li>
         ))}
       </ul>
