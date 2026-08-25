@@ -1,4 +1,4 @@
-import { apiRequest } from "./client";
+import { apiRequest, API_BASE_URL } from "./client";
 
 export function getFarms({ page = 0, size = 10, sort } = {}) {
   return apiRequest("/api/farms", { query: { page, size, sort } });
@@ -35,4 +35,12 @@ export function updateFarm(farmId, { title, area, monthlyRent, rentalMonths, des
   );
   (images ?? []).forEach((file) => formData.append("images", file));
   return apiRequest(`/api/farms/${farmId}`, { method: "PUT", body: formData });
+}
+
+export function getMyFarms() {
+  return apiRequest("/api/host/farms");
+}
+
+export function resolveFarmImageUrl(path) {
+  return path ? `${API_BASE_URL}${path}` : null;
 }

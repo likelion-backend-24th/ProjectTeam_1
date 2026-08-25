@@ -3,14 +3,13 @@ package com.team1.cityfarm.service;
 import com.team1.cityfarm.dto.FarmRequestDto;
 import com.team1.cityfarm.dto.FarmResponseDto;
 import com.team1.cityfarm.dto.FarmUpdateRequestDto;
-import com.team1.cityfarm.entity.Farm;
-import com.team1.cityfarm.entity.FarmImage;
-import com.team1.cityfarm.entity.RoleType;
-import com.team1.cityfarm.entity.User;
+import com.team1.cityfarm.dto.HostFarmResponseDto;
+import com.team1.cityfarm.entity.*;
 import com.team1.cityfarm.global.exception.CustomError;
 import com.team1.cityfarm.global.exception.CustomException;
 import com.team1.cityfarm.repository.FarmImageRepository;
 import com.team1.cityfarm.repository.FarmRepository;
+import com.team1.cityfarm.repository.RentalRepository;
 import com.team1.cityfarm.repository.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +29,7 @@ public class FarmService {
     private final UserRepository userRepository;
     private final FarmImageRepository farmImageRepository;
     private final FileStorageService fileStorageService;
+    private final RentalRepository rentalRepository;
 
     // 밭 등록 (F-160)
     @Transactional
@@ -170,6 +170,22 @@ public class FarmService {
         return  FarmResponseDto.from(farm, thumbnailUrl, imageUrls);
 
 
+    }
+
+    // 호스트 - 내가 등록한 밭 목록 (관리 화면용)
+    @Transactional(readOnly = true)
+    public List<HostFarmResponseDto> getMyFarms(Long userId){
+        List<Farm> farms = farmRepository.findByUser_Id(userId, Pageable.unpaged()).getContent();
+
+        return farms.stream()
+                .map(farm -> {
+                    String thumbnailUrl = farmImageRepository.findFirstByFarm_IdOrderByIdAsc(farm.getId())
+                            .map(FarmImage::getImageUrl)
+                            .orElse(null);
+                    long rentalCount = rentalRepository.countByFarm_IdAndRentalStatus(farm.getId(), RentalStatus.CONFIRMED);
+                    return HostFarmResponseDto.from(farm, thumbnailUrl, rentalCount);
+                })
+                .toList();
     }
 
 }

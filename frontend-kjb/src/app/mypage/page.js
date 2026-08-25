@@ -170,7 +170,7 @@ function MyPageView() {
       </Link>
 
       {isHost ? (
-        <Link href="/host/settlements" className="flex items-center justify-between rounded-2xl bg-surface px-4 py-3.5">
+        <Link href="/host/farms" className="flex items-center justify-between rounded-2xl bg-surface px-4 py-3.5">
           <span className="flex items-center gap-2.5 text-[15px] font-semibold text-ink">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-free-soft text-free">
               <SproutIcon size={18} />
