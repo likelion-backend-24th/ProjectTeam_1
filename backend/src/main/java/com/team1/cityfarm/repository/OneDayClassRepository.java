@@ -1,7 +1,10 @@
 package com.team1.cityfarm.repository;
 
+import com.team1.cityfarm.entity.ClassStatus;
 import com.team1.cityfarm.entity.OneDayClass;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -15,4 +18,7 @@ public interface OneDayClassRepository extends JpaRepository<OneDayClass, Long> 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c from OneDayClass c where c.id = :id")
     Optional<OneDayClass> findByIdForUpdate(@Param("id") Long id);
+
+    // 목록 조회용 - 호스트가 취소한 클래스는 제외
+    Page<OneDayClass> findByStatus(ClassStatus status, Pageable pageable);
 }

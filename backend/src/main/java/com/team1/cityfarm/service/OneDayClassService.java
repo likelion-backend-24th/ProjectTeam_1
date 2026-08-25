@@ -47,9 +47,9 @@ public class OneDayClassService {
         return OneDayClassResponseDto.from(saved, 0);
     }
 
-    //    목록조회
+    //    목록조회 (취소된 클래스는 제외)
     public Page<OneDayClassSummaryDto> getClassList(Pageable pageable) {
-        return oneDayClassRepository.findAll(pageable)
+        return oneDayClassRepository.findByStatus(ClassStatus.OPEN, pageable)
                 .map(cls -> OneDayClassSummaryDto.from(cls, classEnrollmentService.getEnrolledCount(cls.getId())));
     }
 
