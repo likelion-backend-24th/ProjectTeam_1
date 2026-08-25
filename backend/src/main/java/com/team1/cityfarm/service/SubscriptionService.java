@@ -97,7 +97,7 @@ public class SubscriptionService {
 
         // 결제 성공 시 구독(Subscription) 엔티티 생성
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime oneMonthLater = now.plusMinutes(5); //5분으로 테스트만 할 예정
+        LocalDateTime oneMonthLater = now.plusMinutes(10); //10분으로 테스트만 할 예정
 
         Subscription subscription = Subscription.builder()
                 .user(user)
