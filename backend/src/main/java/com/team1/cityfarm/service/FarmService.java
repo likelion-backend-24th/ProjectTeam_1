@@ -93,7 +93,7 @@ public class FarmService {
     // 밭 등록 (F-161)
     @Transactional(readOnly = true)
     public Page<FarmResponseDto> getFarms(Pageable pageable) {
-        Page<Farm> farms = farmRepository.findAll(pageable);
+        Page<Farm> farms = farmRepository.findByFarmStatus(FarmStatus.AVAILABLE, pageable);
 
         return farms.map(farm -> {
             String thumbnailUrl = farmImageRepository.findFirstByFarm_IdOrderByIdAsc(farm.getId())

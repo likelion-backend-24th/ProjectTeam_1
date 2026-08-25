@@ -8,7 +8,6 @@ import { ChevronRightIcon, BookIcon, SproutIcon } from "@/components/icons";
 import { useAuthStore } from "@/store/authStore";
 import { useToastStore } from "@/store/toastStore";
 import { getMyEnrollments, cancelEnrollmentByPass } from "@/lib/api/enrollment";
-import { getOrder } from "@/lib/api/order";
 import { getMyRentals, cancelRental } from "@/lib/api/rental";
 import { getFollowerList, getFollowingList } from "@/lib/api/follow";
 import { CancelPaymentButton } from "@/components/payment/CancelPaymentButton";
