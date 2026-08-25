@@ -8,7 +8,7 @@ import { ChevronRightIcon, BookIcon, SproutIcon } from "@/components/icons";
 import { useAuthStore } from "@/store/authStore";
 import { useToastStore } from "@/store/toastStore";
 import { getMyEnrollments, cancelEnrollmentByPass } from "@/lib/api/enrollment";
-import { getOrder } from "@/lib/api/order";
+import { getOrder, getMyOrders } from "@/lib/api/order";
 import { getHostRentals, cancelRental } from "@/lib/api/rental";
 import { CancelPaymentButton } from "@/components/payment/CancelPaymentButton";
 import { ApiError } from "@/lib/api/client";
@@ -24,6 +24,7 @@ function MyPageView() {
   const [classIndex, setClassIndex] = useState(0);
   const [currentPayment, setCurrentPayment] = useState(null);
   const [isCancellingEnrollment, setIsCancellingEnrollment] = useState(false);
+  const [pendingOrders, setPendingOrders] = useState([]);
 
   const [hostRentals, setHostRentals] = useState([]);
   const [isLoadingRentals, setIsLoadingRentals] = useState(isHost);
@@ -49,6 +50,26 @@ function MyPageView() {
       }
     }
     loadUpcomingClasses();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // 결제창을 열고 결제를 완료하지 않은 신청은 CONFIRMED가 아니라 위 목록에 안 잡히므로 따로 조회한다.
+  useEffect(() => {
+    let cancelled = false;
+    async function loadPendingOrders() {
+      try {
+        const res = await getMyOrders({ page: 0, size: 20 });
+        const pending = (res?.content ?? []).filter(
+          (o) => o.orderType === "GENERAL" && o.orderStatus === "PENDING",
+        );
+        if (!cancelled) setPendingOrders(pending);
+      } catch {
+        if (!cancelled) setPendingOrders([]);
+      }
+    }
+    loadPendingOrders();
     return () => {
       cancelled = true;
     };
@@ -266,6 +287,27 @@ function MyPageView() {
         )}
         <p className="text-[12px] text-ink-muted">ⓘ 신청하신 원데이 클래스는 전체 클래스에서 확인해주세요.</p>
       </div>
+
+      {pendingOrders.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <span className="text-[16px] font-bold text-ink">결제를 완료하지 않은 신청</span>
+          <div className="flex flex-col gap-2">
+            {pendingOrders.map((o) => (
+              <Link
+                key={o.id}
+                href={`/payment/${o.id}`}
+                className="flex items-center justify-between rounded-2xl bg-surface px-4 py-3.5"
+              >
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[14px] font-bold text-ink">{o.title ?? "클래스 결제"}</span>
+                  <span className="text-[12px] text-ink-muted">결제 대기 중 · 눌러서 취소할 수 있어요</span>
+                </div>
+                <ChevronRightIcon size={18} className="text-ink-muted" />
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {isHost ? (
         <div className="flex flex-col gap-3">
