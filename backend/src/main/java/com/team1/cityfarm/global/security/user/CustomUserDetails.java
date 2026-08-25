@@ -19,20 +19,12 @@ public class CustomUserDetails implements UserDetails {
     private final RoleType roleType;
     private final Status status;
 
-    // 1. DB 기반 생성자 (로그인 처리 시)
+    // DB 기반 생성자 (로그인/JwtAuthenticationFilter 공용 — 매 인증마다 최신 상태를 반영한다)
     public CustomUserDetails(User user) {
         this.userId = user.getId();
         this.email = user.getEmail();
         this.roleType = user.getRoleType();
         this.status = user.getStatus();
-    }
-
-    // 2. 토큰 Claim 기반 생성자 (JwtAuthenticationFilter 전용)
-    public CustomUserDetails(Long userId, String email, RoleType roleType) {
-        this.userId = userId;
-        this.email = email;
-        this.roleType = roleType;
-        this.status = getStatus();
     }
 
     // ROLE_USER 또는 ROLE_ADMIN 동적 부여
