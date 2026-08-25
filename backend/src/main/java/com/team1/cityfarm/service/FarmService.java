@@ -18,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
@@ -183,7 +184,11 @@ public class FarmService {
                             .map(FarmImage::getImageUrl)
                             .orElse(null);
                     long rentalCount = rentalRepository.countByFarm_IdAndRentalStatus(farm.getId(), RentalStatus.CONFIRMED);
-                    return HostFarmResponseDto.from(farm, thumbnailUrl, rentalCount);
+                    LocalDateTime rentalStartedAt = rentalRepository
+                            .findTopByFarm_IdAndRentalStatusOrderByCreatedAtDesc(farm.getId(), RentalStatus.CONFIRMED)
+                            .map(Rental::getCreatedAt)
+                            .orElse(null);
+                    return HostFarmResponseDto.from(farm, thumbnailUrl, rentalCount, rentalStartedAt);
                 })
                 .toList();
     }

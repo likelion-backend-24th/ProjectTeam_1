@@ -24,4 +24,7 @@ public interface RentalRepository extends JpaRepository<Rental, Long> {
 
     // 특정 밭의 특정 상태 임대 건수 (호스트 관리 화면 카드용)
     long countByFarm_IdAndRentalStatus(Long farmId, RentalStatus rentalStatus);
+
+    // 밭의 현재 진행중인 임대 시작일 조회
+    Optional<Rental> findTopByFarm_IdAndRentalStatusOrderByCreatedAtDesc(Long farmId, RentalStatus rentalStatus);
 }
