@@ -12,7 +12,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,6 +40,7 @@ public class OrderService {
     private final FarmRepository farmRepository;
     private final RentalRepository rentalRepository;
     private final RentalService rentalService;
+    private final PlatformTransactionManager transactionManager;
 
     /**
      * 원데이 클래스 일반 결제 주문 생성
@@ -261,24 +265,49 @@ public class OrderService {
      * 결제를 시도하지 않았거나 결제창을 닫고 이탈한 경우 PortOne 쪽에서 별도 웹훅이 오지 않으므로,
      * 주문을 결제 실패(FAILED)로, 연결된 신청을 취소로 전환해 정원 점유를 풀어준다.
      */
-    @Transactional
     public int expireStalePendingOrders() {
         LocalDateTime cutoff = LocalDateTime.now().minusMinutes(PENDING_ORDER_TTL_MINUTES);
         List<Order> staleOrders = orderRepository.findByOrderTypeAndOrderStatusAndCreatedAtBefore(
                 OrderType.GENERAL, OrderStatus.PENDING, cutoff
         );
 
+        int expiredCount = 0;
         for (Order order : staleOrders) {
-            order.setOrderStatus(OrderStatus.FAILED);
-            if (classEnrollmentService.hasEnrollmentForOrder(order.getId())) {
-                classEnrollmentService.cancelEnrollment(order.getId());
-            } else {
-                rentalService.cancelRentalByOrderId(order.getId());
+            // 주문 하나당 독립된(REQUIRES_NEW) 트랜잭션으로 처리한다. 전체를 하나의 트랜잭션으로
+            // 묶으면, 연결된 신청/임대 내역을 찾지 못하는 등 특정 주문 하나만 실패해도(고아 주문 등)
+            // 그 예외가 이 배치의 트랜잭션을 rollback-only로 만들어 - try/catch로 잡아도 커밋 시점에
+            // UnexpectedRollbackException이 나면서 - 이번 배치에서 정상 처리됐어야 할 다른 주문들까지
+            // 전부 롤백돼버린다.
+            try {
+                expireOnePendingOrder(order.getId());
+                expiredCount++;
+            } catch (Exception e) {
+                log.error("[주문 만료 처리 실패] 연결된 신청/임대 내역을 찾을 수 없어 이 주문만 건너뜁니다 - orderId: {}, merchantOrderId: {}",
+                        order.getId(), order.getMerchantOrderId(), e);
             }
-            log.info("[주문 만료 처리] 결제 대기 시간 초과로 주문을 만료 처리했습니다 - orderId: {}, merchantOrderId: {}",
-                    order.getId(), order.getMerchantOrderId());
         }
 
-        return staleOrders.size();
+        return expiredCount;
+    }
+
+    private void expireOnePendingOrder(Long orderId) {
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager, new DefaultTransactionDefinition() {{
+            setPropagationBehavior(DefaultTransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        }});
+
+        transactionTemplate.executeWithoutResult(status -> {
+            Order order = orderRepository.findById(orderId)
+                    .orElseThrow(() -> new CustomException(CustomError.ORDER_NOT_FOUND));
+
+            order.setOrderStatus(OrderStatus.FAILED);
+            if (classEnrollmentService.hasEnrollmentForOrder(orderId)) {
+                classEnrollmentService.cancelEnrollment(orderId);
+            } else {
+                rentalService.cancelRentalByOrderId(orderId);
+            }
+
+            log.info("[주문 만료 처리] 결제 대기 시간 초과로 주문을 만료 처리했습니다 - orderId: {}, merchantOrderId: {}",
+                    orderId, order.getMerchantOrderId());
+        });
     }
 }

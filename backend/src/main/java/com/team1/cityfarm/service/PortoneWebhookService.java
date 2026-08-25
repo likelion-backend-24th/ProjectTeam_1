@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.Base64;
 
 @Slf4j
@@ -37,23 +38,28 @@ public class PortoneWebhookService {
 
     @Transactional
     public void processWebhook(String webhookId, String timestamp, String signature, String rawPayload) {
-        // 1. [보안] 서명 검증 및 헤더 유무 확인
-        if (webhookId == null || timestamp == null || signature == null) {
-            log.warn("[Webhook 에러] 헤더 누락");
-            return;
+        // 1. [보안] 서명 검증
+        // 스토어가 여러 팀 공용이라 콘솔에 웹훅을 등록할 수 없어 noticeUrls로만 통지받는데,
+        // 이 경로로 오는 요청엔 PortOne이 webhook-id/timestamp/signature 헤더를 싣지 않는다
+        // (콘솔 등록 웹훅 전용 기능으로 보임). 헤더가 없으면 서명 검증을 건너뛰고, paymentId
+        // 자체는 아래 handlePaymentPaid/Failed에서 PortOne API 재조회로 검증한다(위조 방지의
+        // 실질적 방어선은 원래도 서명이 아니라 이 재조회+금액 비교였음). 헤더가 실려오는
+        // 경우(콘솔 웹훅이 등록되는 미래 등)에는 지금처럼 정상적으로 검증한다.
+        if (webhookId != null && timestamp != null && signature != null) {
+            try {
+                verifySignature(webhookId, timestamp, rawPayload, signature);
+            } catch (Exception e) {
+                log.error("[Webhook 서명 검증 실패로 처리 중단] webhookId: {}", webhookId, e);
+                return;
+            }
+        } else {
+            log.info("[Webhook] 서명 헤더 없음(noticeUrls 경로) - 서명 검증 생략, paymentId 재조회로 검증");
         }
 
-        // 서명 검증 실패는 웹훅 엔드포인트가 반드시 200을 반환해야 한다는 규칙을 깨지 않도록
-        // 여기서 예외를 흡수하고 조용히 중단한다(컨트롤러까지 전파되면 401/500이 나가버림).
-        try {
-            verifySignature(webhookId, timestamp, rawPayload, signature);
-        } catch (Exception e) {
-            log.error("[Webhook 서명 검증 실패로 처리 중단] webhookId: {}", webhookId, e);
-            return;
-        }
-
-        // 2. [멱등성] 이미 처리된 웹훅인지 검증
-        if (webhookInboxRepository.existsByWebhookId(webhookId)) {
+        // 2. [멱등성] 이미 처리된 웹훅인지 검증 (webhookId가 없으면 멱등성 검사 자체를 건너뛴다 -
+        // 아래 처리 로직들이 각자 상태 기반으로 멱등하게 짜여 있어 안전하다: renewSubscription은
+        // ScheduleStatus.PAID 체크, handlePaymentPaid는 order.getOrderStatus()==PAID 체크)
+        if (webhookId != null && webhookInboxRepository.existsByWebhookId(webhookId)) {
             log.info("[Webhook 중복 통지 방지] 이미 처리된 webhookId: {}", webhookId);
             return;
         }
@@ -79,12 +85,23 @@ public class PortoneWebhookService {
             }
 
             // 5. 처리 완료 후 WebhookInbox 저장 (이후 동일 webhookId 진입 시 2번에서 방어)
-            WebhookInbox inbox = WebhookInbox.builder()
-                    .webhookId(webhookId)
-                    .payload(rawPayload)
-                    .status(WebhookStatus.PROCESSED)
-                    .build();
-            webhookInboxRepository.save(inbox);
+            // webhook_id는 NOT NULL 제약이라 헤더가 없는 요청(noticeUrls 경로)은 애초에
+            // 멱등성 기록 대상이 아니므로 저장 자체를 건너뛴다 - 저장을 시도하면 제약 위반
+            // 예외가 이 트랜잭션에 묶인 앞선 처리(구독 갱신 등)까지 롤백시킬 수 있다.
+            if (webhookId != null) {
+                LocalDateTime now = LocalDateTime.now();
+                WebhookInbox inbox = WebhookInbox.builder()
+                        .webhookId(webhookId)
+                        .eventType(type != null ? type : "UNKNOWN")
+                        .paymentId(paymentId)
+                        .payload(rawPayload)
+                        .status(WebhookStatus.PROCESSED)
+                        .receivedAt(now)
+                        .processedAt(now)
+                        .createdAt(now)
+                        .build();
+                webhookInboxRepository.save(inbox);
+            }
 
         } catch (Exception e) {
             log.error("[Webhook 처리 중 예외 발생] webhookId: {}", webhookId, e);
