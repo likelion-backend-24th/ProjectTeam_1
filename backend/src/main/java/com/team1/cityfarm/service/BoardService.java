@@ -5,12 +5,17 @@ import com.team1.cityfarm.dto.BoardResponseDto;
 import com.team1.cityfarm.entity.Board;
 import com.team1.cityfarm.entity.BoardImage;
 import com.team1.cityfarm.entity.Category;
+import com.team1.cityfarm.entity.Reply;
 import com.team1.cityfarm.entity.RoleType;
 import com.team1.cityfarm.entity.User;
 import com.team1.cityfarm.global.exception.CustomError;
 import com.team1.cityfarm.global.exception.CustomException;
+import com.team1.cityfarm.repository.BoardCommentRepository;
 import com.team1.cityfarm.repository.BoardImageRepository;
+import com.team1.cityfarm.repository.BoardLikeRepository;
 import com.team1.cityfarm.repository.BoardRepository;
+import com.team1.cityfarm.repository.ReplyCommentRepository;
+import com.team1.cityfarm.repository.ReplyRepository;
 import com.team1.cityfarm.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -33,6 +38,10 @@ public class BoardService {
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
     private final BoardImageRepository boardImageRepository;
+    private final BoardCommentRepository boardCommentRepository;
+    private final BoardLikeRepository boardLikeRepository;
+    private final ReplyRepository replyRepository;
+    private final ReplyCommentRepository replyCommentRepository;
     private final FileStorageService fileStorageService;
 
     // 게시글 목록 조회하기
@@ -178,6 +187,12 @@ public class BoardService {
             throw new CustomException(CustomError.BOARD_NOT_OWNER);
         }
 
+        // 게시글을 참조하는 하위 엔티티(답글의 답글 포함)를 먼저 삭제해야 FK 제약조건 위반 없이 삭제 가능
+        replyCommentRepository.deleteAll(replyCommentRepository.findByReply_Board_Id(boardId));
+        List<Reply> replies = replyRepository.findAllByBoard_Id(boardId);
+        replyRepository.deleteAll(replies);
+        boardCommentRepository.deleteAll(boardCommentRepository.findByBoardIdOrderByCreatedAtAsc(boardId));
+        boardLikeRepository.deleteAll(boardLikeRepository.findByBoard_Id(boardId));
         boardImageRepository.deleteAll(boardImageRepository.findByBoard_IdOrderByIdAsc(boardId));
         boardRepository.delete(board);
     }
