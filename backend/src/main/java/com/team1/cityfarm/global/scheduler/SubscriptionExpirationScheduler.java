@@ -22,4 +22,10 @@ public class SubscriptionExpirationScheduler {
     public void expireCancelledSubscriptions() {
         subscriptionService.expireCancelledSubscriptions();
     }
+
+    // 1회차 결제 성공 뒤 다음 회차 예약이 실패해 방치된 구독을 재예약 시도한다.
+    @Scheduled(cron = "0 * * * * *") // 매분 정각
+    public void recoverMissingSchedules() {
+        subscriptionService.recoverMissingSchedules();
+    }
 }

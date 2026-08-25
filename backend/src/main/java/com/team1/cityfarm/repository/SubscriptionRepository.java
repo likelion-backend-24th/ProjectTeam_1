@@ -37,4 +37,18 @@ public interface SubscriptionRepository
             SubscriptionStatus status,
             LocalDateTime time
     );
+
+    // 구독 예약 복구 배치용 — 해지 예약되지 않았는데 SCHEDULED 상태 다음 회차 예약이
+    // 하나도 없는 구독 조회 (1회차 결제 성공 뒤 PortOne 예약 실패로 방치된 케이스)
+    @Query("""
+            select s from Subscription s
+            where s.status = :status
+              and s.cancelAtPeriodEnd = false
+              and not exists (
+                  select 1 from SubscriptionSchedule sch
+                  where sch.subscription = s
+                    and sch.status = com.team1.cityfarm.entity.ScheduleStatus.SCHEDULED
+              )
+            """)
+    List<Subscription> findActiveWithoutScheduledPayment(@Param("status") SubscriptionStatus status);
 }
