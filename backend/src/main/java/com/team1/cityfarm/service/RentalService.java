@@ -145,4 +145,73 @@ public class RentalService {
 
         return HostReservationSummaryDto.of(confirmedCount, todayCheckinCount, inUseCount, thisMonthCount, rentalDtos);
     }
+
+    // 결제 주문 생성 시 호출
+    @Transactional
+    public Rental createPendingRental(Long userId, Long farmId, Order order, String description){
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
+
+        Farm farm = lockAndValidateRentable(farmId, userId);
+
+        Rental rental = Rental.builder()
+                .farm(farm)
+                .user(user)
+                .description(description)
+                .rentalStatus(RentalStatus.REQUESTED)
+                .orderId(order.getId())
+                .build();
+
+        Rental saveRental = rentalRepository.save(rental);
+
+        // 1명만 임대 가능하기 때문에 결제 대기중에서 바로 임대중으로 잠금
+        farm.setFarmStatus(FarmStatus.RENTED);
+
+        return saveRental;
+    }
+
+    // 동시 신청 방지
+    private Farm lockAndValidateRentable(Long farmId, Long userId){
+        Farm farm = farmRepository.findByIdForUpdate(farmId)
+                .orElseThrow(() -> new CustomException(CustomError.FARM_NOT_FOUND));
+
+        if (farm.getUser().getId().equals(userId)){
+            throw new CustomException(CustomError.AUTH_FORBIDDEN);
+        }
+
+        if (farm.getFarmStatus() != FarmStatus.AVAILABLE){
+            throw new CustomException(CustomError.FARM_ALREADY_RENTED);
+        }
+
+        return farm;
+    }
+
+    // 결제 성공 시
+    @Transactional
+    public Rental confirmRental(Long orderId){
+        Rental rental = rentalRepository.findByOrderId(orderId)
+                .orElseThrow(() -> new CustomException(CustomError.RENTAL_NOT_FOUND));
+
+        if (rental.getRentalStatus() == RentalStatus.CANCELLED) {
+            throw new CustomException(CustomError.INVALID_ORDER_STATUS);
+        }
+
+        rental.setRentalStatus(RentalStatus.CONFIRMED);
+        return rental;
+    }
+
+    // Rental 취소 + 밭 다시 임대 가능 상태로
+    @Transactional
+    public void cancelRentalByOrderId(Long orderId){
+        Rental rental = rentalRepository.findByOrderId(orderId)
+                .orElseThrow(() -> new CustomException(CustomError.RENTAL_NOT_FOUND));
+
+        if (rental.getRentalStatus() == RentalStatus.CANCELLED){
+            return;
+        }
+
+        rental.setRentalStatus(RentalStatus.CANCELLED);
+        rental.getFarm().setFarmStatus(FarmStatus.AVAILABLE);
+    }
+
 }

@@ -17,20 +17,6 @@ import org.springframework.web.bind.annotation.*;
 public class RentalController {
     private final RentalService rentalService;
 
-    // 밭 임대 신청 (F163)
-    @Operation(summary = "밭 임대 신청", security = @SecurityRequirement(name = "BearerAuth"))
-    @PostMapping("/api/farms/{farmId}/rent")
-    @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<RentalResponseDto> applyRental(
-            @PathVariable Long farmId,
-            @RequestBody(required = false)RentalRequestDto requestDto,
-            @AuthenticationPrincipal CustomUserDetails userDetails
-    ){
-        RentalRequestDto dto = (requestDto != null) ? requestDto : new RentalRequestDto(null);
-        Long userId = userDetails.getUserId();
-        return ApiResponse.success("밭 임대 신청 성공", rentalService.applyRental(farmId, dto, userId));
-    }
-
     // 밭 임대 신청 취소 (F-164)
     @Operation(summary = "밭 임대 신청 취소", security = @SecurityRequirement(name = "BearerAuth"))
     @DeleteMapping("/api/rentals/{rentalId}")

@@ -87,6 +87,7 @@ public enum CustomError {
     RENTAL_NOT_FOUND(HttpStatus.NOT_FOUND, "신청 내역을 찾을 수 없습니다."),
     RENTAL_NOT_OWNER(HttpStatus.FORBIDDEN, "본인이 신청한 임대만 취소할 수 있습니다."),
     RENTAL_ALREADY_CANCELLED(HttpStatus.BAD_REQUEST, "이미 취소된 신청입니다."),
+    RENTAL_REQUIRES_PAYMENT_CANCEL(HttpStatus.BAD_REQUEST, "결제된 신청은 결제 취소를 통해 취소해주세요."),
 
     // 빌링 예외
     BILLING_KEY_VERIFY_FAILED(HttpStatus.BAD_REQUEST, "빌링키 검증에 실패했습니다."),

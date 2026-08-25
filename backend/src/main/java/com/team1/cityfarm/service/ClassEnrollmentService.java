@@ -28,6 +28,11 @@ public class ClassEnrollmentService {
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
 
+    // 주문 건 구분
+    public boolean hasEnrollmentForOrder(Long orderId){
+        return classEnrollmentRepository.findByOrderId(orderId).isPresent();
+    }
+
     // 정원 표시용 (PENDING 또는 CONFIRMED 상태인 신청 인원 수)
     public long getEnrolledCount(Long classId) {
         return classEnrollmentRepository.countByOneDayClassIdAndStatusIn(

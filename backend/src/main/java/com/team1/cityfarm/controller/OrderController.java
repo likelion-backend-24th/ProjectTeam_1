@@ -1,5 +1,6 @@
 package com.team1.cityfarm.controller;
 
+import com.team1.cityfarm.dto.FarmRentalOrderCreateRequestDto;
 import com.team1.cityfarm.dto.OrderCreateRequestDto;
 import com.team1.cityfarm.dto.OrderResponseDto;
 import com.team1.cityfarm.global.security.user.CustomUserDetails;
@@ -26,6 +27,15 @@ public class OrderController {
             @RequestBody OrderCreateRequestDto requestDto
     ) {
         OrderResponseDto response = orderService.createClassOrder(userDetails.getUserId(), requestDto);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/farm-rental")
+    public ResponseEntity<OrderResponseDto> createFarmRentalOrder(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestBody FarmRentalOrderCreateRequestDto requestDto
+            ) {
+        OrderResponseDto response = orderService.createFarmRentalOrder(userDetails.getUserId(), requestDto);
         return ResponseEntity.ok(response);
     }
 
