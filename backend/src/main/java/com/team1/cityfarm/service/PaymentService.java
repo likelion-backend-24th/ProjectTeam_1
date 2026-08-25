@@ -29,6 +29,7 @@ public class PaymentService {
     private final PortonePaymentClient portOnePaymentClient;
     private final ClassEnrollmentService classEnrollmentService;
     private final SettlementService settlementService;
+    private final RentalService rentalService;
 
     /**
      * [PortOne 결제 결과 검증 및 승인 완료 처리]
@@ -101,12 +102,17 @@ public class PaymentService {
         // 2. Order 상태 변경 (PENDING -> PAID)
         order.setOrderStatus(OrderStatus.PAID);
 
-        // 3. ClassEnrollment 상태 변경 (PENDING -> CONFIRMED)
-        ClassEnrollment enrollment = classEnrollmentService.confirmEnrollment(order.getId());
-
-        // 4. Settlement 정산 데이터 생성
-        if (enrollment != null && enrollment.getOneDayClass() != null) {
-            settlementService.createPendingSettlement(order, enrollment.getOneDayClass().getId());
+        // 3~4. 클래스 신청,밭 임대에 따라 확정 + 정산 처리
+        if (classEnrollmentService.hasEnrollmentForOrder(order.getId())) {
+            ClassEnrollment enrollment = classEnrollmentService.confirmEnrollment(order.getId());
+            if (enrollment != null && enrollment.getOneDayClass() != null) {
+                settlementService.createPendingSettlement(order, enrollment.getOneDayClass().getId());
+            }
+        } else {
+            Rental rental = rentalService.confirmRental(order.getId());
+            if (rental != null && rental.getFarm() != null) {
+                settlementService.createPendingFarmRentalSettlement(order, rental.getFarm().getId());
+            }
         }
 
         log.info("[결제 승인 완료] merchantOrderId: {}, paymentId: {}, amount: {}",
@@ -179,9 +185,12 @@ public class PaymentService {
         Order order = payment.getOrder();
         order.setOrderStatus(OrderStatus.CANCELLED);
 
-        // 5. ClassEnrollment 상태 변경
-        classEnrollmentService.cancelEnrollment(order.getId());
-
+        // 5. ClassEnrollment / Rental 상태 변경 (도메인에 따라 분리)
+        if (classEnrollmentService.hasEnrollmentForOrder(order.getId())){
+            classEnrollmentService.cancelEnrollment(order.getId());
+        } else {
+            rentalService.cancelRentalByOrderId(order.getId());
+        }
         // 6. 정산 취소 (환불된 주문이 관리자에게 지급 대상으로 남지 않도록)
         settlementService.cancelSettlementByOrderId(order.getId());
 

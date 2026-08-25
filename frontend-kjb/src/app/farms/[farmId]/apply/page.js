@@ -6,7 +6,7 @@ import { AppShell, PageHeader } from "@/components/AppShell";
 import { RequireAuth } from "@/components/RequireAuth";
 import { BackIcon } from "@/components/icons";
 import { getFarm } from "@/lib/api/farm";
-import { applyRental } from "@/lib/api/rental";
+import { createFarmRentalOrder } from "@/lib/api/rental";
 import { API_BASE_URL, ApiError } from "@/lib/api/client";
 import { formatCurrency } from "@/utils/format";
 import { useToastStore } from "@/store/toastStore";
@@ -52,12 +52,10 @@ function FarmApplyView() {
   async function handleApply() {
     setIsSubmitting(true);
     try {
-      await applyRental(id, { description: message.trim() || null });
-      showToast("임대 신청이 완료됐어요.");
-      router.replace(`/farms/${id}`);
+      const order = await createFarmRentalOrder(id, message.trim());
+      router.push(`/payment/checkout?orderId=${order.id}`);
     } catch (err) {
-      showToast(err instanceof ApiError ? err.message : "임대 신청에 실패했어요.", "error");
-    } finally {
+      showToast(err instanceof ApiError ? err.message : "신청에 실패했어요. 다시 시도해주세요.", "error");
       setIsSubmitting(false);
     }
   }
@@ -110,7 +108,8 @@ function FarmApplyView() {
           </div>
 
           <p className="rounded-xl bg-surface px-4 py-3.5 text-[13px] text-ink-muted">
-            신청하시면 별도 결제 절차 없이 바로 임대가 확정돼요.
+            총 결제 금액은 <span className="font-semibold text-ink">월세 × 임대 개월수</span>로 계산돼요.
+            (월 {formatCurrency(farm.monthlyRent)} × {farm.rentalMonths}개월 = {formatCurrency(farm.monthlyRent * farm.rentalMonths)})
           </p>
 
           <button
@@ -119,7 +118,7 @@ function FarmApplyView() {
             disabled={isSubmitting || farm.farmStatus !== "AVAILABLE"}
             className="mt-2 h-[50px] w-full rounded-xl bg-primary text-[15px] font-semibold text-white disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
           >
-            {isSubmitting ? "신청 중..." : "신청하기"}
+            {isSubmitting ? "이동 중..." : `${formatCurrency(farm.monthlyRent * farm.rentalMonths)} 결제하고 신청하기`}
           </button>
         </>
       )}

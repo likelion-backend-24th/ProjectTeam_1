@@ -11,3 +11,11 @@ export function cancelRental(rentalId) {
 export function getHostRentals({ page = 0, size = 10 } = {}) {
   return apiRequest("/api/host/rentals", { query: { page, size } });
 }
+
+// 밭 임대 결제 주문 생성
+export function createFarmRentalOrder(farmId, description){
+  return apiRequest("/api/orders/farm-rental",{
+    method: "POST",
+    body: { farmId, description: description || null },
+  })
+}

@@ -38,6 +38,10 @@ public class Rental {
     @Column(length = 500)
     private String description;
 
+    // 결제 주문 ID
+    @Column
+    private Long orderId;
+
     // 등록일
     @CreationTimestamp
     @Column(updatable = false)

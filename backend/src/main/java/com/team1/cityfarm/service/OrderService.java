@@ -1,5 +1,6 @@
 package com.team1.cityfarm.service;
 
+import com.team1.cityfarm.dto.FarmRentalOrderCreateRequestDto;
 import com.team1.cityfarm.dto.OrderCreateRequestDto;
 import com.team1.cityfarm.dto.OrderResponseDto;
 import com.team1.cityfarm.entity.*;
@@ -33,6 +34,9 @@ public class OrderService {
     private final ClassEnrollmentRepository classEnrollmentRepository;
     private final ClassEnrollmentService classEnrollmentService;
     private final PaymentRepository paymentRepository;
+    private final FarmRepository farmRepository;
+    private final RentalRepository rentalRepository;
+    private final RentalService rentalService;
 
     /**
      * 원데이 클래스 일반 결제 주문 생성
@@ -89,6 +93,44 @@ public class OrderService {
     }
 
     /**
+     * 밭 임대 결제 주문 생성
+     */
+    @Transactional
+    public OrderResponseDto createFarmRentalOrder(Long userId, FarmRentalOrderCreateRequestDto requestDto){
+
+        // 1. 유저 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
+
+        // 2. 밭 임대 조회
+        Farm farm = farmRepository.findById(requestDto.getFarmId())
+                .orElseThrow(() -> new CustomException(CustomError.FARM_NOT_FOUND));
+
+        int amount = farm.getMonthlyRent() * farm.getRentalMonths();
+
+        // 3. 고유 merchantOrderId 생성
+        String uuidSuffix = UUID.randomUUID().toString().substring(0,8).toUpperCase();
+        String merchantOrderId = "BE24-CITYFARM-" + uuidSuffix;
+
+        // 4. Order 생성
+        Order order = Order.builder()
+                .user(user)
+                .amount(amount)
+                .merchantOrderId(merchantOrderId)
+                .orderType(OrderType.GENERAL)
+                .orderStatus(OrderStatus.PENDING)
+                .build();
+
+        Order savedOrder = orderRepository.save(order);
+
+        rentalService.createPendingRental(userId, farm.getId(), savedOrder, requestDto.getDescription());
+
+        // 5. 응답
+        return OrderResponseDto.from(savedOrder, farm.getTitle() + " 임대", null, null);
+    }
+
+
+    /**
      * 단건 주문 상세 조회
      */
     public OrderResponseDto getOrderDetails(Long userId, Long orderId) {
@@ -110,8 +152,6 @@ public class OrderService {
         if (order.getOrderType() == OrderType.SUBSCRIPTION) {
             classTitle = order.getSubscription().getPlanType().name() + " 정기구독";
         } else {
-            classTitle = "원데이클래스 신청";
-
             ClassEnrollment enrollment = classEnrollmentRepository
                     .findByOrderId(order.getId())
                     .orElse(null);
@@ -119,6 +159,13 @@ public class OrderService {
             if (enrollment != null && enrollment.getOneDayClass() != null) {
                 classTitle = enrollment.getOneDayClass().getTitle();
                 scheduledAt = enrollment.getOneDayClass().getDate();
+            } else {
+                Rental rental = rentalRepository.findByOrderId(order.getId()).orElse(null);
+                if (rental != null && rental.getFarm() != null) {
+                    classTitle = rental.getFarm().getTitle() + " 임대";
+                } else {
+                    classTitle = "원데이클래스 신청";
+                }
             }
         }
 
@@ -153,8 +200,6 @@ public class OrderService {
             if (order.getOrderType() == OrderType.SUBSCRIPTION) {
                 classTitle = order.getSubscription().getPlanType().name() + " 정기구독";
             } else {
-                classTitle = "원데이클래스 신청";
-
                 ClassEnrollment enrollment = classEnrollmentRepository
                         .findByOrderId(order.getId())
                         .orElse(null);
@@ -162,6 +207,13 @@ public class OrderService {
                 if (enrollment != null && enrollment.getOneDayClass() != null) {
                     classTitle = enrollment.getOneDayClass().getTitle();
                     scheduledAt = enrollment.getOneDayClass().getDate();
+                } else {
+                    Rental rental = rentalRepository.findByOrderId(order.getId()).orElse(null);
+                    if (rental != null && rental.getFarm() != null) {
+                        classTitle = rental.getFarm().getTitle() + " 임대";
+                    } else {
+                        classTitle = "원데이클래스 신청";
+                    }
                 }
             }
 

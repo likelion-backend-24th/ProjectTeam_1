@@ -6,7 +6,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Optional;
+
 public interface RentalRepository extends JpaRepository<Rental, Long> {
+
+    // 결제 주문 기준 조회
+    Optional<Rental> findByOrderId(Long orderId);
 
     // 신청자 조회
     Page<Rental> findByUser_Id(Long userId, Pageable pageable);

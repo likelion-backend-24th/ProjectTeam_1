@@ -3,6 +3,7 @@ package com.team1.cityfarm.repository;
 import com.team1.cityfarm.entity.Order;
 import com.team1.cityfarm.entity.OrderStatus;
 import com.team1.cityfarm.entity.OrderType;
+import com.team1.cityfarm.entity.Rental;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -34,4 +35,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             OrderStatus orderStatus,
             LocalDateTime cutoff
     );
+
+
 }
