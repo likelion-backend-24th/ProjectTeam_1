@@ -1,5 +1,6 @@
 package com.team1.cityfarm.service;
 
+import com.team1.cityfarm.dto.HostReservationSummaryDto;
 import com.team1.cityfarm.dto.RentalRequestDto;
 import com.team1.cityfarm.dto.RentalResponseDto;
 import com.team1.cityfarm.entity.*;
@@ -13,6 +14,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -92,5 +96,53 @@ public class RentalService {
 
         Page<Rental> rentals = rentalRepository.findByFarm_User_Id(hostId, pageable);
         return rentals.map(RentalResponseDto::from);
+    }
+
+    // 호스트 - 내 모든 밭에 대한 예약 현황 요약 + 목록
+    @Transactional
+    public HostReservationSummaryDto getHostReservationSummary(Long hostId){
+        User host = userRepository.findById(hostId)
+                .orElseThrow(() -> new CustomException(CustomError.NOT_HOST_ROLE));
+
+        if (host.getRoleType() != RoleType.HOST) {
+            throw new CustomException(CustomError.NOT_HOST_ROLE);
+        }
+
+        List<Rental> rentals = rentalRepository.findByFarm_User_Id(hostId, Pageable.unpaged()).getContent();
+        LocalDate today = LocalDate.now();
+
+        long confirmedCount = rentals.stream()
+                .filter(r -> r.getRentalStatus() == RentalStatus.CONFIRMED)
+                .count();
+
+        long todayCheckinCount = rentals.stream()
+                .filter(r -> r.getRentalStatus() == RentalStatus.CONFIRMED)
+                .filter(r -> r.getCreatedAt().toLocalDate().isEqual(today))
+                .count();
+
+        long inUseCount = rentals.stream()
+                .filter(r -> r.getRentalStatus() == RentalStatus.CONFIRMED)
+                .filter(r -> {
+                    LocalDate start = r.getCreatedAt().toLocalDate();
+                    LocalDate end = start.plusMonths(r.getFarm().getRentalMonths());
+                    return !today.isBefore(start) && today.isBefore(end);
+                })
+                .count();
+
+        long thisMonthCount = rentals.stream()
+                .filter(r -> r.getRentalStatus() != RentalStatus.CANCELLED)
+                .filter(r -> {
+                    LocalDate created = r.getCreatedAt().toLocalDate();
+                    return created.getYear() == today.getYear() && created.getMonth() == today.getMonth();
+                })
+                .count();
+
+        List<RentalResponseDto> rentalDtos = rentals.stream()
+                .filter(r -> r.getRentalStatus() != RentalStatus.CANCELLED)
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                .map(RentalResponseDto::from)
+                .toList();
+
+        return HostReservationSummaryDto.of(confirmedCount, todayCheckinCount, inUseCount, thisMonthCount, rentalDtos);
     }
 }

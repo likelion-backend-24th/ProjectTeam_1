@@ -1,9 +1,12 @@
 package com.team1.cityfarm.controller;
 
+import com.team1.cityfarm.dto.HostFarmResponseDto;
+import com.team1.cityfarm.dto.HostReservationSummaryDto;
 import com.team1.cityfarm.dto.RentalResponseDto;
 import com.team1.cityfarm.dto.SettlementResponseDto;
 import com.team1.cityfarm.global.response.ApiResponse;
 import com.team1.cityfarm.global.security.user.CustomUserDetails;
+import com.team1.cityfarm.service.FarmService;
 import com.team1.cityfarm.service.RentalService;
 import com.team1.cityfarm.service.SettlementService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,6 +35,7 @@ public class HostController {
 
     private final SettlementService settlementService;
     private final RentalService rentalService;
+    private final FarmService farmService;
 
     /**
      * [호스트] 내 정산내역 목록 조회
@@ -57,5 +61,19 @@ public class HostController {
     ) {
         Long hostId = userDetails.getUserId();
         return  ApiResponse.success("밭 임대 현황 조회 성공", rentalService.getHostRentals(hostId, pageable));
+    }
+
+    @Operation(summary = "내가 등록한 밭 목록 조회", description = "호스트 관리 화면에서 내가 등록한 밭들을 조회합니다.")
+    @GetMapping("/farms")
+    public ApiResponse<List<HostFarmResponseDto>> getMyFarms(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        Long hostId = userDetails.getUserId();
+        return ApiResponse.success("내 밭 목록 조회 성공", farmService.getMyFarms(hostId));
+    }
+
+    @Operation(summary = "내 밭 전체 예약 현황 조회", description = "내가 등록한 모든 밭의 예약 현황 요약과 목록을 조회합니다.")
+    @GetMapping("/reservations")
+    public ApiResponse<HostReservationSummaryDto> getMyReservationSummary(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        Long hostId = userDetails.getUserId();
+        return ApiResponse.success("예약 현황 조회 성공", rentalService.getHostReservationSummary(hostId));
     }
 }

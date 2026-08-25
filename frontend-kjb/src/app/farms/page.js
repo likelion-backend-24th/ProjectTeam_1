@@ -2,13 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { AppShell, PageHeader } from "@/components/AppShell";
-import { HeartIcon, PencilIcon, SearchIcon } from "@/components/icons";
+import { HeartIcon, SearchIcon } from "@/components/icons";
 import { getFarms } from "@/lib/api/farm";
 import { API_BASE_URL, ApiError } from "@/lib/api/client";
 import { formatCurrency } from "@/utils/format";
-import { useAuthStore } from "@/store/authStore";
 
 const SORT_OPTIONS = [
   { label: "전체", value: undefined },
@@ -30,9 +28,6 @@ function getPageNumbers(current, totalPages) {
 }
 
 export default function FarmListPage() {
-  const router = useRouter();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-
   const [activeSort, setActiveSort] = useState(SORT_OPTIONS[0].value);
   const [keywordInput, setKeywordInput] = useState("");
   const [farms, setFarms] = useState([]);
@@ -66,14 +61,6 @@ export default function FarmListPage() {
 
   function handleSearchSubmit(e) {
     e.preventDefault();
-  }
-
-  function handleRegisterClick() {
-    if (!isAuthenticated) {
-      router.push("/login?from=/farms/new");
-      return;
-    }
-    router.push("/farms/new");
   }
 
   const pageNumbers = getPageNumbers(page, totalPages);
@@ -172,7 +159,7 @@ export default function FarmListPage() {
               {p + 1}
             </button>
           ))}
-          <button
+           <button
             type="button"
             disabled={page >= totalPages - 1}
             onClick={() => loadFarms(page + 1)}
@@ -183,15 +170,6 @@ export default function FarmListPage() {
           </button>
         </div>
       )}
-
-      <button
-        type="button"
-        onClick={handleRegisterClick}
-        aria-label="밭 등록"
-        className="absolute right-5 bottom-[calc(60px_+_20px)] flex h-[52px] w-[52px] items-center justify-center rounded-full bg-primary text-white shadow-[0_6px_16px_rgba(0,0,0,0.2)]"
-      >
-        <PencilIcon size={22} />
-      </button>
     </AppShell>
   );
 }
