@@ -161,20 +161,17 @@ function ProfileView() {
         />
       }
     >
-      <div className="flex justify-center pt-3 pb-1">
-        <div className="flex h-[76px] w-[76px] items-center justify-center rounded-full bg-surface-strong text-[28px] font-bold text-ink-soft">
-          {profile?.nickname?.slice(0, 1) ?? "?"}
-        </div>
-        <div className="flex flex-1 items-center justify-around">
-          <LinkComponent href="/profile/followers" className="flex flex-col items-center gap-0.5">
-            <span className="text-base font-bold">{followerCount ?? "-"}</span>
-            <span className="text-xs text-ink-muted">팔로워</span>
-          </LinkComponent>
-          <LinkComponent href="/profile/following" className="flex flex-col items-center gap-0.5">
-            <span className="text-base font-bold">{followingCount ?? "-"}</span>
-            <span className="text-xs text-ink-muted">팔로잉</span>
-          </LinkComponent>
-        </div>
+     <div className="relative flex flex-col gap-1 overflow-hidden rounded-[18px] bg-gradient-to-br from-[#1a2e22] via-[#2f5138] to-[#3f6b48] px-5 py-[22px] text-white">
+        <span className="text-xs font-bold tracking-wide text-[#c8e6cf]">도시 귀농 프로젝트</span>
+        <p className="relative z-10 max-w-[80%] text-[19px] leading-snug font-extrabold break-words">
+          {profile ? `${profile.nickname}님, 오늘도 반가워요!` : "내 프로필"}
+        </p>
+        <p className="relative z-10 mt-0.5 max-w-[80%] text-[13px] text-white/80">
+          도시에서 밭을 키우는 당신을 응원합니다
+        </p>
+        <span aria-hidden className="absolute -right-1.5 -bottom-3.5 rotate-[-8deg] text-[72px] opacity-20">
+          🌱
+        </span>
       </div>
 
       <ReadonlyField label="이름" value={profile?.name} />
