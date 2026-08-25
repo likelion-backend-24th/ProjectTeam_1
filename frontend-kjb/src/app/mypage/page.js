@@ -8,8 +8,9 @@ import { ChevronRightIcon, BookIcon, SproutIcon } from "@/components/icons";
 import { useAuthStore } from "@/store/authStore";
 import { useToastStore } from "@/store/toastStore";
 import { getMyEnrollments, cancelEnrollmentByPass } from "@/lib/api/enrollment";
-import { getOrder, getMyOrders } from "@/lib/api/order";
+import { getOrder } from "@/lib/api/order";
 import { getHostRentals, cancelRental } from "@/lib/api/rental";
+import { getFollowerList, getFollowingList } from "@/lib/api/follow";
 import { CancelPaymentButton } from "@/components/payment/CancelPaymentButton";
 import { ApiError } from "@/lib/api/client";
 import { formatDateWithWeekday, formatTime } from "@/utils/format";
@@ -17,9 +18,29 @@ import { formatDateWithWeekday, formatTime } from "@/utils/format";
 function MyPageView() {
   const profile = useAuthStore((s) => s.profile);
   const isHost = useAuthStore((s) => s.isHost);
+  const isAdmin = useAuthStore((s) => s.isAdmin);
   const showToast = useToastStore((s) => s.showToast);
 
+  const [followerCount, setFollowerCount] = useState(null);
+  const [followingCount, setFollowingCount] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([getFollowerList(), getFollowingList()])
+      .then(([followers, following]) => {
+        if (cancelled) return;
+        setFollowerCount(followers.length);
+        setFollowingCount(following.length);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const [upcomingClasses, setUpcomingClasses] = useState([]);
+  
+
   const [isLoadingClasses, setIsLoadingClasses] = useState(true);
   const [classIndex, setClassIndex] = useState(0);
   const [currentPayment, setCurrentPayment] = useState(null);
@@ -168,26 +189,39 @@ function MyPageView() {
   return (
     <AppShell header={<PageHeader title="마이페이지" />}>
       {/* 프로필 카드 */}
-      <Link href="/profile" className="flex items-center gap-3 rounded-2xl bg-surface px-4 py-4">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-surface-strong text-[22px] font-bold text-ink-soft">
-          {profile?.nickname?.slice(0, 1) ?? "?"}
-        </div>
-        <div className="flex flex-1 flex-col gap-1">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[16px] font-bold text-ink">{profile?.nickname ?? "닉네임"}</span>
-            <span
-              className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                isHost ? "bg-free-soft text-free" : "bg-surface-strong text-ink-muted"
-              }`}
-            >
-              {isHost ? "호스트 회원" : "일반 회원"}
-            </span>
-          </div>
-          <span className="text-[13px] text-ink-muted">
-            도시에서 밭을 키우는 당신을 응원합니다 🌱{isHost && <span className="ml-1 text-free">✓</span>}
+      <Link
+        href="/profile"
+        className="relative flex flex-col gap-2 overflow-hidden rounded-2xl bg-gradient-to-br from-free-soft via-free-soft to-emerald-100 px-4 py-4"
+      >
+        <div className="relative z-10 flex items-center gap-1.5">
+          <span className="text-[16px] font-bold text-ink">{profile?.nickname ?? "닉네임"}</span>
+          <span
+            className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+              isAdmin
+                ? "bg-red-100 text-red-700"
+                : isHost
+                  ? "bg-blue-50 text-blue-600"
+                  : "bg-surface-strong text-ink-muted"
+            }`}
+          >
+            {isAdmin ? "관리자" : isHost ? "호스트 회원" : "일반 회원"}
           </span>
         </div>
-        <ChevronRightIcon size={18} className="text-ink-muted" />
+
+        <div className="relative z-10 flex items-center gap-4">
+          <span className="text-[13px] text-ink-soft">
+            <span className="font-bold text-ink">{followerCount ?? "-"}</span> 팔로워
+          </span>
+          <span className="text-[13px] text-ink-soft">
+            <span className="font-bold text-ink">{followingCount ?? "-"}</span> 팔로잉
+          </span>
+        </div>
+
+       <ChevronRightIcon size={18} className="absolute right-4 top-1/2 z-10 -translate-y-1/2 text-ink" />
+
+        <span aria-hidden className="pointer-events-none absolute -right-0 -bottom-5 text-[84px] opacity-90">
+          🌱
+        </span>
       </Link>
 
       {isHost ? (
