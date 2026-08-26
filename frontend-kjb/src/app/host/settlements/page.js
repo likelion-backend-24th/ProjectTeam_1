@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { getHostSettlements } from "@/lib/api/settlement";
-import { ChevronRightIcon } from "@/components/icons";
+import { BackIcon } from "@/components/icons";
 
 export default function HostSettlementPage() {
   const router = useRouter();
@@ -27,7 +27,6 @@ export default function HostSettlementPage() {
     fetchSettlements();
   }, []);
 
-  // 날짜 데이터를 보기 쉽게 포맷팅하는 헬퍼 함수
   const formatDate = (dateString) => {
     if (!dateString) return "-";
     const date = new Date(dateString);
@@ -39,18 +38,14 @@ export default function HostSettlementPage() {
   return (
     <AppShell
       header={
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-surface text-ink hover:bg-surface-strong"
-            aria-label="뒤로 가기"
-          >
-            {/* 뒤로가기 화살표 아이콘 (좌측 방향) */}
-            <ChevronRightIcon size={18} className="rotate-180" />
-          </button>
-          <PageHeader title="내 정산 내역" />
-        </div>
+        <PageHeader
+          title="내 정산 내역"
+          left={
+            <button type="button" onClick={() => router.back()} className="cursor-pointer">
+              <BackIcon size={22} />
+            </button>
+          }
+        />
       }
     >
       {loading && (
