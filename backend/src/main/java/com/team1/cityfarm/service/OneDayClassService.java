@@ -76,6 +76,11 @@ public class OneDayClassService {
         return OneDayClassResponseDto.from(oneDayClass, classEnrollmentService.getEnrolledCount(classId));
     }
 
+    //    호스트 관리 화면 - 내가 개설한 클래스 개수
+    public long countMyClasses(Long hostId) {
+        return oneDayClassRepository.countByHost_Id(hostId);
+    }
+
     //    클래스 취소
     @Transactional
     public List<ClassEnrollment> cancelClass(Long classId, Long hostId) {

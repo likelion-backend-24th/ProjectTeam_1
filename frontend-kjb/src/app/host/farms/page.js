@@ -9,6 +9,7 @@ import { BackIcon, ChevronRightIcon, PencilIcon, SproutIcon } from "@/components
 import { useAuthStore } from "@/store/authStore";
 import { getMyFarms, resolveFarmImageUrl } from "@/lib/api/farm";
 import { getHostReservationSummary } from "@/lib/api/host";
+import { getMyClassCount } from "@/lib/api/onedayclass";
 import { formatDate } from "@/utils/format";
 
 const TABS = [
@@ -32,6 +33,7 @@ function HostFarmsView() {
   const isHost = useAuthStore((s) => s.isHost);
   const [farms, setFarms] = useState([]);
   const [thisMonthCount, setThisMonthCount] = useState(0);
+  const [classCount, setClassCount] = useState(0);
   const [activeTab, setActiveTab] = useState("ALL");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -43,10 +45,15 @@ function HostFarmsView() {
       setIsLoading(true);
       setError(null);
       try {
-        const [farmList, summary] = await Promise.all([getMyFarms(), getHostReservationSummary()]);
+        const [farmList, summary, myClassCount] = await Promise.all([
+          getMyFarms(),
+          getHostReservationSummary(),
+          getMyClassCount(),
+        ]);
         if (ignore) return;
         setFarms(farmList);
         setThisMonthCount(summary.thisMonthCount);
+        setClassCount(myClassCount);
        } catch (err) {
         if (!ignore) setError(err?.code ? err.message : "내 땅 목록을 불러오지 못했어요.");
       } finally {
@@ -98,11 +105,14 @@ function HostFarmsView() {
       }
     >
       <div className="flex flex-col gap-4 rounded-2xl bg-gradient-to-br from-emerald-700 to-emerald-500 px-4 py-5 text-white">
-        <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15">
-            <SproutIcon size={18} />
-          </span>
-          <span className="text-[14px] font-semibold text-emerald-50">올린 땅 수</span>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15">
+              <SproutIcon size={18} />
+            </span>
+            <span className="text-[14px] font-semibold text-emerald-50">올린 땅 수</span>
+          </div>
+          <span className="text-[13px] font-semibold text-emerald-50">개설한 클래스 {classCount}개</span>
         </div>
 
         <span className="text-3xl font-bold">{farms.length}개 🏡</span>

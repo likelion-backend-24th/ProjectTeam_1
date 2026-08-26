@@ -86,6 +86,17 @@ public class OneDayClassController {
         return ApiResponse.success("클래스 설명 수정 성공", oneDayClassService.updateDescription(classId, hostId, requestDto));
     }
 
+    @Operation(summary = "내가 개설한 클래스 개수 조회",
+            description = "호스트 관리 화면의 '개설한 클래스' 카운트용.",
+            security = @SecurityRequirement(name = "BearerAuth"))
+    @GetMapping("/host/me/count")
+    public ApiResponse<Long> getMyClassCount(@AuthenticationPrincipal CustomUserDetails customUserDetails) {
+
+        Long hostId = customUserDetails.getUserId();
+
+        return ApiResponse.success("내 클래스 개수 조회 성공", oneDayClassService.countMyClasses(hostId));
+    }
+
     @Operation(summary = "클래스 취소", description = "호스트가 자신의 클래스를 취소하고, 신청건들을 환불/수강권 복구 처리",
     security = @SecurityRequirement(name = "BearerAuth"))
     @PostMapping("/{classId}/cancel")

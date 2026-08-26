@@ -21,4 +21,7 @@ public interface OneDayClassRepository extends JpaRepository<OneDayClass, Long> 
 
     // 목록 조회용 - 호스트가 취소한 클래스는 제외
     Page<OneDayClass> findByStatus(ClassStatus status, Pageable pageable);
+
+    // 호스트 관리 화면 - 내가 개설한 클래스 개수
+    long countByHost_Id(Long hostId);
 }
