@@ -74,4 +74,16 @@ public class FarmController {
         Long userId = userDetails.getUserId();
         return ApiResponse.success("밭 정보 수정 성공", farmService.updateFarm(farmId, requestDto, images, userId));
     }
+
+    // 밭 게시글 삭제
+    @Operation(summary = "밭 게시글 삭제", description = "임대 가능한 상태의 밭만 삭제할 수 있습니다.", security = @SecurityRequirement(name = "BearerAuth"))
+    @DeleteMapping("/{farmId}")
+    public ApiResponse<Void> deleteFarm(
+            @PathVariable Long farmId,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ){
+        Long userId = userDetails.getUserId();
+        farmService.deleteFarm(farmId, userId);
+        return ApiResponse.success("밭 게시글 삭제 성공");
+    }
 }

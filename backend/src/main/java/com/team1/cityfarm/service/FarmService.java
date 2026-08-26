@@ -173,6 +173,29 @@ public class FarmService {
 
     }
 
+
+    // 밭 게시글 삭제
+    @Transactional
+    public void deleteFarm(Long farmId, long userId){
+        Farm farm = farmRepository.findById(farmId)
+                .orElseThrow(() -> new CustomException(CustomError.FARM_NOT_FOUND));
+
+        // 등록자 본인만 삭제 가능
+        if (!farm.getUser().getId().equals(userId)){
+            throw new CustomException(CustomError.FARM_NOT_OWNER);
+        }
+
+        // 임대 가능 상태일 때만 삭제 허용
+        if (farm.getFarmStatus() != FarmStatus.AVAILABLE){
+            throw new CustomException(CustomError.FARM_DELETE_NOT_ALLOWED);
+        }
+
+        farmImageRepository.deleteAll(farmImageRepository.findByFarm_IdOrderByIdAsc(farmId));
+        rentalRepository.deleteByFarm_Id(farmId);
+        farmRepository.delete(farm);
+    }
+
+
     // 호스트 - 내가 등록한 밭 목록 (관리 화면용)
     @Transactional(readOnly = true)
     public List<HostFarmResponseDto> getMyFarms(Long userId){

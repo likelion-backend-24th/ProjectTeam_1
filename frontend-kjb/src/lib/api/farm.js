@@ -44,3 +44,7 @@ export function getMyFarms() {
 export function resolveFarmImageUrl(path) {
   return path ? `${API_BASE_URL}${path}` : null;
 }
+
+export function deleteFarm(farmId) {
+  return apiRequest(`/api/farms/${farmId}`, { method: "DELETE" });
+}
