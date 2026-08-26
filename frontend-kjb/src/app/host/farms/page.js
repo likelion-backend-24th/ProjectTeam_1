@@ -5,11 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { RequireAuth } from "@/components/RequireAuth";
-import { BackIcon, ChevronRightIcon, PencilIcon, SproutIcon } from "@/components/icons";
+import { BackIcon, CalendarIcon, ChevronRightIcon, PencilIcon, SproutIcon } from "@/components/icons";
 import { useAuthStore } from "@/store/authStore";
 import { getMyFarms, resolveFarmImageUrl } from "@/lib/api/farm";
 import { getHostReservationSummary } from "@/lib/api/host";
-import { getMyClassCount } from "@/lib/api/onedayclass";
+import { getMyClasses } from "@/lib/api/onedayclass";
 import { formatDate } from "@/utils/format";
 
 const TABS = [
@@ -33,7 +33,7 @@ function HostFarmsView() {
   const isHost = useAuthStore((s) => s.isHost);
   const [farms, setFarms] = useState([]);
   const [thisMonthCount, setThisMonthCount] = useState(0);
-  const [classCount, setClassCount] = useState(0);
+  const [myClasses, setMyClasses] = useState([]);
   const [activeTab, setActiveTab] = useState("ALL");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -45,15 +45,16 @@ function HostFarmsView() {
       setIsLoading(true);
       setError(null);
       try {
-        const [farmList, summary, myClassCount] = await Promise.all([
-          getMyFarms(),
-          getHostReservationSummary(),
-          getMyClassCount(),
-        ]);
+        const [farmList, summary] = await Promise.all([getMyFarms(), getHostReservationSummary()]);
         if (ignore) return;
         setFarms(farmList);
         setThisMonthCount(summary.thisMonthCount);
-        setClassCount(myClassCount);
+
+        getMyClasses()
+          .then((classes) => {
+            if (!ignore) setMyClasses(classes);
+          })
+          .catch(() => {});
        } catch (err) {
         if (!ignore) setError(err?.code ? err.message : "내 땅 목록을 불러오지 못했어요.");
       } finally {
@@ -95,6 +96,8 @@ function HostFarmsView() {
 
   const operatingCount = farms.filter((f) => f.farmStatus === "RENTED").length;
   const inactiveCount = farms.filter((f) => f.farmStatus === "AVAILABLE").length;
+  const openClassCount = myClasses.filter((c) => new Date(c.date) >= new Date()).length;
+  const endedClassCount = myClasses.filter((c) => new Date(c.date) < new Date()).length;
   return (
     <AppShell
       header={
@@ -105,27 +108,49 @@ function HostFarmsView() {
       }
     >
       <div className="flex flex-col gap-4 rounded-2xl bg-gradient-to-br from-emerald-700 to-emerald-500 px-4 py-5 text-white">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15">
-              <SproutIcon size={18} />
-            </span>
-            <span className="text-[14px] font-semibold text-emerald-50">올린 땅 수</span>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15">
+                <SproutIcon size={18} />
+              </span>
+              <span className="text-[14px] font-semibold text-emerald-50">올린 땅 수</span>
+            </div>
+            <span className="text-3xl font-bold">{farms.length}개 🏡</span>
           </div>
-          <span className="text-[13px] font-semibold text-emerald-50">개설한 클래스 {classCount}개</span>
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15">
+                <CalendarIcon size={18} />
+              </span>
+              <span className="text-[14px] font-semibold text-emerald-50">총 클래스</span>
+            </div>
+            <span className="text-3xl font-bold">{myClasses.length}개 📅</span>
+          </div>
         </div>
 
-        <span className="text-3xl font-bold">{farms.length}개 🏡</span>
-
-        <div className="flex items-center gap-4">
-          <div className="flex flex-col gap-2">
-            <span className="w-fit rounded-full bg-white/15 px-3 py-1 text-[12px] font-semibold text-white">운영 중</span>
-            <span className="text-lg font-bold">{operatingCount}개 🌱</span>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col gap-2">
+              <span className="w-fit rounded-full bg-white/15 px-3 py-1 text-[12px] font-semibold text-white">운영 중</span>
+              <span className="text-lg font-bold">{operatingCount}개 🌱</span>
+            </div>
+            <div className="h-10 w-px bg-white/20" />
+            <div className="flex flex-col gap-2">
+              <span className="w-fit rounded-full bg-white/10 px-3 py-1 text-[12px] font-semibold text-emerald-50">미운영</span>
+              <span className="text-lg font-bold">{inactiveCount}개 🍃</span>
+            </div>
           </div>
-          <div className="h-10 w-px bg-white/20" />
-          <div className="flex flex-col gap-2">
-            <span className="w-fit rounded-full bg-white/10 px-3 py-1 text-[12px] font-semibold text-emerald-50">미운영</span>
-            <span className="text-lg font-bold">{inactiveCount}개 🍃</span>
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col items-end gap-2">
+              <span className="w-fit rounded-full bg-white/15 px-3 py-1 text-[12px] font-semibold text-white">진행중</span>
+              <span className="text-lg font-bold">{openClassCount}개 📖</span>
+            </div>
+            <div className="h-10 w-px bg-white/20" />
+            <div className="flex flex-col items-end gap-2">
+              <span className="w-fit rounded-full bg-white/10 px-3 py-1 text-[12px] font-semibold text-emerald-50">종료</span>
+              <span className="text-lg font-bold">{endedClassCount}개 ✅</span>
+            </div>
           </div>
         </div>
 

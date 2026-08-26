@@ -12,6 +12,7 @@ import com.team1.cityfarm.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -76,9 +77,12 @@ public class OneDayClassService {
         return OneDayClassResponseDto.from(oneDayClass, classEnrollmentService.getEnrolledCount(classId));
     }
 
-    //    호스트 관리 화면 - 내가 개설한 클래스 개수
-    public long countMyClasses(Long hostId) {
-        return oneDayClassRepository.countByHost_Id(hostId);
+    //    호스트 관리 화면 - 내가 개설한 클래스 목록 (취소한 클래스는 제외)
+    public List<OneDayClassSummaryDto> getMyClasses(Long hostId) {
+        return oneDayClassRepository.findByHost_IdAndStatus(hostId, ClassStatus.OPEN, Sort.by(Sort.Direction.ASC, "date"))
+                .stream()
+                .map(cls -> OneDayClassSummaryDto.from(cls, classEnrollmentService.getEnrolledCount(cls.getId())))
+                .toList();
     }
 
     //    클래스 취소

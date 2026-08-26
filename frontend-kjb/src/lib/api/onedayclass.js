@@ -35,7 +35,7 @@ export function getClassApplicants(classId) {
   return apiRequest(`/api/onedayclass/${classId}/applicants`);
 }
 
-// 호스트 관리 화면 - 내가 개설한 클래스 개수.
-export function getMyClassCount() {
-  return apiRequest("/api/onedayclass/host/me/count");
+// 호스트 관리 화면 - 내가 개설한 클래스 목록 (취소한 클래스는 제외).
+export function getMyClasses() {
+  return apiRequest("/api/onedayclass/host/me");
 }
