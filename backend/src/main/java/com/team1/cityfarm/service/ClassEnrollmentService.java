@@ -187,11 +187,16 @@ public class ClassEnrollmentService {
     }
 
     //    호스트 - 내 클래스 신청자 목록 조회
-    public List<EnrollmentApplicantResponseDto> getApplicant(Long classId, Long hostId) {
+    public List<EnrollmentApplicantResponseDto> getApplicant(Long classId, Long requesterId) {
         OneDayClass oneDayClass = oneDayClassRepository.findById(classId)
                 .orElseThrow(() -> new CustomException(CustomError.ONE_DAY_CLASS_NOT_FOUND));
 
-        if (!oneDayClass.getHost().getId().equals(hostId)) {
+        User requester = userRepository.findById(requesterId)
+                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
+
+        boolean isOwner = oneDayClass.getHost().getId().equals(requesterId);
+        boolean isAdmin = requester.getRoleType() == RoleType.ADMIN;
+        if (!isOwner && !isAdmin) {
             throw new CustomException(CustomError.CLASS_NOT_OWNER);
         }
 

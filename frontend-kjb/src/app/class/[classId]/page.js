@@ -30,6 +30,7 @@ export default function OneDayClassDetailPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const authLoading = useAuthStore((s) => s.isLoading);
   const profile = useAuthStore((s) => s.profile);
+  const isAdmin = useAuthStore((s) => s.isAdmin);
 
   const [cls, setCls] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -68,6 +69,7 @@ export default function OneDayClassDetailPage() {
   }, [load]);
 
   const isOwnClass = !!profile && cls?.hostId != null && profile.id === cls.hostId;
+  const canManageClass = isOwnClass || isAdmin;
 
   const loadMyEnrollment = useCallback(async () => {
     setIsEnrollmentLoading(true);
@@ -205,7 +207,7 @@ export default function OneDayClassDetailPage() {
             </button>
           )}
 
-          {!authLoading && isAuthenticated && isOwnClass && (
+          {!authLoading && isAuthenticated && canManageClass && (
             <HostClassActions
               classId={classId}
               description={cls.description}
