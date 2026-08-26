@@ -6,7 +6,7 @@ import { AppShell, PageHeader } from "@/components/AppShell";
 import { BackIcon, ChevronRightIcon } from "@/components/icons";
 import { getFarm } from "@/lib/api/farm";
 import { API_BASE_URL, ApiError } from "@/lib/api/client";
-import { formatCurrency } from "@/utils/format";
+import { formatCurrency, formatDate } from "@/utils/format";
 import { useAuthStore } from "@/store/authStore";
 
 const STATUS_LABEL = {
@@ -130,7 +130,9 @@ export default function FarmDetailPage() {
               </span>
             </div>
             <p className="text-[13px] text-ink-muted">{farm.location}</p>
-            <p className="text-[13px] text-ink-muted">등록자 {farm.ownerNickname}</p>
+            <p className="text-[13px] text-ink-muted">
+              등록자 {farm.ownerNickname} · {formatDate(farm.createdAt)}
+            </p>
           </div>
 
           <p className="text-[20px] font-extrabold text-ink">월 {formatCurrency(farm.monthlyRent)}</p>
