@@ -28,6 +28,13 @@ public class Settlement {
     private Order order;
 
     /**
+     * 구독 수강권으로 신청한 건에 대한 정산인 경우, 어떤 신청(ClassEnrollment)에서 발생했는지.
+     * 이 경로는 Order가 없어(order=null) order_id로 역추적이 불가능하므로 별도로 보관한다.
+     */
+    @Column(name = "enrollment_id")
+    private Long enrollmentId;
+
+    /**
      * 정산을 받을 HOST
      */
     @ManyToOne(fetch = FetchType.LAZY)
@@ -87,6 +94,7 @@ public class Settlement {
     @Builder
     public Settlement(
             Order order,
+            Long enrollmentId,
             User host,
             String className,
             SettlementType settlementType,
@@ -95,6 +103,7 @@ public class Settlement {
             int settlementAmount
     ) {
         this.order = order;
+        this.enrollmentId = enrollmentId;
         this.host = host;
         this.className = className;
         this.settlementType = settlementType;
