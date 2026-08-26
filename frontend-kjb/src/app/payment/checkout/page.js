@@ -109,7 +109,6 @@ function CheckoutView({ pendingRef }) {
         <p className="text-[15px] font-extrabold">{order.title ?? "클래스 결제"}</p>
         {order.scheduledAt && <Row label="클래스 일정" value={formatDateTime(order.scheduledAt)} />}
         <hr className="border-border" />
-        <Row label="클래스 가격" value={formatCurrency(order.originalAmount ?? order.amount)} />
         <Row label="최종 결제 금액" value={formatCurrency(order.amount)} strong />
         <Row label="결제 방법" value="카드 (PortOne)" />
       </div>
