@@ -1,9 +1,13 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { getHostSettlements } from '@/lib/api/settlement';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { AppShell, PageHeader } from "@/components/AppShell";
+import { getHostSettlements } from "@/lib/api/settlement";
+import { ChevronRightIcon } from "@/components/icons";
 
 export default function HostSettlementPage() {
+  const router = useRouter();
   const [settlements, setSettlements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -14,7 +18,7 @@ export default function HostSettlementPage() {
         const data = await getHostSettlements();
         setSettlements(data);
       } catch (err) {
-        setError(err.message || '정산 내역을 불러오는데 실패했습니다.');
+        setError(err.message || "정산 내역을 불러오는데 실패했습니다.");
       } finally {
         setLoading(false);
       }
@@ -25,91 +29,99 @@ export default function HostSettlementPage() {
 
   // 날짜 데이터를 보기 쉽게 포맷팅하는 헬퍼 함수
   const formatDate = (dateString) => {
-    if (!dateString) return '-';
+    if (!dateString) return "-";
     const date = new Date(dateString);
     return isNaN(date.getTime()) 
       ? dateString 
-      : date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+      : date.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-[50vh]">
-        <p className="text-gray-500 text-lg">정산 내역을 불러오는 중...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex justify-center items-center min-h-[50vh]">
-        <p className="text-red-500 text-lg">에러 발생: {error}</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6 text-gray-900">내 정산 내역</h1>
-
-      <div className="bg-white shadow-md rounded-lg overflow-hidden border border-gray-200">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-gray-50 text-gray-700 uppercase text-xs tracking-wider">
-              <tr>
-                <th className="py-3 px-6">정산 번호</th>
-                <th className="py-3 px-6">클래스명</th>
-                <th className="py-3 px-6">결제 금액</th>
-                <th className="py-3 px-6">정산 비율</th>
-                <th className="py-3 px-6">정산 금액</th>
-                <th className="py-3 px-6">상태</th>
-                <th className="py-3 px-6">생성 일시</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 text-sm text-gray-600">
-              {settlements.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-6 text-center text-gray-400">
-                    조회된 정산 내역이 없습니다.
-                  </td>
-                </tr>
-              ) : (
-                settlements.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="py-4 px-6 font-medium text-gray-900">{item.id}</td>
-                    <td className="py-4 px-6 font-medium text-gray-800">{item.className || '-'}</td>
-                    <td className="py-4 px-6 text-gray-600">
-                      {item.paymentAmount?.toLocaleString()}원
-                    </td>
-                    <td className="py-4 px-6 text-gray-600">
-                      {item.settlementRate ? `${item.settlementRate}%` : '-'}
-                    </td>
-                    <td className="py-4 px-6 font-semibold text-blue-600">
-                      {item.settlementAmount?.toLocaleString()}원
-                    </td>
-                    <td className="py-4 px-6">
-                      <span
-                        className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                          item.status === 'COMPLETED'
-                            ? 'bg-green-100 text-green-800'
-                            : item.status === 'CANCELLED'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}
-                      >
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6 text-xs text-gray-500">
-                      {formatDate(item.createdAt)}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+    <AppShell
+      header={
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-surface text-ink hover:bg-surface-strong"
+            aria-label="뒤로 가기"
+          >
+            {/* 뒤로가기 화살표 아이콘 (좌측 방향) */}
+            <ChevronRightIcon size={18} className="rotate-180" />
+          </button>
+          <PageHeader title="내 정산 내역" />
         </div>
-      </div>
-    </div>
+      }
+    >
+      {loading && (
+        <div className="flex justify-center items-center py-12">
+          <p className="text-sm text-ink-muted">정산 내역을 불러오는 중...</p>
+        </div>
+      )}
+
+      {error && (
+        <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+          에러 발생: {error}
+        </div>
+      )}
+
+      {!loading && !error && (
+        <div className="flex flex-col gap-3">
+          {settlements.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl bg-surface px-4 py-12 text-center text-sm text-ink-muted">
+              조회된 정산 내역이 없습니다.
+            </div>
+          ) : (
+            settlements.map((item) => (
+              <div
+                key={item.id}
+                className="flex flex-col gap-3 rounded-2xl border border-border bg-white p-4 shadow-sm"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[12px] font-semibold text-ink-muted">
+                    정산번호 #{item.id}
+                  </span>
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                      item.status === "COMPLETED"
+                        ? "bg-green-100 text-green-800"
+                        : item.status === "CANCELLED"
+                        ? "bg-red-100 text-red-800"
+                        : "bg-yellow-100 text-yellow-800"
+                    }`}
+                  >
+                    {item.status}
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <span className="text-[15px] font-bold text-ink">
+                    {item.className || "-"}
+                  </span>
+                  <span className="text-[12px] text-ink-muted">
+                    생성일시: {formatDate(item.createdAt)}
+                  </span>
+                </div>
+
+                <div className="mt-1 flex items-center justify-between border-t border-border pt-3 text-[13px]">
+                  <div className="flex flex-col">
+                    <span className="text-[11px] text-ink-muted">결제 금액 ({item.settlementRate ? `${item.settlementRate}%` : '-'})</span>
+                    <span className="font-semibold text-ink">
+                      {item.paymentAmount?.toLocaleString()}원
+                    </span>
+                  </div>
+                  <div className="flex flex-col text-right">
+                    <span className="text-[11px] text-ink-muted">정산 금액</span>
+                    <span className="text-[15px] font-bold text-primary">
+                      {item.settlementAmount?.toLocaleString()}원
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </AppShell>
   );
 }
