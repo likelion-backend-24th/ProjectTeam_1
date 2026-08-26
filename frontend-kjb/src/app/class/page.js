@@ -123,7 +123,10 @@ export default function OneDayClassListPage() {
               <p className="truncate text-[15px] font-bold">{cls.title}</p>
               {cls.description && <p className="line-clamp-2 text-[13px] text-ink-soft">{cls.description}</p>}
               <div className="flex items-center justify-between gap-2 text-xs text-ink-muted">
-                <span>{formatDateTime(cls.date)}</span>
+                <span>
+                  {formatDateTime(cls.date)}
+                  {cls.hostNickname && ` · ${cls.hostNickname}`}
+                </span>
                 <div className="flex shrink-0 items-center gap-3">
                   <span className="flex items-center gap-1">
                     <LocationIcon size={14} /> {cls.location}
