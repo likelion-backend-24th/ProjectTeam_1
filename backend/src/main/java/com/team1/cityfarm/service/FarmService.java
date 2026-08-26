@@ -180,8 +180,11 @@ public class FarmService {
         Farm farm = farmRepository.findById(farmId)
                 .orElseThrow(() -> new CustomException(CustomError.FARM_NOT_FOUND));
 
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
+
         // 등록자 본인만 삭제 가능
-        if (!farm.getUser().getId().equals(userId)){
+        if (!farm.getUser().getId().equals(userId) && !user.getRoleType().equals(RoleType.ADMIN)){
             throw new CustomException(CustomError.FARM_NOT_OWNER);
         }
 
