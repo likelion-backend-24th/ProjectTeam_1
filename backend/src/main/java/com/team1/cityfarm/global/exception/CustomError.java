@@ -84,7 +84,6 @@ public enum CustomError {
     FARM_NOT_FOUND(HttpStatus.NOT_FOUND,"존재하지 않는 밭입니다."),
     FARM_ALREADY_RENTED(HttpStatus.BAD_REQUEST, "이미 임대 중인 밭입니다."),
     FARM_NOT_OWNER(HttpStatus.FORBIDDEN, "밭 등록자 본인만 수정할 수 있습니다."),
-    FARM_DELETE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "임대 가능한 상태의 밭만 삭제할 수 있습니다."),
 
     RENTAL_NOT_FOUND(HttpStatus.NOT_FOUND, "신청 내역을 찾을 수 없습니다."),
     RENTAL_NOT_OWNER(HttpStatus.FORBIDDEN, "본인이 신청한 임대만 취소할 수 있습니다."),
