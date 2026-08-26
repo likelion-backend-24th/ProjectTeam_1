@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { getFarms } from "@/lib/api/farm";
 import { API_BASE_URL, ApiError } from "@/lib/api/client";
-import { formatCurrency } from "@/utils/format";
+import { formatCurrency, formatDate } from "@/utils/format";
 
 const PAGE_SIZE = 10;
 const MAX_PAGE_BUTTONS = 5;
@@ -97,6 +97,9 @@ export default function FarmListPage() {
                 <p className="truncate text-[15px] font-bold">{farm.title}</p>
                 <p className="truncate text-[13px] text-ink-muted">{farm.location}</p>
                 <p className="text-[13px] text-ink-muted">{farm.area}m²</p>
+                <p className="truncate text-[12px] text-ink-muted">
+                  {farm.ownerNickname} · {formatDate(farm.createdAt)}
+                </p>
                 <p className="text-[14px] font-bold text-ink">월 {formatCurrency(farm.monthlyRent)}</p>
               </div>
             </Link>
