@@ -585,7 +585,7 @@ public class SubscriptionService {
         // 수강권으로 들은 클래스도 일반결제와 동일하게 호스트 정산 대상에 포함한다(정책 확정 사항).
         // 결제(Order/Payment)가 없는 경로라 클래스 가격을 정산 기준 금액으로 사용한다.
         OneDayClass oneDayClass = enrollment.getOneDayClass();
-        settlementService.createPendingSettlementForPass(oneDayClass.getHost(), classId, oneDayClass.getPrice());
+        settlementService.createPendingSettlementForPass(oneDayClass.getHost(), classId, oneDayClass.getPrice(), enrollment.getId());
 
         log.info("[구독 수강권 사용] userId: {}, subscriptionId: {}, passId: {}, classId: {}, 잔여: {}",
                 userId, subscription.getId(), pass.getId(), classId, pass.getRemainingCount());
@@ -629,6 +629,10 @@ public class SubscriptionService {
         }
 
         subscriptionPassUsageRepository.delete(usage);
+
+        // GENERAL 결제 취소(PaymentService.refundForHostCancelledClass)와 대칭되게, 이 신청 건으로
+        // 발생한 Settlement도 함께 취소한다 — 안 그러면 호스트 클래스 취소 시 PENDING에 계속 남는다.
+        settlementService.cancelSettlementByEnrollmentId(enrollmentId);
 
         log.info("[구독 수강권 복구] enrollmentId: {}, passId: {}, 복구 후 잔여: {}",
                 enrollmentId, pass.getId(), pass.getRemainingCount());
