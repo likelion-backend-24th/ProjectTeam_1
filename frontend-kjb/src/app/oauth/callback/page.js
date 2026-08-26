@@ -11,10 +11,10 @@ function OAuthCallbackContent() {
 
   useEffect(() => {
     const accessToken = searchParams.get("accessToken");
-    // refreshToken도 필요하면 여기서 searchParams.get("refreshToken")으로 받으실 수 있습니다.
+    const refreshToken = searchParams.get("refreshToken");
 
     if (accessToken) {
-      socialLogin(accessToken)
+      socialLogin(accessToken, refreshToken)
         .then(() => {
           // 로그인 성공 시 메인 화면으로 이동
           router.replace("/");
