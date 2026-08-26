@@ -38,7 +38,7 @@ export default function SubscriptionPage() {
         }
       }
     } catch (err) {
-      // 구독 이력이 없는 사용자는 404를 받는 것이 정상이므로 별도 에러로 취급하지 않는다.
+      // 구독 이력이 없는 사용자는 404를 받는 것이 정상이므로 별도 에러로 취급하지 않습니다.
       if (err instanceof ApiError && err.status === 404) {
         setSubscription(null);
       } else {
