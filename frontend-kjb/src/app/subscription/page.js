@@ -1,14 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
+import LinkComponent from "next/link";
 import { useRouter } from "next/navigation";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { PlanCard } from "@/components/subscription/PlanCard";
 import { CurrentSubscriptionCard } from "@/components/subscription/CurrentSubscriptionCard";
 import { CancelSubscriptionButton } from "@/components/subscription/CancelSubscriptionButton";
 import { PassUsageSection } from "@/components/subscription/PassUsageSection";
-import { ChevronRightIcon } from "@/components/icons";
+import { ChevronRightIcon, BackIcon } from "@/components/icons";
 import { getMySubscription, getSubscriptionPass } from "@/lib/api/subscription";
 import { ApiError } from "@/lib/api/client";
 import { useAuthStore } from "@/store/authStore";
@@ -38,7 +38,6 @@ export default function SubscriptionPage() {
         }
       }
     } catch (err) {
-      // 구독 이력이 없는 사용자는 404를 받는 것이 정상이므로 별도 에러로 취급하지 않는다.
       if (err instanceof ApiError && err.status === 404) {
         setSubscription(null);
       } else {
@@ -64,17 +63,14 @@ export default function SubscriptionPage() {
   return (
     <AppShell
       header={
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-surface text-ink hover:bg-surface-strong"
-            aria-label="뒤로 가기"
-          >
-            <ChevronRightIcon size={18} className="rotate-180" />
-          </button>
-          <PageHeader title="구독" />
-        </div>
+        <PageHeader
+          title="구독"
+          left={
+            <button type="button" onClick={() => router.back()} className="cursor-pointer">
+              <BackIcon size={22} />
+            </button>
+          }
+        />
       }
     >
       {!isAuthenticated && !authLoading && (
@@ -102,13 +98,13 @@ export default function SubscriptionPage() {
         <>
           <CurrentSubscriptionCard subscription={subscription} passSummary={currentPass} />
 
-          <Link
+          <LinkComponent
             href="/subscription/billing"
             className="flex items-center justify-between rounded-xl border border-border bg-white px-4 py-3.5"
           >
             <span className="text-[14px] font-semibold">결제수단 관리</span>
             <ChevronRightIcon size={18} className="text-ink-muted" />
-          </Link>
+          </LinkComponent>
 
           {currentPass && <PassUsageSection passId={currentPass.id} />}
 
