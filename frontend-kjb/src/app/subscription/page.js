@@ -38,7 +38,7 @@ export default function SubscriptionPage() {
         }
       }
     } catch (err) {
-      // 구독 이력이 없는 사용자는 404를 받는 것이 정상이므로 별도 에러로 취급하지 않습니다.
+      // 구독 이력이 없는 사용자는 404를 받는 것이 정상이므로 별도 에러로 취급하지 않는다.
       if (err instanceof ApiError && err.status === 404) {
         setSubscription(null);
       } else {
@@ -62,7 +62,21 @@ export default function SubscriptionPage() {
   const isActive = subscription?.status === "ACTIVE";
 
   return (
-    <AppShell header={<PageHeader title="구독" />}>
+    <AppShell
+      header={
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-surface text-ink hover:bg-surface-strong"
+            aria-label="뒤로 가기"
+          >
+            <ChevronRightIcon size={18} className="rotate-180" />
+          </button>
+          <PageHeader title="구독" />
+        </div>
+      }
+    >
       {!isAuthenticated && !authLoading && (
         <>
           <p className="text-[13px] text-ink-soft">
