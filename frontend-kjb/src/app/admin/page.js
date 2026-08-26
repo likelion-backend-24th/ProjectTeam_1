@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { RequireAuth } from "@/components/RequireAuth";
 import { getAllUsers, patchUser } from "@/lib/api/admin";
@@ -19,6 +20,7 @@ const STATUS_LABEL = {
 };
 
 function AdminView() {
+  const router = useRouter();
   const showToast = useToastStore((s) => s.showToast);
   const [users, setUsers] = useState([]);
   const [page, setPage] = useState(0);
@@ -76,7 +78,22 @@ function AdminView() {
   }
 
   return (
-    <AppShell header={<PageHeader title="회원 관리" />}>
+    <AppShell
+      header={
+        <PageHeader
+          title="회원 관리"
+          right={
+            <button
+              type="button"
+              onClick={() => router.push("/admin/settlements")}
+              className="rounded-lg bg-surface px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-surface-hover"
+            >
+              정산 관리
+            </button>
+          }
+        />
+      }
+    >
       <p className="text-sm text-ink-soft">전체 회원 {totalElements}명</p>
 
       {error && <p className="rounded-lg bg-red-50 px-3.5 py-2.5 text-[13px] text-red-700">{error}</p>}
