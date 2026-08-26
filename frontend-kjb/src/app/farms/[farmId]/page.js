@@ -4,10 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { BackIcon, ChevronRightIcon } from "@/components/icons";
-import { getFarm } from "@/lib/api/farm";
 import { API_BASE_URL, ApiError } from "@/lib/api/client";
 import { formatCurrency } from "@/utils/format";
 import { useAuthStore } from "@/store/authStore";
+import { useToastStore } from "@/store/toastStore";
+import { getFarm, deleteFarm } from "@/lib/api/farm";
 
 const STATUS_LABEL = {
   AVAILABLE: "임대 가능",
@@ -65,9 +66,22 @@ export default function FarmDetailPage() {
     router.push(`/farms/${id}/apply`);
   }
 
-  function handleEditClick(){
-    router.push(`/farms/${id}/edit`);
+const showToast = useToastStore((s) => s.showToast);
+const [isDeleting, setIsDeleting] = useState(false);
+
+async function handleDeleteClick() {
+  if (!window.confirm("이 게시글을 삭제할까요? 삭제하면 되돌릴 수 없어요.")) return;
+  setIsDeleting(true);
+  try {
+    await deleteFarm(id);
+    showToast("게시글이 삭제되었어요.");
+    router.push("/host/farms");
+  } catch (err) {
+    showToast(err instanceof ApiError ? err.message : "삭제에 실패했어요.", "error");
+  } finally {
+    setIsDeleting(false);
   }
+}
 
   return (
     <AppShell
@@ -152,13 +166,25 @@ export default function FarmDetailPage() {
           </div>
 
          {isOwner ? (
-            <button
-              type="button"
-              onClick={handleEditClick}
-              className="mt-2 h-[50px] w-full rounded-xl bg-primary text-[15px] font-semibold text-white cursor-pointer"
-            >
-              수정하기
-            </button>
+  <div className="mt-2 flex gap-2">
+    <button
+      type="button"
+      onClick={handleEditClick}
+      className="h-[50px] flex-1 rounded-xl bg-primary text-[15px] font-semibold text-white cursor-pointer"
+    >
+      수정하기
+    </button>
+    {farm.farmStatus === "AVAILABLE" && (
+      <button
+        type="button"
+        onClick={handleDeleteClick}
+        disabled={isDeleting}
+        className="h-[50px] flex-1 rounded-xl bg-surface-strong text-[15px] font-semibold text-red-600 disabled:opacity-50 cursor-pointer"
+      >
+        {isDeleting ? "삭제 중..." : "삭제하기"}
+      </button>
+    )}
+  </div>
           ) : (
             <button
               type="button"

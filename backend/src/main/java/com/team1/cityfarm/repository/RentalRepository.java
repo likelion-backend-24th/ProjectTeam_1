@@ -33,4 +33,9 @@ public interface RentalRepository extends JpaRepository<Rental, Long> {
 
     // 내가 신청했지만 취소한 건 제외
     Page<Rental> findByUser_IdAndRentalStatusNot(Long userId, RentalStatus rentalStatus, Pageable pageable);
+
+    // 밭 삭제 시 해당 밭의 임대 이력(취소 확인용)
+    void deleteByFarm_Id(Long farmId);
+
+
 }
