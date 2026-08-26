@@ -5,11 +5,13 @@ import com.team1.cityfarm.entity.OneDayClass;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface OneDayClassRepository extends JpaRepository<OneDayClass, Long> {
@@ -21,4 +23,7 @@ public interface OneDayClassRepository extends JpaRepository<OneDayClass, Long> 
 
     // 목록 조회용 - 호스트가 취소한 클래스는 제외
     Page<OneDayClass> findByStatus(ClassStatus status, Pageable pageable);
+
+    // 호스트 관리 화면 - 내가 개설한 클래스 목록 (취소한 클래스는 제외)
+    List<OneDayClass> findByHost_IdAndStatus(Long hostId, ClassStatus status, Sort sort);
 }
