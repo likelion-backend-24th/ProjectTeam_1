@@ -203,21 +203,30 @@ function MyPageView() {
           </span>
         </div>
 
-        <div className="relative z-10 flex items-center gap-4">
-          <span className="text-[13px] text-ink-soft">
-            <span className="font-bold text-ink">{followerCount ?? "-"}</span> 팔로워
-          </span>
-          <span className="text-[13px] text-ink-soft">
-            <span className="font-bold text-ink">{followingCount ?? "-"}</span> 팔로잉
-          </span>
+        <div className="absolute right-3 top-3 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-white/70">
+          <ChevronRightIcon size={16} className="text-ink" />
         </div>
 
-       <ChevronRightIcon size={18} className="absolute right-4 top-1/2 z-10 -translate-y-1/2 text-ink" />
-
-        <span aria-hidden className="pointer-events-none absolute -right-0 -bottom-5 text-[84px] opacity-90">
+        <span aria-hidden className="pointer-events-none absolute -right-1 -bottom-2 text-[48px] opacity-90">
           🌱
         </span>
       </Link>
+
+      {/* 팔로워 / 팔로잉 목록 이동 */}
+      <div className="flex items-center gap-2">
+        <Link
+          href="/profile/followers"
+          className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-surface py-3 text-[13px] text-ink-soft"
+        >
+          <span className="font-bold text-ink">{followerCount ?? "-"}</span> 팔로워
+        </Link>
+        <Link
+          href="/profile/following"
+          className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-surface py-3 text-[13px] text-ink-soft"
+        >
+          <span className="font-bold text-ink">{followingCount ?? "-"}</span> 팔로잉
+        </Link>
+      </div>
 
       {isHost ? (
         <Link href="/host/farms" className="flex items-center justify-between rounded-2xl bg-surface px-4 py-3.5">
