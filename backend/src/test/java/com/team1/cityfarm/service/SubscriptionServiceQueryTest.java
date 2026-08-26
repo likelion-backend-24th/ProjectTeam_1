@@ -38,6 +38,7 @@ class SubscriptionServiceQueryTest {
     @Mock private com.team1.cityfarm.portone.PortonePaymentClient portonePaymentClient;
     @Mock private ClassEnrollmentService classEnrollmentService;
     @Mock private SettlementService settlementService;
+    @Mock private org.springframework.transaction.PlatformTransactionManager transactionManager;
 
     private SubscriptionService service;
 
@@ -47,7 +48,7 @@ class SubscriptionServiceQueryTest {
                 subscriptionRepository, userRepository, subscriptionPassRepository,
                 subscriptionPassUsageRepository, subscriptionScheduleRepository, billingKeyRepository,
                 orderRepository, paymentRepository, portonePaymentClient, classEnrollmentService,
-                settlementService
+                settlementService, transactionManager
         );
     }
 

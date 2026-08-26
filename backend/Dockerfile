@@ -28,4 +28,4 @@ COPY --chown=appuser:appuser --from=builder /app/build/libs/*.jar app.jar
 EXPOSE 8080
 
 # 운영 프로파일로 실행
-ENTRYPOINT ["java", "-jar", "-Dspring.profiles.active=prod", "/app/app.jar"]
+ENTRYPOINT ["java", "-Duser.timezone=Asia/Seoul", "-jar", "-Dspring.profiles.active=prod", "/app/app.jar"]

@@ -6,6 +6,7 @@ import com.team1.cityfarm.dto.SignupRequestDto;
 import com.team1.cityfarm.dto.oauth2.OAuth2UserInfo;
 import com.team1.cityfarm.entity.RefreshToken;
 import com.team1.cityfarm.entity.SocialAccount;
+import com.team1.cityfarm.entity.Status;
 import com.team1.cityfarm.entity.User;
 import com.team1.cityfarm.global.exception.CustomError;
 import com.team1.cityfarm.global.exception.CustomException;
@@ -30,6 +31,7 @@ public class AuthService {
     private final JwtProvider jwtProvider;
     private final RefreshTokenService refreshTokenService;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final BillingKeyService billingKeyService;
 
     // 회원가입
     public void signUp(SignupRequestDto dto) {
@@ -74,6 +76,11 @@ public class AuthService {
 
         if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
             throw new CustomException(CustomError.AUTH_LOGIN_FAILED);
+        }
+
+        // 탈퇴(소프트 삭제)한 계정은 비밀번호가 맞아도 로그인시키지 않는다.
+        if (user.getStatus() != Status.ACTIVE) {
+            throw new CustomException(CustomError.AUTH_WITHDRAWN_ACCOUNT);
         }
 
         String accessToken = jwtProvider.createAccessToken(user.getId(), user.getEmail(), user.getRoleType());
@@ -150,16 +157,27 @@ public class AuthService {
         refreshTokenService.deleteAllByUserId(userId);
     }
 
+    //회원 탈퇴
+    // 하드 삭제가 아니라 소프트 삭제(Status.WITHDRAWN)로 처리한다 — 게시글 등 이 유저를 참조하는
+    // 데이터를 남긴 채로 "탈퇴한 회원"으로 표시하기 위함. status만 바꿔서는 탈퇴가 사실상 로그아웃과
+    // 다를 바 없어지므로, login()에서 status != ACTIVE면 로그인 자체를 거부하도록 같이 막아뒀다.
     @Transactional
     public void withdraw(Long userId) {
         // 1. 회원 존재 여부 확인
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
 
-        // 2. RefreshToken 삭제
+        // 2. 결제수단/세션 정리 - 등록된 빌링키가 없으면 삭제할 것도 없으니 존재할 때만 호출한다.
+        // revokeMyBillingKey는 같은 트랜잭션에 참여하는 @Transactional이라, 여기서 예외를 던지게
+        // 두면 try-catch로 잡아도 트랜잭션이 이미 rollback-only로 표시돼 커밋 시점에
+        // UnexpectedRollbackException이 터진다. 그래서 예외 대신 존재 여부를 먼저 확인한다.
+        // (활성 구독에 다음 회차가 예약돼있어 삭제가 막히는 경우(BILLING_KEY_IN_USE)는 그대로 전파해 탈퇴를 막는다)
+        if (billingKeyService.hasActiveBillingKey(userId)) {
+            billingKeyService.revokeMyBillingKey(userId, "회원 탈퇴");
+        }
         refreshTokenRepository.deleteByUserId(userId);
 
-        // 3. 회원 탈퇴 처리
-        userRepository.delete(user);
+        // 3. 회원 탈퇴 처리 (소프트 삭제)
+        user.updateStatus(Status.WITHDRAWN);
     }
 }

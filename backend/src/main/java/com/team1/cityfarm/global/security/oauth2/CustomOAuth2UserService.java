@@ -7,6 +7,7 @@ import com.team1.cityfarm.dto.oauth2.OAuth2UserInfo;
 import com.team1.cityfarm.entity.ProviderType;
 import com.team1.cityfarm.entity.RoleType;
 import com.team1.cityfarm.entity.SocialAccount;
+import com.team1.cityfarm.entity.Status;
 import com.team1.cityfarm.entity.User;
 import com.team1.cityfarm.repository.SocialAccountRepository;
 import com.team1.cityfarm.repository.UserRepository;
@@ -56,6 +57,11 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         // 4. DB 저장 또는 기존 회원 정보 업데이트 및 소셜 계정 연동
         User user = saveOrUpdate(userInfo);
+
+        // 탈퇴(소프트 삭제)했거나 정지된 계정은 소셜 로그인으로도 다시 들어올 수 없게 막는다.
+        if (user.getStatus() != Status.ACTIVE) {
+            throw new OAuth2AuthenticationException("탈퇴한 계정입니다.");
+        }
 
         // 5. CustomOAuth2User 반환 (OAuth2SuccessHandler에서 oAuth2User.getUser()를 직접 꺼낼 수 있게 설정)
         return new CustomOAuth2User(user, attributes);

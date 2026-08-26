@@ -40,7 +40,10 @@ public record RentalResponseDto (
     String createdAt,
 
     @Schema(description = "상태 변경 일시", example = "2026-08-00")
-    String updatedAt
+    String updatedAt,
+
+    @Schema(description = "밭 등록자 닉네임", example = "농장주 홍길동")
+    String hostNickname
 ){
     public static RentalResponseDto from(Rental rental){
         LocalDateTime rentalStart = rental.getCreatedAt();
@@ -56,7 +59,8 @@ public record RentalResponseDto (
                 rentalStart.toString(),
                 rentalEnd.toString(),
                 rental.getCreatedAt().toString(),
-                rental.getUpdatedAt().toString()
+                rental.getUpdatedAt().toString(),
+                rental.getFarm().getUser().getNickname()
         );
     }
 }

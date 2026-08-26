@@ -48,7 +48,9 @@ function ClassWriteView() {
       const created = await createOneDayClass({
         title: title.trim(),
         description: description.trim(),
-        date,
+        // <input type="datetime-local">의 값은 브라우저 로컬시각(KST)이지만, 백엔드는
+        // naive datetime을 UTC로 취급한다(utils/format.js 참고) — 그대로 보내면 표시할 때 9시간 밀림.
+        date: new Date(date).toISOString().slice(0, 19),
         location: location.trim(),
         capacity: Number(capacity),
         price: Number(price),

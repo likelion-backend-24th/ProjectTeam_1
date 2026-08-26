@@ -6,7 +6,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Optional;
+
 public interface RentalRepository extends JpaRepository<Rental, Long> {
+
+    // 결제 주문 기준 조회
+    Optional<Rental> findByOrderId(Long orderId);
 
     // 신청자 조회
     Page<Rental> findByUser_Id(Long userId, Pageable pageable);
@@ -19,4 +24,13 @@ public interface RentalRepository extends JpaRepository<Rental, Long> {
 
     // 특정 밭의 특정 상태 임대 건수 (호스트 관리 화면 카드용)
     long countByFarm_IdAndRentalStatus(Long farmId, RentalStatus rentalStatus);
+
+    // 밭의 현재 진행중인 임대 시작일 조회
+    Optional<Rental> findTopByFarm_IdAndRentalStatusOrderByCreatedAtDesc(Long farmId, RentalStatus rentalStatus);
+
+    // 내가 신청해서 확정된 임대 목록 (마이페이지)
+    Page<Rental> findByUser_IdAndRentalStatus(Long userId, RentalStatus rentalStatus, Pageable pageable);
+
+    // 내가 신청했지만 취소한 건 제외
+    Page<Rental> findByUser_IdAndRentalStatusNot(Long userId, RentalStatus rentalStatus, Pageable pageable);
 }

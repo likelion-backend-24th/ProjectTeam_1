@@ -18,6 +18,7 @@ public enum CustomError {
     AUTH_PASSWORD_REQUIRED(HttpStatus.BAD_REQUEST, "비밀번호를 입력해주세요"),
     AUTH_DUPLICATED_EMAIL(HttpStatus.CONFLICT, "이미 사용중인 이메일입니다"),
     AUTH_DUPLICATED_NICKNAME(HttpStatus.CONFLICT, "이미 사용중인 닉네임입니다"),
+    AUTH_WITHDRAWN_ACCOUNT(HttpStatus.FORBIDDEN, "탈퇴한 계정입니다."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다"),
     EMAIL_REQUIRED(HttpStatus.NOT_FOUND, "이메일을 입력해주세요."),
     PASSWORD_REQUIRED(HttpStatus.NOT_FOUND, "비밀번호를 입력해주세요."),
@@ -87,6 +88,7 @@ public enum CustomError {
     RENTAL_NOT_FOUND(HttpStatus.NOT_FOUND, "신청 내역을 찾을 수 없습니다."),
     RENTAL_NOT_OWNER(HttpStatus.FORBIDDEN, "본인이 신청한 임대만 취소할 수 있습니다."),
     RENTAL_ALREADY_CANCELLED(HttpStatus.BAD_REQUEST, "이미 취소된 신청입니다."),
+    RENTAL_REQUIRES_PAYMENT_CANCEL(HttpStatus.BAD_REQUEST, "결제된 신청은 결제 취소를 통해 취소해주세요."),
 
     // 빌링 예외
     BILLING_KEY_VERIFY_FAILED(HttpStatus.BAD_REQUEST, "빌링키 검증에 실패했습니다."),
