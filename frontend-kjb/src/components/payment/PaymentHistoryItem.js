@@ -4,7 +4,7 @@ import { ORDER_STATUS_LABEL } from "@/lib/constants/status";
 import { formatCurrency, formatDateTime } from "@/utils/format";
 
 const ORDER_TYPE_LABEL = {
-  GENERAL: "일반 클래스 결제",
+  GENERAL: "일반 결제",
   SUBSCRIPTION: "구독 결제",
 };
 
