@@ -63,8 +63,14 @@ export default function FarmDetailPage() {
   }
 
   function handleApplyClick() {
-    router.push(`/farms/${id}/apply`);
-  }
+  router.push(`/farms/${id}/apply`);
+}
+
+function handleEditClick(){
+  router.push(`/farms/${id}/edit`);
+}
+
+  
 
 const showToast = useToastStore((s) => s.showToast);
 const [isDeleting, setIsDeleting] = useState(false);
