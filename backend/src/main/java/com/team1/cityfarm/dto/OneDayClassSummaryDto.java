@@ -20,6 +20,7 @@ public class OneDayClassSummaryDto {
     private int capacity;
     private long enrolledCount;
     private int price;
+    private String hostNickname;
 
     public static OneDayClassSummaryDto from(OneDayClass entity, long enrolledCount){
         return OneDayClassSummaryDto.builder()
@@ -31,6 +32,7 @@ public class OneDayClassSummaryDto {
                 .capacity(entity.getCapacity())
                 .enrolledCount(enrolledCount)
                 .price(entity.getPrice())
+                .hostNickname(entity.getHost().getNickname())
                 .build();
     }
 }
