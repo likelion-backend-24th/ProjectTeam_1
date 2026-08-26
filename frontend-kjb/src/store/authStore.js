@@ -67,8 +67,9 @@ export const useAuthStore = create((set, get) => ({
     });
   },
 
-  socialLogin: async (accessToken) => {
+  socialLogin: async (accessToken, refreshToken) => {
     setAccessToken(accessToken);
+    if (refreshToken) setRefreshToken(refreshToken);
     try {
       const profile = await getMyProfile();
       set({
