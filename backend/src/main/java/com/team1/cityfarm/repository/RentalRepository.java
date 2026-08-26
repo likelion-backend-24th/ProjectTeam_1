@@ -13,6 +13,9 @@ public interface RentalRepository extends JpaRepository<Rental, Long> {
     // 결제 주문 기준 조회
     Optional<Rental> findByOrderId(Long orderId);
 
+    //
+    void deleteByFarm_Id(Long farmId);
+
     // 신청자 조회
     Page<Rental> findByUser_Id(Long userId, Pageable pageable);
 
