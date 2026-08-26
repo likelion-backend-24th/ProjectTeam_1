@@ -5,6 +5,7 @@ import com.team1.cityfarm.entity.Category;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -30,5 +31,10 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
 
     // 피드 목록 조회 (팔로우한 사용자들의 게시글)
     Page<Board> findByUser_IdIn(List<Long> userIds, Pageable pageable);
+
+//    전체 목록 조회 시 공지사항을 상단 고정으로 정렬
+    @Query("SELECT b FROM Board b ORDER BY CASE WHEN b.category = 'NOTICE' THEN 0 ELSE 1 END, b.createdAt DESC")
+    Page<Board> findAllOrderByNoticeFirst(Pageable pageable);
+
 
 }

@@ -19,6 +19,7 @@ import com.team1.cityfarm.repository.ReplyRepository;
 import com.team1.cityfarm.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,7 +53,9 @@ public class BoardService {
         Page<Board> boards;
 
         if (category == null && !hasKeyword) {
-            boards = boardRepository.findAll(pageable);
+            // 공지사항 상단 고정 정렬을 직접 지정하므로, 요청으로 들어온 정렬 값은 무시하고 페이지/사이즈만 사용한다
+            Pageable noticeFirstPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+            boards = boardRepository.findAllOrderByNoticeFirst(noticeFirstPageable);
         } else if (category != null && !hasKeyword) {
             boards = boardRepository.findByCategory(category, pageable);
         } else if (category == null) {
