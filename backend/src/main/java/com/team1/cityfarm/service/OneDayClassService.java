@@ -62,13 +62,19 @@ public class OneDayClassService {
         return OneDayClassResponseDto.from(oneDayClass, classEnrollmentService.getEnrolledCount(classId));
     }
 
-    //    수업 설명 수정
+    //    수업 설명 수정 (본인 클래스 또는 관리자만 가능)
     @Transactional
-    public OneDayClassResponseDto updateDescription(Long classId, Long hostId, OneDayClassDescriptionUpdateDto requestDto) {
+    public OneDayClassResponseDto updateDescription(Long classId, Long requesterId, OneDayClassDescriptionUpdateDto requestDto) {
         OneDayClass oneDayClass = oneDayClassRepository.findById(classId)
                 .orElseThrow(() -> new CustomException(CustomError.ONE_DAY_CLASS_NOT_FOUND));
 
-        if (!oneDayClass.getHost().getId().equals(hostId)) {
+        // 요청자의 role을 직접 조회해서 검증 - 호스트 role이 아니라 실제 요청자 role을 봐야 함
+        User requester = userRepository.findById(requesterId)
+                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
+
+        boolean isOwner = oneDayClass.getHost().getId().equals(requesterId);
+        boolean isAdmin = requester.getRoleType() == RoleType.ADMIN;
+        if (!isOwner && !isAdmin) {
             throw new CustomException(CustomError.CLASS_NOT_OWNER);
         }
 
@@ -85,13 +91,18 @@ public class OneDayClassService {
                 .toList();
     }
 
-    //    클래스 취소
+    //    클래스 취소 (본인 클래스 또는 관리자만 가능)
     @Transactional
-    public List<ClassEnrollment> cancelClass(Long classId, Long hostId) {
+    public List<ClassEnrollment> cancelClass(Long classId, Long requesterId) {
         OneDayClass oneDayClass = oneDayClassRepository.findById(classId)
                 .orElseThrow(() -> new CustomException(CustomError.ONE_DAY_CLASS_NOT_FOUND));
 
-        if (!oneDayClass.getHost().getId().equals(hostId)) {
+        User requester = userRepository.findById(requesterId)
+                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
+
+        boolean isOwner = oneDayClass.getHost().getId().equals(requesterId);
+        boolean isAdmin = requester.getRoleType() == RoleType.ADMIN;
+        if (!isOwner && !isAdmin) {
             throw new CustomException(CustomError.CLASS_NOT_OWNER);
         }
 
