@@ -167,8 +167,15 @@ public class AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
 
-        // 2. 결제수단/세션 정리
-        billingKeyService.revokeMyBillingKey(userId, "회원 탈퇴");
+        // 2. 결제수단/세션 정리 (등록된 빌링키가 없으면 삭제할 것도 없으니 스킵 -
+        // 활성 구독에 다음 회차가 예약돼있어 삭제가 막히는 경우(BILLING_KEY_IN_USE)는 그대로 전파해 탈퇴를 막는다)
+        try {
+            billingKeyService.revokeMyBillingKey(userId, "회원 탈퇴");
+        } catch (CustomException e) {
+            if (e.getCustomError() != CustomError.BILLING_KEY_NOT_FOUND) {
+                throw e;
+            }
+        }
         refreshTokenRepository.deleteByUserId(userId);
 
         // 3. 회원 탈퇴 처리 (소프트 삭제)
