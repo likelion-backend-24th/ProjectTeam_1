@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { getHostSettlements } from "@/lib/api/settlement";
 import { BackIcon } from "@/components/icons";
+import { SETTLEMENT_STATUS_LABEL } from "@/lib/constants/status";
 
 export default function HostSettlementPage() {
   const router = useRouter();
@@ -85,7 +86,7 @@ export default function HostSettlementPage() {
                         : "bg-yellow-100 text-yellow-800"
                     }`}
                   >
-                    {item.status}
+                    {SETTLEMENT_STATUS_LABEL[item.status] ?? item.status}
                   </span>
                 </div>
 

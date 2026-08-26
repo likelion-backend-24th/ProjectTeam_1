@@ -82,6 +82,18 @@ export const BILLING_KEY_STATUS_LABEL = {
   REVOKED: "삭제됨",
 };
 
+export const SettlementStatus = {
+  PENDING: "PENDING",
+  COMPLETED: "COMPLETED",
+  CANCELLED: "CANCELLED",
+};
+
+export const SETTLEMENT_STATUS_LABEL = {
+  PENDING: "정산 대기",
+  COMPLETED: "정산 완료",
+  CANCELLED: "취소됨",
+};
+
 export const BillingKeyIssuanceStatus = {
   PENDING: "PENDING",
   COMPLETED: "COMPLETED",
