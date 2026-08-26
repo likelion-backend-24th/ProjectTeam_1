@@ -167,14 +167,13 @@ public class AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
 
-        // 2. 결제수단/세션 정리 (등록된 빌링키가 없으면 삭제할 것도 없으니 스킵 -
-        // 활성 구독에 다음 회차가 예약돼있어 삭제가 막히는 경우(BILLING_KEY_IN_USE)는 그대로 전파해 탈퇴를 막는다)
-        try {
+        // 2. 결제수단/세션 정리 - 등록된 빌링키가 없으면 삭제할 것도 없으니 존재할 때만 호출한다.
+        // revokeMyBillingKey는 같은 트랜잭션에 참여하는 @Transactional이라, 여기서 예외를 던지게
+        // 두면 try-catch로 잡아도 트랜잭션이 이미 rollback-only로 표시돼 커밋 시점에
+        // UnexpectedRollbackException이 터진다. 그래서 예외 대신 존재 여부를 먼저 확인한다.
+        // (활성 구독에 다음 회차가 예약돼있어 삭제가 막히는 경우(BILLING_KEY_IN_USE)는 그대로 전파해 탈퇴를 막는다)
+        if (billingKeyService.hasActiveBillingKey(userId)) {
             billingKeyService.revokeMyBillingKey(userId, "회원 탈퇴");
-        } catch (CustomException e) {
-            if (e.getCustomError() != CustomError.BILLING_KEY_NOT_FOUND) {
-                throw e;
-            }
         }
         refreshTokenRepository.deleteByUserId(userId);
 

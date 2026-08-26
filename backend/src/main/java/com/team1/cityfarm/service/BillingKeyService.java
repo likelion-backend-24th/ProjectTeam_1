@@ -114,6 +114,15 @@ public class BillingKeyService {
     }
 
     /**
+     * 활성 빌링키 존재 여부만 확인한다 (예외 없이). 호출부에서 revokeMyBillingKey를
+     * 예외 없이 안전하게 호출할지 미리 판단할 때 사용 - BILLING_KEY_NOT_FOUND를
+     * 던지고 잡는 방식은 같은 트랜잭션 안에서 rollback-only를 유발해 위험하다.
+     */
+    public boolean hasActiveBillingKey(Long userId) {
+        return billingKeyRepository.findByUserIdAndStatus(userId, BillingKeyStatus.ACTIVE).isPresent();
+    }
+
+    /**
      * [빌링키 단독 삭제 (카드 교체 없이 그냥 삭제)]
      * 활성 구독에 아직 실행되지 않은 예약결제가 걸려있으면 삭제를 막는다 — 대체 카드 없이
      * 지우면 다음 회차 결제 수단이 사라져서 구독이 조용히 끊긴다. 하드 삭제 대신 REVOKED로 남긴다.
