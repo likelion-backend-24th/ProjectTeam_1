@@ -119,7 +119,7 @@ public class SettlementService {
      * [구독 수강권 사용 시 호출] Order 없이 클래스 가격 기준으로 정산(PENDING) 데이터 생성
      */
     @Transactional
-    public Settlement createPendingSettlementForPass(User host, Long classId, int classPrice) {
+    public Settlement createPendingSettlementForPass(User host, Long classId, int classPrice, Long enrollmentId) {
         // 정산 금액 계산 (클래스 가격 * 50 / 100)
         BigDecimal paymentAmount = BigDecimal.valueOf(classPrice);
 
@@ -132,9 +132,10 @@ public class SettlementService {
                 .multiply(CLASS_SETTLEMENT_RATE)
                 .divide(new BigDecimal("100"), 0, RoundingMode.FLOOR); // 원 단위 이하 절사
 
-        // Settlement 엔티티 생성 및 저장 (order는 null)
+        // Settlement 엔티티 생성 및 저장 (order는 null, 대신 enrollmentId로 역추적)
         Settlement settlement = Settlement.builder()
                 .order(null)
+                .enrollmentId(enrollmentId)
                 .host(host)
                 .className(className)
                 .settlementType(SettlementType.ONE_DAY_CLASS) // 프로젝트 정책에 맞는 타입 사용
@@ -200,6 +201,19 @@ public class SettlementService {
                 .ifPresent(settlement -> {
                     settlement.cancel();
                     log.info("[정산 취소 완료] Settlement ID: {}, Order ID: {}", settlement.getId(), orderId);
+                });
+    }
+
+    /**
+     * [구독 수강권 취소 시 호출] enrollmentId로 정산 취소 처리
+     * 수강권 경로는 Order가 없어 cancelSettlementByOrderId를 쓸 수 없는 건에 대응한다.
+     */
+    @Transactional
+    public void cancelSettlementByEnrollmentId(Long enrollmentId) {
+        settlementRepository.findByEnrollmentId(enrollmentId)
+                .ifPresent(settlement -> {
+                    settlement.cancel();
+                    log.info("[정산 취소 완료] Settlement ID: {}, Enrollment ID: {}", settlement.getId(), enrollmentId);
                 });
     }
 }
