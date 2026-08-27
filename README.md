@@ -286,26 +286,26 @@ cd backend
 
 | 번호 | 문서 제목 (주제) | 핵심 키워드 | 링크 |
 | :---: | :--- | :--- | :---: |
-| **01** | Merge Conflict | `Git` | [보기](./docs/1.md) |
-| **02** | 인증 모듈 중복 구현으로 인한 아키텍쳐 충돌 | `Git`, `Java` | [보기](./docs/2.md) |
-| **03** | .yaml 파일 | `Java` | [보기](./docs/3.md) |
-| **04** | 게시글 등록 schema 설정 | `Java` | [보기](./docs/4.md) |
-| **05** | 답변 등록 | `Java` | [보기](./docs/5.md) |
-| **06** | 목록 조회 시 불필요한 인증 요구 | `Java` | [보기](./docs/6.md) |
-| **07** | 답변/댓글이 달린 게시글 삭제가 안됨 | `Java` | [보기](./docs/7.md) |
-| **08** | 회원가입 안내 가이드 필요 | `JavaScript`, `React`, `Next.js` | [보기](./docs/8.md) |
-| **09** | 공지사항 답글/댓글 기능 삭제 | `Java` | [보기](./docs/9.md) |
-| **10** | OAuth 로그인 세션 만료 후 OAuth 재로그인 실패 | `Java` | [보기](./docs/10.md) |
-| **11** | 게시글 글자 수 제한 기능 | `Java` | [보기](./docs/11.md) |
-| **12** | 댓글과 답글의 위치 변경 | `React`, `Next.js` | [보기](./docs/12.md) |
-| **13** | 게시글 필터 정의 필요 | `Java` | [보기](./docs/13.md) |
-| **14** | 게시글 검색 기능 | `Java` | [보기](./docs/14.md) |
-| **15** | 비로그인 시 댓글칸이 입력되는 현상 | `Java` | [보기](./docs/15.md) |
-| **16** | 원데이클래스 설명 수정 | `Java` | [보기](./docs/16.md) |
-| **17** | 카드 등록 중 인증문자 미발송 | `API`, `Java` | [보기](./docs/17.md) |
-| **18** | icons.js 병합충돌 | `React`, `Next.js` | [보기](./docs/18.md) |
-| **19** | lib/api/profile.js 병합 충돌 | `JavaScript`, `Next.js` | [보기](./docs/19.md) |
-| **20** | 클래스 등록 폼 좌우 스크롤 | `Tailwind` | [보기](./docs/20.md) |
-| **21** | 회원탈퇴 안 됨 | `Java` | [보기](./docs/21.md) |
-| **22** | 회원탈퇴 ERROR 2 | `Java` | [보기](./docs/22.md) |
-| **23** | 장시간 로그인 후 재접속 시 자동 로그아웃되는 문제 | `React`, `Next.js`, `Tailwind` | [보기](./docs/23.md) |
+| **01** | Merge Conflict | `Git` | [보기](./docs/troubleshooting/1.md) |
+| **02** | 인증 모듈 중복 구현으로 인한 아키텍쳐 충돌 | `Git`, `Java` | [보기](./docs/troubleshooting/2.md) |
+| **03** | .yaml 파일 | `Java` | [보기](./docs/troubleshooting/3.md) |
+| **04** | 게시글 등록 schema 설정 | `Java` | [보기](./docs/troubleshooting/4.md) |
+| **05** | 답변 등록 | `Java` | [보기](./docs/troubleshooting/5.md) |
+| **06** | 목록 조회 시 불필요한 인증 요구 | `Java` | [보기](./docs/troubleshooting/6.md) |
+| **07** | 답변/댓글이 달린 게시글 삭제가 안됨 | `Java` | [보기](./docs/troubleshooting/7.md) |
+| **08** | 회원가입 안내 가이드 필요 | `JavaScript`, `React`, `Next.js` | [보기](./docs/troubleshooting/8.md) |
+| **09** | 공지사항 답글/댓글 기능 삭제 | `Java` | [보기](./docs/troubleshooting/9.md) |
+| **10** | OAuth 로그인 세션 만료 후 OAuth 재로그인 실패 | `Java` | [보기](./docs/troubleshooting/10.md) |
+| **11** | 게시글 글자 수 제한 기능 | `Java` | [보기](./docs/troubleshooting/11.md) |
+| **12** | 댓글과 답글의 위치 변경 | `React`, `Next.js` | [보기](./docs/troubleshooting/12.md) |
+| **13** | 게시글 필터 정의 필요 | `Java` | [보기](./docs/troubleshooting/13.md) |
+| **14** | 게시글 검색 기능 | `Java` | [보기](./docs/troubleshooting/14.md) |
+| **15** | 비로그인 시 댓글칸이 입력되는 현상 | `Java` | [보기](./docs/troubleshooting/15.md) |
+| **16** | 원데이클래스 설명 수정 | `Java` | [보기](./docs/troubleshooting/16.md) |
+| **17** | 카드 등록 중 인증문자 미발송 | `API`, `Java` | [보기](./docs/troubleshooting/17.md) |
+| **18** | icons.js 병합충돌 | `React`, `Next.js` | [보기](./docs/troubleshooting/18.md) |
+| **19** | lib/api/profile.js 병합 충돌 | `JavaScript`, `Next.js` | [보기](./docs/troubleshooting/19.md) |
+| **20** | 클래스 등록 폼 좌우 스크롤 | `Tailwind` | [보기](./docs/troubleshooting/20.md) |
+| **21** | 회원탈퇴 안 됨 | `Java` | [보기](./docs/troubleshooting/21.md) |
+| **22** | 회원탈퇴 ERROR 2 | `Java` | [보기](./docs/troubleshooting/22.md) |
+| **23** | 장시간 로그인 후 재접속 시 자동 로그아웃되는 문제 | `React`, `Next.js`, `Tailwind` | [보기](./docs/troubleshooting/23.md) |
