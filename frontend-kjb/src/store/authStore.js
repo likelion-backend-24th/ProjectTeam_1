@@ -47,11 +47,35 @@ export const useAuthStore = create((set, get) => ({
     try {
       const profile = await getMyProfile();
       set({ profile, isAuthenticated: true, isAdmin: isAdminToken(token), isHost: isHostToken(token), isLoading: false });
+      return;
     } catch {
-      clearAccessToken();
-      clearRefreshToken();
-      set({ isAuthenticated: false, profile: null, isAdmin: false, isHost: false, isLoading: false });
+      // 액세스 토큰이 만료됐을 수 있으니 곧바로 로그아웃시키지 않고 리프레시 토큰으로 재발급을 먼저 시도한다
     }
+
+    const refreshToken = getRefreshToken();
+    if (refreshToken) {
+      try {
+        const res = await reissueApi(refreshToken);
+        setAccessToken(res.accessToken);
+        if (res.refreshToken) setRefreshToken(res.refreshToken);
+
+        const profile = await getMyProfile();
+        set({
+          profile,
+          isAuthenticated: true,
+          isAdmin: isAdminToken(res.accessToken),
+          isHost: isHostToken(res.accessToken),
+          isLoading: false,
+        });
+        return;
+      } catch {
+        // 리프레시 토큰도 만료/무효 - 아래에서 로그아웃 처리
+      }
+    }
+
+    clearAccessToken();
+    clearRefreshToken();
+    set({ isAuthenticated: false, profile: null, isAdmin: false, isHost: false, isLoading: false });
   },
 
   login: async (payload) => {
