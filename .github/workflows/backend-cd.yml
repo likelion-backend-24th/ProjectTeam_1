@@ -1,0 +1,107 @@
+name: backend-CD.yml
+
+on:
+  push:
+    branches: [ "feat/Docker" ]
+    paths:
+      - 'backend/**'
+      - 'docker-compose.yml' # docker-compose.yml 변경 시에도 CD 감지
+
+jobs:
+  # 1) 이미지 빌드 후 GHCR에 push
+  build-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_lower: ${{ steps.string.outputs.image_lower }}
+    steps:
+      # 1) 소스코드 체크아웃
+      - uses: actions/checkout@v4
+
+      # 2) GitHub Secrets의 내용으로 application-secret.yml 파일 생성
+      # 2) GitHub Secrets의 내용으로 application-secret.yml 파일 생성
+      - name: Create application-secret.yml
+        run: |
+          cat << 'EOF' > ./backend/src/main/resources/application-secret.yml
+          ${{ secrets.APPLICATION_SECRET_YML }}
+          EOF
+
+      # 1-1) GitHub 계정/레포명을 전부 소문자로 변환 (GHCR 필수 규격)
+      - name: Lowercase Repository Name
+        id: string
+        run: |
+          IMAGE_NAME="ghcr.io/${{ github.repository_owner }}/cityfarm-backend"
+          IMAGE_LOWER=$(echo "$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')
+          echo "image_lower=${IMAGE_LOWER}" >> $GITHUB_OUTPUT
+          echo "IMAGE_LOWER=${IMAGE_LOWER}" >> $GITHUB_ENV
+
+      # 1-2) GHCR 로그인
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 1-3) 이미지 빌드 및 GHCR 푸시
+      - name: Build & Push image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_LOWER }}:latest
+            ${{ env.IMAGE_LOWER }}:${{ github.sha }}
+
+  # 2) EC2에 SSH 접속해서 재배포
+  deploy:
+    needs: build-image
+    runs-on: ubuntu-latest
+    steps:
+      # 2-1) 최신 docker-compose.yml을 가져오기 위한 체크아웃
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      # 2-2) 루트에 위치한 docker-compose.yml을 EC2로 복사
+      - name: Copy docker-compose.yml via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "docker-compose.yml" # 💡 루트 경로의 파일 복사
+          target: "~/cityfarm"
+
+      # 2-3) SSH 접속 후 배포 수행
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: GITHUB_TOKEN,IMAGE_NAME,ACTOR,DB_PASSWORD
+          script: |
+            # 1) GHCR 로그인
+            echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
+            
+            # 2) 디렉토리 이동 및 생성
+            mkdir -p ~/cityfarm
+            cd ~/cityfarm
+            
+            # 3) .env 파일 생성
+            echo "DB_PASSWORD=$DB_PASSWORD" > .env
+            
+            # 4) 최신 이미지 pull 및 백엔드(app) 서비스만 재기동
+            docker pull "$IMAGE_NAME":latest
+            docker compose up -d app
+            
+            # 5) 안 쓰는 이미지 정리
+            docker image prune -f
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE_NAME: ${{ needs.build-image.outputs.image_lower }}
+          ACTOR: ${{ github.actor }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}

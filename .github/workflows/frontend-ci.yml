@@ -1,0 +1,38 @@
+name: frontend-CI.yml
+
+on:
+  push:
+    branches: [ "feat/Docker" ]
+    paths:
+      - 'frontend-kjb/**'
+  pull_request:
+    branches: [ "feat/Docker" ]
+    paths:
+      - 'frontend-kjb/**'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./frontend-kjb
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'frontend-kjb/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # 빌드 시 환경변수 전달
+      - name: Build frontend
+        env:
+          NEXT_PUBLIC_API_URL: "http://54.86.192.52:8080"
+        run: npm run build

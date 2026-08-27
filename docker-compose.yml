@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # 1) MySQL Database 컨테이너
+  db:
+    image: mysql:8.0
+    container_name: cityfarm-DB
+    restart: always
+    environment:
+      MYSQL_DATABASE: cityfarm
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2) Spring Boot 백엔드 애플리케이션 컨테이너
+  app:
+    image: ghcr.io/likelion-backend-24th/cityfarm-backend:latest
+    container_name: cityfarm-backend
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/cityfarm?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - uploads_data:/app/uploads
+
+  # 3) 프론트엔드 컨테이너
+  frontend:
+    image: ghcr.io/likelion-backend-24th/cityfarm-frontend:latest # 레지스트리 소문자 경로 및 이름 확인
+    container_name: cityfarm-frontend
+    restart: always
+    ports:
+      - "80:3000" # 💡 수정: 외부 80포트로 접속해서 내부 Next.js(3000포트)로 연결
+    depends_on:
+      - app
+
+volumes:
+  mysql_data:
+  uploads_data:

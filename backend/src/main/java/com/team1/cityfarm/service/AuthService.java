@@ -1,0 +1,183 @@
+package com.team1.cityfarm.service;
+
+import com.team1.cityfarm.dto.LoginRequestDto;
+import com.team1.cityfarm.dto.LoginResponseDto;
+import com.team1.cityfarm.dto.SignupRequestDto;
+import com.team1.cityfarm.dto.oauth2.OAuth2UserInfo;
+import com.team1.cityfarm.entity.RefreshToken;
+import com.team1.cityfarm.entity.SocialAccount;
+import com.team1.cityfarm.entity.Status;
+import com.team1.cityfarm.entity.User;
+import com.team1.cityfarm.global.exception.CustomError;
+import com.team1.cityfarm.global.exception.CustomException;
+import com.team1.cityfarm.global.security.jwt.JwtProvider;
+import com.team1.cityfarm.repository.RefreshTokenRepository;
+import com.team1.cityfarm.repository.SocialAccountRepository;
+import com.team1.cityfarm.repository.UserRepository;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
+import org.springframework.transaction.annotation.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+@Service
+@Transactional
+@RequiredArgsConstructor
+public class AuthService {
+    private final UserRepository userRepository;
+    private final SocialAccountRepository socialAccountRepository; // 1. SocialAccountRepository 추가
+    private final PasswordEncoder passwordEncoder;
+    private final JwtProvider jwtProvider;
+    private final RefreshTokenService refreshTokenService;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final BillingKeyService billingKeyService;
+
+    // 회원가입
+    public void signUp(SignupRequestDto dto) {
+        if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
+            throw new CustomException(CustomError.AUTH_DUPLICATED_EMAIL);
+        }
+
+        if (!dto.getPassword().equals(dto.getPasswordConfirm())) {
+            throw new CustomException(CustomError.AUTH_PASSWORD_VALID);
+        }
+
+        if (userRepository.findByNickname(dto.getNickname()).isPresent()) {
+            throw new CustomException(CustomError.AUTH_DUPLICATED_NICKNAME);
+        }
+
+        User user = User.builder()
+                .email(dto.getEmail())
+                .password(passwordEncoder.encode(dto.getPassword()))
+                .nickname(dto.getNickname())
+                .name(dto.getName())
+                .build();
+
+        userRepository.save(user);
+    }
+
+    // 로그인
+    public LoginResponseDto login(LoginRequestDto dto) {
+
+        if (dto.getEmail() == null || dto.getEmail().isEmpty())
+            throw new CustomException(CustomError.AUTH_EMAIL_REQUIRED);
+
+        if (dto.getPassword() == null || dto.getPassword().isEmpty())
+            throw new CustomException(CustomError.AUTH_PASSWORD_VALID);
+
+        User user = userRepository.findByEmail(dto.getEmail())
+                .orElseThrow(() -> new CustomException(CustomError.AUTH_LOGIN_FAILED));
+
+        // 소셜 로그인 전용 계정(비밀번호 없음) 예외 처리
+        if (user.getPassword() == null) {
+            throw new CustomException(CustomError.AUTH_LOGIN_FAILED);
+        }
+
+        if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
+            throw new CustomException(CustomError.AUTH_LOGIN_FAILED);
+        }
+
+        // 탈퇴(소프트 삭제)한 계정은 비밀번호가 맞아도 로그인시키지 않는다.
+        if (user.getStatus() != Status.ACTIVE) {
+            throw new CustomException(CustomError.AUTH_WITHDRAWN_ACCOUNT);
+        }
+
+        String accessToken = jwtProvider.createAccessToken(user.getId(), user.getEmail(), user.getRoleType());
+        String refreshToken = jwtProvider.createRefreshToken(user.getId());
+        refreshTokenService.deleteAllByUserId(user.getId());
+
+        RefreshToken refreshTokenEntity = RefreshToken.builder()
+                .user(user)
+                .token(refreshToken)
+                .build();
+        refreshTokenService.addRefreshToken(refreshTokenEntity);
+
+        return new LoginResponseDto(accessToken, refreshToken);
+    }
+
+    // 토큰 재발급
+    @Transactional
+    public LoginResponseDto reissueAccessToken(String refreshToken) {
+        if (refreshToken == null) {
+            throw new CustomException(CustomError.TOKEN_NOT_FOUND);
+        }
+
+        Long userId;
+        try {
+            userId = jwtProvider.getUserIdFromRefreshToken(refreshToken);
+        } catch (ExpiredJwtException e) {
+            throw new CustomException(CustomError.TOKEN_EXPIRED);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new CustomException(CustomError.TOKEN_INVALID);
+        }
+
+        RefreshToken dbToken = refreshTokenService.findRefreshToken(refreshToken)
+                .orElseThrow(() -> new CustomException(CustomError.TOKEN_INVALID));
+        if (!refreshToken.equals(dbToken.getToken())) {
+            throw new CustomException(CustomError.TOKEN_INVALID);
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
+
+        String newAccessToken = jwtProvider.createAccessToken(user.getId(), user.getEmail(), user.getRoleType());
+
+        return new LoginResponseDto(newAccessToken, refreshToken);
+    }
+
+    // 로그인된 사용자의 소셜 계정 수동 연동
+    @Transactional
+    public void linkSocialToLoginUser(Long userId, OAuth2UserInfo userInfo) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
+
+        // 이미 연동되어 있는 소셜 계정인지 확인
+        boolean isAlreadyLinked = socialAccountRepository
+                .findByProviderAndProviderId(userInfo.getProvider(), userInfo.getProviderId())
+                .isPresent();
+
+        if (isAlreadyLinked) {
+            throw new CustomException(CustomError.AUTH_LOGIN_FAILED); // 필요에 따라 적절한 CustomError 지정
+        }
+
+        SocialAccount socialAccount = SocialAccount.builder()
+                .user(user)
+                .provider(userInfo.getProvider())
+                .providerId(userInfo.getProviderId())
+                .build();
+
+        socialAccountRepository.save(socialAccount);
+    }
+
+    // 로그아웃
+    @Transactional
+    public void logout(Long userId) {
+        // DB에서 해당 유저의 Refresh Token 삭제
+        refreshTokenService.deleteAllByUserId(userId);
+    }
+
+    //회원 탈퇴
+    // 하드 삭제가 아니라 소프트 삭제(Status.WITHDRAWN)로 처리한다 — 게시글 등 이 유저를 참조하는
+    // 데이터를 남긴 채로 "탈퇴한 회원"으로 표시하기 위함. status만 바꿔서는 탈퇴가 사실상 로그아웃과
+    // 다를 바 없어지므로, login()에서 status != ACTIVE면 로그인 자체를 거부하도록 같이 막아뒀다.
+    @Transactional
+    public void withdraw(Long userId) {
+        // 1. 회원 존재 여부 확인
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(CustomError.USER_NOT_FOUND));
+
+        // 2. 결제수단/세션 정리 - 등록된 빌링키가 없으면 삭제할 것도 없으니 존재할 때만 호출한다.
+        // revokeMyBillingKey는 같은 트랜잭션에 참여하는 @Transactional이라, 여기서 예외를 던지게
+        // 두면 try-catch로 잡아도 트랜잭션이 이미 rollback-only로 표시돼 커밋 시점에
+        // UnexpectedRollbackException이 터진다. 그래서 예외 대신 존재 여부를 먼저 확인한다.
+        // (활성 구독에 다음 회차가 예약돼있어 삭제가 막히는 경우(BILLING_KEY_IN_USE)는 그대로 전파해 탈퇴를 막는다)
+        if (billingKeyService.hasActiveBillingKey(userId)) {
+            billingKeyService.revokeMyBillingKey(userId, "회원 탈퇴");
+        }
+        refreshTokenRepository.deleteByUserId(userId);
+
+        // 3. 회원 탈퇴 처리 (소프트 삭제)
+        user.updateStatus(Status.WITHDRAWN);
+    }
+}

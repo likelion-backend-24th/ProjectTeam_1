@@ -1,0 +1,249 @@
+package com.team1.cityfarm.service;
+
+import com.team1.cityfarm.dto.PaymentCancelRequestDto;
+import com.team1.cityfarm.dto.PaymentResponseDto;
+import com.team1.cityfarm.dto.PaymentVerifyRequestDto;
+import com.team1.cityfarm.entity.*;
+import com.team1.cityfarm.global.exception.CustomError;
+import com.team1.cityfarm.global.exception.CustomException;
+import com.team1.cityfarm.portone.PortonePaymentClient;
+import com.team1.cityfarm.portone.PortonePaymentResponseDto;
+import com.team1.cityfarm.portone.RefundEligibilityResponseDto;
+import com.team1.cityfarm.repository.OrderRepository;
+import com.team1.cityfarm.repository.PaymentRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class PaymentService {
+
+    private final PaymentRepository paymentRepository;
+    private final OrderRepository orderRepository;
+    private final PortonePaymentClient portOnePaymentClient;
+    private final ClassEnrollmentService classEnrollmentService;
+    private final SettlementService settlementService;
+    private final RentalService rentalService;
+
+    /**
+     * [PortOne 결제 결과 검증 및 승인 완료 처리]
+     */
+    @Transactional
+    public PaymentResponseDto verifyAndCompletePayment(PaymentVerifyRequestDto request) {
+        String paymentId = request.getPaymentId();
+        String merchantOrderId = request.getMerchantOrderId();
+
+        // 1. 이미 완료 처리된 PortOne 결제건인지 중복 확인
+        if (paymentRepository.existsByPortonePaymentId(paymentId)) {
+            throw new CustomException(CustomError.DUPLICATE_PAYMENT);
+        }
+
+        // 2. DB에서 해당 merchantOrderId로 주문 조회
+        Order order = orderRepository.findByMerchantOrderId(merchantOrderId)
+                .orElseThrow(() -> new CustomException(CustomError.ORDER_NOT_FOUND));
+
+        // 3. 주문 상태가 PENDING인지 확인 (이미 웹훅 등에 의해 처리된 경우 중복 처리 방지)
+        if (order.getOrderStatus() != OrderStatus.PENDING) {
+            // 이미 PAID 상태라면 기존 결제 내역 반환
+            if (order.getOrderStatus() == OrderStatus.PAID) {
+                Payment existingPayment = paymentRepository.findByOrderId(order.getId())
+                        .orElseThrow(() -> new CustomException(CustomError.PAYMENT_NOT_FOUND));
+                return PaymentResponseDto.from(existingPayment);
+            }
+            throw new CustomException(CustomError.INVALID_ORDER_STATUS);
+        }
+
+        // 4. PortOne V2 API 단건 조회
+        PortonePaymentResponseDto portOnePayment = portOnePaymentClient.getPaymentDetails(paymentId);
+
+        // 5. [검증 ①] PortOne 결제 상태가 PAID인가?
+        if (!"PAID".equalsIgnoreCase(portOnePayment.getStatus())) {
+            log.error("[결제 검증 실패] PortOne 결제 미완료 상태 - paymentId: {}, status: {}", paymentId, portOnePayment.getStatus());
+            throw new CustomException(CustomError.PAYMENT_FAILED);
+        }
+
+        // 6. [검증 ②] 실제 결제된 금액이 주문(Order) 금액과 일치하는가?
+        Integer actualPaidAmount = portOnePayment.getAmount().getPaid();
+        if (actualPaidAmount == null || !actualPaidAmount.equals(order.getAmount())) {
+            log.error("[결제 위변조 위험] 결제 금액 불일치 - Order 금액: {}, PortOne 실제 결제 금액: {}", order.getAmount(), actualPaidAmount);
+            throw new CustomException(CustomError.INVALID_PAYMENT_AMOUNT);
+        }
+
+        // 7~10. 결제 완료 승인 처리 (공통 메서드 호출)
+        Payment payment = processPaymentSuccess(order, paymentId, actualPaidAmount, portOnePayment.getPayMethodType(), portOnePayment.getApprovedAtParsed());
+
+        return PaymentResponseDto.from(payment);
+    }
+
+    /**
+     * [공통 결제 성공 승인 로직]
+     * Webhook과 verifyAndCompletePayment 양쪽에서 재사용 가능한 트랜잭션 단위 메서드
+     */
+    @Transactional
+    public Payment processPaymentSuccess(Order order, String portonePaymentId, Integer amount, String payMethod, LocalDateTime approvedAt) {
+        // 1. Payment 엔티티 생성 및 저장
+        Payment payment = Payment.builder()
+                .order(order)
+                .portonePaymentId(portonePaymentId)
+                .payMethod(payMethod)
+                .amount(amount)
+                .status(PaymentStatus.PAID)
+                .approvedAt(approvedAt != null ? approvedAt : LocalDateTime.now())
+                .build();
+
+        Payment savedPayment = paymentRepository.save(payment);
+
+        // 2. Order 상태 변경 (PENDING -> PAID)
+        order.setOrderStatus(OrderStatus.PAID);
+
+        // 3~4. 클래스 신청,밭 임대에 따라 확정 + 정산 처리
+        if (classEnrollmentService.hasEnrollmentForOrder(order.getId())) {
+            ClassEnrollment enrollment = classEnrollmentService.confirmEnrollment(order.getId());
+            if (enrollment != null && enrollment.getOneDayClass() != null) {
+                settlementService.createPendingSettlement(order, enrollment.getOneDayClass().getId());
+            }
+        } else {
+            Rental rental = rentalService.confirmRental(order.getId());
+            if (rental != null && rental.getFarm() != null) {
+                settlementService.createPendingFarmRentalSettlement(order, rental.getFarm().getId());
+            }
+        }
+
+        log.info("[결제 승인 완료] merchantOrderId: {}, paymentId: {}, amount: {}",
+                order.getMerchantOrderId(), portonePaymentId, amount);
+
+        return savedPayment;
+    }
+
+    /**
+     * [환불 가능 여부 및 사유 조회]
+     */
+    public RefundEligibilityResponseDto checkRefundEligibility(Long paymentId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new CustomException(CustomError.PAYMENT_NOT_FOUND));
+
+        if (payment.getStatus() == PaymentStatus.CANCELLED) {
+            return RefundEligibilityResponseDto.fail("ALREADY_CANCELLED");
+        }
+
+        // 구독(정기결제) 주문은 ClassEnrollment가 없어 이 취소 플로우로 처리할 수 없다.
+        // 구독 해지는 SubscriptionService.cancelSubscriptionAtPeriodEnd로 처리한다.
+        if (payment.getOrder().getOrderType() != OrderType.GENERAL) {
+            return RefundEligibilityResponseDto.fail("UNSUPPORTED_ORDER_TYPE");
+        }
+
+        if (payment.getCreatedAt().plusHours(24).isBefore(LocalDateTime.now())) {
+            return RefundEligibilityResponseDto.fail("REFUND_DEADLINE_EXCEEDED");
+        }
+
+        boolean isAlreadyUsed = classEnrollmentService.isEnrollmentUsed(payment.getOrder().getId());
+        if (isAlreadyUsed) {
+            return RefundEligibilityResponseDto.fail("PASS_ALREADY_USED");
+        }
+
+        return RefundEligibilityResponseDto.ok();
+    }
+
+    /**
+     * [결제 전체 취소/환불]
+     * userId 인자를 추가하여 결제자 소유권 검증 추가
+     */
+    @Transactional
+    public PaymentResponseDto cancelPayment(Long userId, Long paymentId, PaymentCancelRequestDto request) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new CustomException(CustomError.PAYMENT_NOT_FOUND));
+
+        // 결제 본인 검증
+        if (!payment.getOrder().getUser().getId().equals(userId)) {
+            throw new CustomException(CustomError.AUTH_UNAUTHORIZED);
+        }
+
+        // 1. 사전 환불 가능 여부 검증
+        RefundEligibilityResponseDto eligibility = checkRefundEligibility(paymentId);
+        if (!eligibility.isRefundable()) {
+            log.error("[결제 취소 불가] paymentId: {}, reason: {}", paymentId, eligibility.getReason());
+            throw new CustomException(CustomError.CANNOT_REFUND);
+        }
+
+        String cancelReason = (request != null && request.getReason() != null)
+                ? request.getReason()
+                : "사용자 요청에 의한 취소";
+
+        // 2. PortOne V2 API 단건 결제 취소 요청
+        portOnePaymentClient.cancelPayment(payment.getPortonePaymentId(), cancelReason);
+
+        // 3. Payment 엔티티 상태 변경
+        payment.cancel(cancelReason, LocalDateTime.now());
+
+        // 4. Order 엔티티 상태 변경
+        Order order = payment.getOrder();
+        order.setOrderStatus(OrderStatus.CANCELLED);
+
+        // 5. ClassEnrollment / Rental 상태 변경 (도메인에 따라 분리)
+        if (classEnrollmentService.hasEnrollmentForOrder(order.getId())){
+            classEnrollmentService.cancelEnrollment(order.getId());
+        } else {
+            rentalService.cancelRentalByOrderId(order.getId());
+        }
+        // 6. 정산 취소 (환불된 주문이 관리자에게 지급 대상으로 남지 않도록)
+        settlementService.cancelSettlementByOrderId(order.getId());
+
+        log.info("[결제 취소 완료] paymentId: {}, merchantOrderId: {}, reason: {}",
+                paymentId, order.getMerchantOrderId(), cancelReason);
+
+        return PaymentResponseDto.from(payment);
+    }
+
+    /**
+     * [결제 전체 취소/환불 — orderId 기준]
+     * ClassEnrollment 쪽에서는 paymentId가 아니라 orderId만 들고 있는 경우가 많아 추가한 진입점.
+     * 검증/취소 로직은 {@link #cancelPayment}와 완전히 동일하다(GENERAL 주문만 취소 가능,
+     * 24시간 이내/미사용 조건 등은 checkRefundEligibility에서 그대로 적용됨).
+     */
+    @Transactional
+    public PaymentResponseDto cancelPaymentByOrderId(Long userId, Long orderId, PaymentCancelRequestDto request) {
+        Payment payment = paymentRepository.findByOrderId(orderId)
+                .orElseThrow(() -> new CustomException(CustomError.PAYMENT_NOT_FOUND));
+
+        return cancelPayment(userId, payment.getId(), request);
+    }
+
+    /**
+     * [호스트의 클래스 취소로 인한 환불]
+     * 사용자 귀책이 아니므로 checkRefundEligibility(24시간 이내/미사용 조건)를 건너뛰고 전액 환불한다.
+     * 소유권 검증도 하지 않는다 — "이 사람이 이 클래스의 호스트인지"는 호출부
+     * (OneDayClassService.cancelClass)에서 이미 검증됐다는 전제. 이미 취소된 결제는 멱등하게 스킵한다.
+     * ClassEnrollment 상태는 여기서 건드리지 않는다 — 호스트 클래스 취소 흐름에서
+     * classEnrollmentService.cancelAllEnrollmentsForClass가 이미 처리했다는 전제.
+     */
+    @Transactional
+    public void refundForHostCancelledClass(Long orderId, String reason) {
+        Payment payment = paymentRepository.findByOrderId(orderId)
+                .orElseThrow(() -> new CustomException(CustomError.PAYMENT_NOT_FOUND));
+
+        if (payment.getStatus() == PaymentStatus.CANCELLED) {
+            return;
+        }
+        if (payment.getOrder().getOrderType() != OrderType.GENERAL) {
+            // 수강권(SUBSCRIPTION)으로 신청한 건은 이 경로로 오면 안 됨 - SubscriptionService.restorePassByEnrollmentId로 처리
+            log.warn("[호스트 클래스 취소 환불 스킵] GENERAL 주문이 아님 - orderId: {}", orderId);
+            return;
+        }
+
+        portOnePaymentClient.cancelPayment(payment.getPortonePaymentId(), reason);
+
+        payment.cancel(reason, LocalDateTime.now());
+        payment.getOrder().setOrderStatus(OrderStatus.CANCELLED);
+
+        settlementService.cancelSettlementByOrderId(orderId);
+
+        log.info("[호스트 클래스 취소 환불 완료] orderId: {}, paymentId: {}, reason: {}",
+                orderId, payment.getId(), reason);
+    }
+}
