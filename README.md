@@ -5,6 +5,9 @@
 
 🔗 **[Project Notion (기획안 및 상세 문서)](https://app.notion.com/p/1-3ac73873401a803191ebeab3ce2f07eb)**
 
+🔗 발표 자료
+- [프로젝트 발표 자료 (PDF)](./docs/presentation.pdf)
+
 ---
 
 ## 🛠 Tech Stack
